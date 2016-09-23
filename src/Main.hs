@@ -148,7 +148,7 @@ prettyBlock (Pandoc.CodeBlock _ txt) = PP.vcat
         map extend $ [""] ++ ls ++ [""]
 
 prettyBlock (Pandoc.BulletList bss) = PP.vcat
-    [ "-" <+> PP.align (prettyBlocks bs)
+    [ PP.dullmagenta "-" <+> PP.align (prettyBlocks bs)
     | bs <- bss
     ]
 
