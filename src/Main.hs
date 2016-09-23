@@ -74,22 +74,37 @@ displayPresentation Presentation {..} = do
 
 
 --------------------------------------------------------------------------------
-updatePresentation :: Char -> Presentation -> Maybe Presentation
+updatePresentation :: Char -> Presentation -> IO (Maybe Presentation)
 
 updatePresentation char presentation = case char of
-    'q'    -> Nothing
-    '\n'   -> goToSlide nextSlide
-    '\DEL' -> goToSlide prevSlide
-    _      -> Just presentation
+    'q'    -> return Nothing
+    '\n'   -> return $ goToSlide nextSlide
+    '\DEL' -> return $ goToSlide prevSlide
+    'j'    -> return $ goToSlide nextSlide
+    'k'    -> return $ goToSlide prevSlide
+    'h'    -> return $ goToSlide nextSlide
+    'l'    -> return $ goToSlide prevSlide
+    'r'    -> reloadPresentation
+    _      -> return $ Just presentation
   where
     numSlides = length (pSlides presentation)
     nextSlide = pActiveSlide presentation + 1
     prevSlide = pActiveSlide presentation - 1
+    clip idx  = min (max 0 idx) (numSlides - 1)
 
-    goToSlide idx
-        | idx < numSlides && idx >= 0 = Just presentation {pActiveSlide = idx}
-        | otherwise                   = Just presentation
+    goToSlide idx = Just presentation {pActiveSlide = clip idx}
 
+    reloadPresentation = do
+        pres <- readPresentation (pFilePath presentation)
+        return $ Just pres {pActiveSlide = clip (pActiveSlide presentation)}
+
+
+--------------------------------------------------------------------------------
+readPresentation :: FilePath -> IO Presentation
+readPresentation filePath = do
+    src  <- readFile filePath
+    doc  <- either (fail . show) return $ Pandoc.readMarkdown Pandoc.def src
+    either fail return $ pandocToPresentation filePath doc
 
 
 --------------------------------------------------------------------------------
@@ -114,19 +129,28 @@ pandocToSlides (Pandoc.Pandoc _meta blocks0) = splitSlides blocks0
 --------------------------------------------------------------------------------
 prettyBlock :: Pandoc.Block -> PP.Doc
 
+prettyBlock (Pandoc.Plain inlines) = prettyInlines inlines
+
 prettyBlock (Pandoc.Para inlines) = prettyInlines inlines
 
 prettyBlock (Pandoc.Header i _ inlines) =
     PP.blue $ PP.string (replicate i '#') <+> prettyInlines inlines
 
-prettyBlock (Pandoc.CodeBlock _ txt) = PP.onwhite $ PP.black $ PP.string $
-    blockify txt
+prettyBlock (Pandoc.CodeBlock _ txt) = PP.vcat
+    [ PP.indent 3 $ PP.onwhite $ PP.black $ PP.string line
+    | line <- blockified txt
+    ]
   where
-    blockify str =
+    blockified str =
         let ls       = lines str
             longest  = foldr max 0 (map length ls)
             extend l = " " ++ l ++ replicate (longest - length l) ' ' ++ " " in
-        unlines $ map extend ls
+        map extend $ [""] ++ ls ++ [""]
+
+prettyBlock (Pandoc.BulletList bss) = PP.vcat
+    [ "-" <+> PP.align (prettyBlocks bs)
+    | bs <- bss
+    ]
 
 prettyBlock unsupported = PP.onred $ PP.string $ show unsupported
 
@@ -142,6 +166,8 @@ prettyInline :: Pandoc.Inline -> PP.Doc
 prettyInline Pandoc.Space = PP.space
 
 prettyInline (Pandoc.Str str) = PP.string str
+
+prettyInline (Pandoc.Emph inlines) = PP.green $ prettyInlines inlines
 
 prettyInline (Pandoc.Strong inlines) = PP.red $ PP.bold $ prettyInlines inlines
 
@@ -165,9 +191,7 @@ prettyInlines = mconcat . map prettyInline
 main :: IO ()
 main = do
     (file : _) <- getArgs
-    source     <- readFile file
-    doc        <- either (fail . show) return $ Pandoc.readMarkdown Pandoc.def source
-    pres       <- either fail return $ pandocToPresentation file doc
+    pres       <- readPresentation file
 
     IO.hSetBuffering IO.stdin IO.NoBuffering
     loop pres
@@ -175,7 +199,8 @@ main = do
   where
     loop pres0 = do
         displayPresentation pres0
-        c <- getChar
-        case updatePresentation c pres0 of
+        c       <- getChar
+        mbPres1 <- updatePresentation c pres0
+        case mbPres1 of
             Nothing    -> return ()
             Just pres1 -> loop pres1
