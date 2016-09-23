@@ -52,7 +52,7 @@ displayPresentation Presentation {..} = do
         titleOffset = (termWidth - titleWidth) `div` 2
 
     Ansi.setCursorColumn titleOffset
-    PP.putDoc $ PP.yellow $ PP.string title
+    PP.putDoc $ PP.dullyellow $ PP.string title
     putStrLn ""
     putStrLn ""
 
@@ -67,9 +67,9 @@ displayPresentation Presentation {..} = do
         activeWidth = length active
 
     Ansi.setCursorPosition (termHeight - 2) 0
-    PP.putDoc $ " " <> PP.yellow (prettyInlines pAuthor)
+    PP.putDoc $ " " <> PP.dullyellow (prettyInlines pAuthor)
     Ansi.setCursorColumn (termWidth - activeWidth - 1)
-    PP.putDoc $ PP.yellow $ PP.string active
+    PP.putDoc $ PP.dullyellow $ PP.string active
     putStrLn ""
 
 
@@ -134,10 +134,10 @@ prettyBlock (Pandoc.Plain inlines) = prettyInlines inlines
 prettyBlock (Pandoc.Para inlines) = prettyInlines inlines
 
 prettyBlock (Pandoc.Header i _ inlines) =
-    PP.blue $ PP.string (replicate i '#') <+> prettyInlines inlines
+    PP.dullblue $ PP.string (replicate i '#') <+> prettyInlines inlines
 
 prettyBlock (Pandoc.CodeBlock _ txt) = PP.vcat
-    [ PP.indent 3 $ PP.onwhite $ PP.black $ PP.string line
+    [ PP.indent 3 $ PP.ondullblack $ PP.dullwhite $ PP.string line
     | line <- blockified txt
     ]
   where
@@ -152,7 +152,7 @@ prettyBlock (Pandoc.BulletList bss) = PP.vcat
     | bs <- bss
     ]
 
-prettyBlock unsupported = PP.onred $ PP.string $ show unsupported
+prettyBlock unsupported = PP.ondullred $ PP.string $ show unsupported
 
 
 --------------------------------------------------------------------------------
@@ -167,19 +167,20 @@ prettyInline Pandoc.Space = PP.space
 
 prettyInline (Pandoc.Str str) = PP.string str
 
-prettyInline (Pandoc.Emph inlines) = PP.green $ prettyInlines inlines
+prettyInline (Pandoc.Emph inlines) = PP.dullgreen $ prettyInlines inlines
 
-prettyInline (Pandoc.Strong inlines) = PP.red $ PP.bold $ prettyInlines inlines
+prettyInline (Pandoc.Strong inlines) =
+    PP.dullred $ PP.bold $ prettyInlines inlines
 
 prettyInline (Pandoc.Code _ txt) = PP.onwhite $ PP.black $ PP.string txt
 
 prettyInline (Pandoc.Link _ title (target, _))
     | [Pandoc.Str target] == title =
-        PP.blue $ PP.underline $ "<" <> PP.string target <> ">"
+        PP.dullcyan $ PP.underline $ "<" <> PP.string target <> ">"
 
 prettyInline Pandoc.SoftBreak = PP.softline
 
-prettyInline unsupported = PP.onred $ PP.string $ show unsupported
+prettyInline unsupported = PP.ondullred $ PP.string $ show unsupported
 
 
 --------------------------------------------------------------------------------
