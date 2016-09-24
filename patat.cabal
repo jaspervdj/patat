@@ -1,4 +1,4 @@
-Name:                schuif
+Name:                patat
 Version:             0.1.0.0
 Synopsis:            Terminal-based pandoc presentation tool
 Description:         Terminal-based pandoc presentation tool
@@ -12,7 +12,7 @@ Build-type:          Simple
 Extra-source-files:  CHANGELOG.md
 Cabal-version:       >=1.10
 
-Executable schuif
+Executable patat
   Main-is:           Main.hs
   Ghc-options:       -Wall
   Hs-source-dirs:    src
@@ -24,4 +24,3 @@ Executable schuif
     base           >= 4.9  && < 4.10,
     pandoc         >= 1.17 && < 1.18,
     terminal-size  >= 0.3  && < 0.4
-  -- other-modules:       
