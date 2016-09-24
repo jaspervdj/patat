@@ -6,6 +6,8 @@
 module Patat.Presentation.Interactive
     ( PresentationCommand
     , readPresentationCommand
+
+    , UpdatedPresentation (..)
     , updatePresentation
     ) where
 
@@ -13,9 +15,6 @@ module Patat.Presentation.Interactive
 --------------------------------------------------------------------------------
 import           Patat.Presentation.Internal
 import           Patat.Presentation.Read
-import           System.Environment          (getArgs)
-import qualified System.IO                   as IO
-import qualified Text.Pandoc                 as Pandoc
 
 
 --------------------------------------------------------------------------------
@@ -38,11 +37,19 @@ readPresentationCommand = do
 
 
 --------------------------------------------------------------------------------
+data UpdatedPresentation
+    = UpdatedPresentation !Presentation
+    | ExitedPresentation
+    | ErroredPresentation String
+    deriving (Show)
+
+
+--------------------------------------------------------------------------------
 updatePresentation
-    :: PresentationCommand -> Presentation -> IO (Maybe Presentation)
+    :: PresentationCommand -> Presentation -> IO UpdatedPresentation
 
 updatePresentation char presentation = case char of
-    "q"      -> return Nothing
+    "q"      -> return ExitedPresentation
     "\n"     -> return $ goToSlide fwd
     "\DEL"   -> return $ goToSlide bwd
     "h"      -> return $ goToSlide bwd
@@ -56,7 +63,7 @@ updatePresentation char presentation = case char of
     "0"      -> return $ goToSlide (const 0)
     "G"      -> return $ goToSlide (const $ numSlides - 1)
     "r"      -> reloadPresentation
-    _        -> return $ Just presentation
+    _        -> return $ UpdatedPresentation presentation
   where
     numSlides = length (pSlides presentation)
     clip idx  = min (max 0 idx) (numSlides - 1)
@@ -66,9 +73,12 @@ updatePresentation char presentation = case char of
     skipFwd   = \x -> x + 10
     skipBwd   = \x -> x - 10
 
-    goToSlide f =
-        Just presentation {pActiveSlide = clip (f $ pActiveSlide presentation)}
+    goToSlide f = UpdatedPresentation $
+        presentation {pActiveSlide = clip (f $ pActiveSlide presentation)}
 
     reloadPresentation = do
-        pres <- readPresentation (pFilePath presentation)
-        return $ Just pres {pActiveSlide = clip (pActiveSlide presentation)}
+        errOrPres <- readPresentation (pFilePath presentation)
+        return $ case errOrPres of
+            Left  err  -> ErroredPresentation err
+            Right pres -> UpdatedPresentation $
+                pres {pActiveSlide = clip (pActiveSlide presentation)}

@@ -5,6 +5,7 @@ module Patat.Presentation
 
     , PresentationCommand
     , readPresentationCommand
+    , UpdatedPresentation (..)
     , updatePresentation
     ) where
 

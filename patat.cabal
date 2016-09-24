@@ -1,7 +1,7 @@
 Name:                patat
 Version:             0.1.0.0
-Synopsis:            Terminal-based pandoc presentation tool
-Description:         Terminal-based pandoc presentation tool
+Synopsis:            Terminal-based presentations using Pandoc
+Description:         Terminal-based presentations using Pandoc
 License:             GPL-2
 License-file:        LICENSE
 Author:              Jasper Van der Jeugt <m@jaspervdj.be>
@@ -19,11 +19,12 @@ Executable patat
   Default-language:  Haskell2010
 
   Build-depends:
-    ansi-wl-pprint >= 0.6  && < 0.7,
-    ansi-terminal  >= 0.6  && < 0.7,
-    base           >= 4.9  && < 4.10,
-    pandoc         >= 1.17 && < 1.18,
-    terminal-size  >= 0.3  && < 0.4
+    ansi-terminal        >= 0.6  && < 0.7,
+    ansi-wl-pprint       >= 0.6  && < 0.7,
+    base                 >= 4.9  && < 4.10,
+    optparse-applicative >= 0.12 && < 0.14,
+    pandoc               >= 1.17 && < 1.18,
+    terminal-size        >= 0.3  && < 0.4
 
   Other-modules:
     Patat.Presentation

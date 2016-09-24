@@ -8,16 +8,19 @@ module Patat.Presentation.Read
 --------------------------------------------------------------------------------
 import           Patat.Presentation.Internal
 import           System.Environment             (getArgs)
-import qualified System.IO                      as IO
 import qualified Text.Pandoc                    as Pandoc
 
 
 --------------------------------------------------------------------------------
-readPresentation :: FilePath -> IO Presentation
+readPresentation :: FilePath -> IO (Either String Presentation)
 readPresentation filePath = do
-    src  <- readFile filePath
-    doc  <- either (fail . show) return $ Pandoc.readMarkdown Pandoc.def src
-    either fail return $ pandocToPresentation filePath doc
+    src <- readFile filePath
+    return $ do
+        doc <- case Pandoc.readMarkdown Pandoc.def src of
+            Left err -> Left $ "Pandoc parsing error: " ++ show err
+            Right x  -> Right x
+
+        pandocToPresentation filePath doc
 
 
 --------------------------------------------------------------------------------
