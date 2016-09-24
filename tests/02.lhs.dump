@@ -1,0 +1,8 @@
+This is how to do [32mHello World[0m in Haskell:
+
+   [40m[37m                                [0;40m[0m
+   [40m[37m main :: IO ()                  [0;40m[0m
+   [40m[37m main = putStrLn "Hello World!" [0;40m[0m
+   [40m[37m                                [0;40m[0m
+
+Cool, right?

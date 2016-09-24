@@ -6,9 +6,11 @@ module Patat.Presentation.Read
 
 
 --------------------------------------------------------------------------------
+import qualified Data.Set                    as Set
 import           Patat.Presentation.Internal
-import           System.Environment             (getArgs)
-import qualified Text.Pandoc                    as Pandoc
+import           System.FilePath             (takeExtension)
+import qualified Text.Pandoc                 as Pandoc
+import qualified Text.Pandoc.Error           as Pandoc
 
 
 --------------------------------------------------------------------------------
@@ -16,11 +18,33 @@ readPresentation :: FilePath -> IO (Either String Presentation)
 readPresentation filePath = do
     src <- readFile filePath
     return $ do
-        doc <- case Pandoc.readMarkdown Pandoc.def src of
+        reader <- case readExtension ext of
+            Nothing -> Left $ "Unknown extension: " ++ ext
+            Just r  -> Right r
+
+        doc <- case reader src of
             Left err -> Left $ "Pandoc parsing error: " ++ show err
             Right x  -> Right x
 
         pandocToPresentation filePath doc
+  where
+    ext = takeExtension filePath
+
+
+--------------------------------------------------------------------------------
+readExtension
+    :: String -> Maybe (String -> Either Pandoc.PandocError Pandoc.Pandoc)
+readExtension fileExt = case fileExt of
+    ".md"  -> Just $ Pandoc.readMarkdown Pandoc.def
+    ".lhs" -> Just $ Pandoc.readMarkdown lhsOpts
+    ""     -> Just $ Pandoc.readMarkdown Pandoc.def
+    _      -> Nothing
+
+  where
+    lhsOpts = Pandoc.def
+        { Pandoc.readerExtensions = Set.insert Pandoc.Ext_literate_haskell
+            (Pandoc.readerExtensions Pandoc.def)
+        }
 
 
 --------------------------------------------------------------------------------
