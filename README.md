@@ -35,6 +35,17 @@ Running
 
     patat presentation.md
 
+Controls:
+
+- **Next slide**: `space`, `enter`, `l`, `→`
+- **Previous slide**: `backspace`, `h`, `←`
+- **Go forward 10 slides**: `j`, `↓`
+- **Go backward 10 slides**: `k`, `↑`
+- **First slide**: `0`
+- **Last slide**: `G`
+- **Reload file**: `r`
+- **Quit**: `q`
+
 Input format
 ------------
 
