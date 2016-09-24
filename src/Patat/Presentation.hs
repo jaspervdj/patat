@@ -2,6 +2,7 @@ module Patat.Presentation
     ( Presentation (..)
     , readPresentation
     , displayPresentation
+    , dumpPresentation
 
     , PresentationCommand
     , readPresentationCommand

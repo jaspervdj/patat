@@ -21,6 +21,7 @@ import qualified System.IO           as IO
 data Options = Options
     { oFilePath :: !FilePath
     , oForce    :: !Bool
+    , oDump     :: !Bool
     } deriving (Show)
 
 
@@ -33,6 +34,11 @@ parseOptions = Options
     <*> (OA.switch $
             OA.long    "force" <>
             OA.help    "Force ANSI terminal" <>
+            OA.hidden)
+    <*> (OA.switch $
+            OA.long    "dump" <>
+            OA.short   'd' <>
+            OA.help    "Just dump all slides and exit" <>
             OA.hidden)
 
 
@@ -70,8 +76,9 @@ main = do
 
     unless (oForce options) assertAnsiFeatures
 
-    IO.hSetBuffering IO.stdin IO.NoBuffering
-    loop pres
+    if oDump options
+        then dumpPresentation pres
+        else IO.hSetBuffering IO.stdin IO.NoBuffering >> loop pres
   where
     loop pres0 = do
         displayPresentation pres0

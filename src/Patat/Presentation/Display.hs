@@ -4,10 +4,12 @@
 {-# LANGUAGE RecordWildCards            #-}
 module Patat.Presentation.Display
     ( displayPresentation
+    , dumpPresentation
     ) where
 
 
 --------------------------------------------------------------------------------
+import           Data.List                    (intersperse)
 import           Data.Monoid                  ((<>))
 import           Patat.Presentation.Internal
 import qualified System.Console.ANSI          as Ansi
@@ -51,6 +53,12 @@ displayPresentation Presentation {..} = do
     Ansi.setCursorColumn (termWidth - activeWidth - 1)
     PP.putDoc $ PP.dullyellow $ PP.string active
     putStrLn ""
+
+
+--------------------------------------------------------------------------------
+dumpPresentation :: Presentation -> IO ()
+dumpPresentation =
+    PP.putDoc . PP.vcat . intersperse "----------" . map prettySlide . pSlides
 
 
 --------------------------------------------------------------------------------
