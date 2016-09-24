@@ -6,7 +6,6 @@ module Main where
 
 
 --------------------------------------------------------------------------------
-import           Data.List                    (intersperse)
 import           Data.Monoid                  ((<>))
 import qualified System.Console.ANSI          as Ansi
 import qualified System.Console.Terminal.Size as Terminal
@@ -88,6 +87,8 @@ updatePresentation char presentation = case char of
     "\ESC[D" -> return $ goToSlide bwd      -- Left arrow
     "\ESC[B" -> return $ goToSlide skipFwd  -- Down arrow
     "\ESC[A" -> return $ goToSlide skipBwd  -- Up arrow
+    "0"      -> return $ goToSlide (const 0)
+    "G"      -> return $ goToSlide (const $ numSlides - 1)
     "r"      -> reloadPresentation
     _        -> return $ Just presentation
   where
@@ -161,6 +162,18 @@ prettyBlock (Pandoc.BulletList bss) = PP.vcat
     | bs <- bss
     ] <> PP.line
 
+prettyBlock (Pandoc.OrderedList _ bss) = PP.vcat
+    [ PP.dullmagenta (PP.string prefix) <+> PP.align (prettyBlocks bs)
+    | (prefix, bs) <- zip padded bss
+    ] <> PP.line
+  where
+    longest = foldr max 0 (map length numbers)
+    padded  = [n ++ replicate (longest - length n) ' ' | n <- numbers]
+    numbers =
+        [ show i ++ "."
+        | i <- [1 .. length bss]
+        ]
+
 prettyBlock unsupported = PP.ondullred $ PP.string $ show unsupported
 
 
@@ -189,6 +202,8 @@ prettyInline (Pandoc.Link _ title (target, _))
         PP.dullcyan $ PP.underline $ "<" <> PP.string target <> ">"
 
 prettyInline Pandoc.SoftBreak = PP.softline
+
+prettyInline Pandoc.LineBreak = PP.hardline
 
 prettyInline unsupported = PP.ondullred $ PP.string $ show unsupported
 
