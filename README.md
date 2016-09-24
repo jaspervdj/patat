@@ -8,11 +8,19 @@ not require `ncurses`.
 ![screenshot](extra/screenshot.png?raw=true)
 
 `patat` is written in [Haskell] and built upon the great [Pandoc] library.  This
-means it is not limited to Markdown, but it supports basically every input
-format that Pandoc supports.
+means it is theoretically not limited to Markdown, but can it supports every
+input format that Pandoc supports.
 
 [Haskell]: http://haskell.org/
 [Pandoc]: http://pandoc.org/
+
+Table of Contents
+-----------------
+
+-   [Installation](#installation)
+-   [Running](#running)
+-   [Input format](#input-format)
+-   [Trivia](#trivia)
 
 Installation
 ------------
