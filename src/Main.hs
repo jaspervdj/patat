@@ -78,25 +78,29 @@ updatePresentation :: String -> Presentation -> IO (Maybe Presentation)
 
 updatePresentation char presentation = case char of
     "q"      -> return Nothing
-    "\n"     -> return $ goToSlide nextSlide
-    "\DEL"   -> return $ goToSlide prevSlide
-    "j"      -> return $ goToSlide nextSlide
-    "k"      -> return $ goToSlide prevSlide
-    "h"      -> return $ goToSlide nextSlide
-    "l"      -> return $ goToSlide prevSlide
-    "\ESC[C" -> return $ goToSlide nextSlide  -- Right arrow
-    "\ESC[D" -> return $ goToSlide prevSlide  -- Left arrow
-    "\ESC[B" -> return $ goToSlide nextSlide  -- Down arrow
-    "\ESC[A" -> return $ goToSlide prevSlide  -- Up arrow
+    "\n"     -> return $ goToSlide fwd
+    "\DEL"   -> return $ goToSlide bwd
+    "h"      -> return $ goToSlide bwd
+    "j"      -> return $ goToSlide skipFwd
+    "k"      -> return $ goToSlide skipBwd
+    "l"      -> return $ goToSlide fwd
+    "\ESC[C" -> return $ goToSlide fwd      -- Right arrow
+    "\ESC[D" -> return $ goToSlide bwd      -- Left arrow
+    "\ESC[B" -> return $ goToSlide skipFwd  -- Down arrow
+    "\ESC[A" -> return $ goToSlide skipBwd  -- Up arrow
     "r"      -> reloadPresentation
     _        -> return $ Just presentation
   where
     numSlides = length (pSlides presentation)
-    nextSlide = pActiveSlide presentation + 1
-    prevSlide = pActiveSlide presentation - 1
     clip idx  = min (max 0 idx) (numSlides - 1)
 
-    goToSlide idx = Just presentation {pActiveSlide = clip idx}
+    fwd       = \x -> x + 1
+    bwd       = \x -> x - 1
+    skipFwd   = \x -> x + 10
+    skipBwd   = \x -> x - 10
+
+    goToSlide f =
+        Just presentation {pActiveSlide = clip (f $ pActiveSlide presentation)}
 
     reloadPresentation = do
         pres <- readPresentation (pFilePath presentation)
@@ -135,15 +139,16 @@ prettyBlock :: Pandoc.Block -> PP.Doc
 
 prettyBlock (Pandoc.Plain inlines) = prettyInlines inlines
 
-prettyBlock (Pandoc.Para inlines) = prettyInlines inlines
+prettyBlock (Pandoc.Para inlines) = prettyInlines inlines <> PP.line
 
 prettyBlock (Pandoc.Header i _ inlines) =
-    PP.dullblue $ PP.string (replicate i '#') <+> prettyInlines inlines
+    PP.dullblue (PP.string (replicate i '#') <+> prettyInlines inlines) <>
+    PP.line
 
 prettyBlock (Pandoc.CodeBlock _ txt) = PP.vcat
     [ PP.indent 3 $ PP.ondullblack $ PP.dullwhite $ PP.string line
     | line <- blockified txt
-    ]
+    ] <> PP.line
   where
     blockified str =
         let ls       = lines str
@@ -154,14 +159,14 @@ prettyBlock (Pandoc.CodeBlock _ txt) = PP.vcat
 prettyBlock (Pandoc.BulletList bss) = PP.vcat
     [ PP.dullmagenta "-" <+> PP.align (prettyBlocks bs)
     | bs <- bss
-    ]
+    ] <> PP.line
 
 prettyBlock unsupported = PP.ondullred $ PP.string $ show unsupported
 
 
 --------------------------------------------------------------------------------
 prettyBlocks :: [Pandoc.Block] -> PP.Doc
-prettyBlocks = PP.vcat . intersperse "" . map prettyBlock
+prettyBlocks = PP.vcat . map prettyBlock
 
 
 --------------------------------------------------------------------------------
@@ -177,7 +182,7 @@ prettyInline (Pandoc.Strong inlines) =
     PP.dullred $ PP.bold $ prettyInlines inlines
 
 prettyInline (Pandoc.Code _ txt) =
-    PP.ondullblack $ PP.dullwhite $ PP.string txt
+    PP.ondullblack $ PP.dullwhite $ " " <> PP.string txt <> " "
 
 prettyInline (Pandoc.Link _ title (target, _))
     | [Pandoc.Str target] == title =
