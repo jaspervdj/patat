@@ -24,3 +24,10 @@ Executable patat
     base           >= 4.9  && < 4.10,
     pandoc         >= 1.17 && < 1.18,
     terminal-size  >= 0.3  && < 0.4
+
+  Other-modules:
+    Patat.Presentation
+    Patat.Presentation.Display
+    Patat.Presentation.Interactive
+    Patat.Presentation.Internal
+    Patat.Presentation.Read

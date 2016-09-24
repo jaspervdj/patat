@@ -10,3 +10,7 @@ format that Pandoc supports.
 
 [Haskell]: http://haskell.org/
 [Pandoc]: http://pandoc.org/
+
+_"Patat"_ is the Flemish word for a simple potato.  Dutch people also use it to
+refer to French Fries but I don't really do that -- in Belgium we just call
+fries _"Frieten"_.
