@@ -6,15 +6,16 @@ module Main where
 
 
 --------------------------------------------------------------------------------
-import           Control.Monad       (unless)
-import           Data.Monoid         ((<>))
-import           Data.Version        (showVersion)
-import qualified Options.Applicative as OA
+import           Control.Monad                (unless)
+import           Data.Monoid                  ((<>))
+import           Data.Version                 (showVersion)
+import qualified Options.Applicative          as OA
 import           Patat.Presentation
 import qualified Paths_patat
-import qualified System.Console.ANSI as Ansi
-import           System.Exit         (exitFailure)
-import qualified System.IO           as IO
+import qualified System.Console.ANSI          as Ansi
+import           System.Exit                  (exitFailure)
+import qualified System.IO                    as IO
+import qualified Text.PrettyPrint.ANSI.Leijen as PP
 
 
 --------------------------------------------------------------------------------
@@ -47,7 +48,21 @@ parserInfo :: OA.ParserInfo Options
 parserInfo = OA.info (OA.helper <*> parseOptions) $
     OA.fullDesc <>
     OA.header ("patat v" <> showVersion Paths_patat.version) <>
-    OA.progDesc "Terminal-based presentations using Pandoc"
+    OA.progDescDoc (Just desc)
+  where
+    desc = PP.vcat
+        [ "Terminal-based presentations using Pandoc"
+        , ""
+        , "Controls:"
+        , "- Next slide:             space, enter, l, right"
+        , "- Previous slide:         backspace, h, left"
+        , "- Go forward 10 slides:   j, down"
+        , "- Go backward 10 slides:  k, up"
+        , "- First slide:            0"
+        , "- Last slide:             G"
+        , "- Reload file:            r"
+        , "- Quit:                   q"
+        ]
 
 
 --------------------------------------------------------------------------------
