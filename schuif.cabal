@@ -2,7 +2,7 @@ name:                schuif
 version:             0.1.0.0
 synopsis:            Terminal-based pandoc presentation tool
 description:         Terminal-based pandoc presentation tool
-license:             BSD3
+license:             GPL-2
 license-file:        LICENSE
 author:              Jasper Van der Jeugt <m@jaspervdj.be>
 maintainer:          Jasper Van der Jeugt <m@jaspervdj.be>

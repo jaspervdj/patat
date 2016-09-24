@@ -127,12 +127,25 @@ instance PP.Pretty Slide where
 
 
 --------------------------------------------------------------------------------
+-- | Split a pandoc document into slides.  If the document contains horizonal
+-- rules, we use those as slide delimiters.  If there are no horizontal rules,
+-- we split using h1 headers.
 pandocToSlides :: Pandoc.Pandoc -> [Slide]
-pandocToSlides (Pandoc.Pandoc _meta blocks0) = splitSlides blocks0
+pandocToSlides (Pandoc.Pandoc _meta blocks0)
+    | any (== Pandoc.HorizontalRule) blocks0 = splitAtRules blocks0
+    | otherwise                              = splitAtH1s   blocks0
   where
-    splitSlides blocks = case break (== Pandoc.HorizontalRule) blocks of
+    splitAtRules blocks = case break (== Pandoc.HorizontalRule) blocks of
         (xs, [])           -> [Slide xs]
-        (xs, (_rule : ys)) -> Slide xs : splitSlides ys
+        (xs, (_rule : ys)) -> Slide xs : splitAtRules ys
+
+    splitAtH1s []       = []
+    splitAtH1s (b : bs) = case break isH1 bs of
+        (xs, [])       -> [Slide (b : xs)]
+        (xs, (y : ys)) -> Slide (b : xs) : splitAtH1s (y : ys)
+
+    isH1 (Pandoc.Header i _ _) = i == 1
+    isH1 _                     = False
 
 
 --------------------------------------------------------------------------------
