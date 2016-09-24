@@ -1,24 +1,24 @@
-name:                schuif
-version:             0.1.0.0
-synopsis:            Terminal-based pandoc presentation tool
-description:         Terminal-based pandoc presentation tool
-license:             GPL-2
-license-file:        LICENSE
-author:              Jasper Van der Jeugt <m@jaspervdj.be>
-maintainer:          Jasper Van der Jeugt <m@jaspervdj.be>
-copyright:           2016 Jasper Van der Jeugt
-category:            Text
-build-type:          Simple
-extra-source-files:  ChangeLog.md
-cabal-version:       >=1.10
+Name:                schuif
+Version:             0.1.0.0
+Synopsis:            Terminal-based pandoc presentation tool
+Description:         Terminal-based pandoc presentation tool
+License:             GPL-2
+License-file:        LICENSE
+Author:              Jasper Van der Jeugt <m@jaspervdj.be>
+Maintainer:          Jasper Van der Jeugt <m@jaspervdj.be>
+Copyright:           2016 Jasper Van der Jeugt
+Category:            Text
+Build-type:          Simple
+Extra-source-files:  CHANGELOG.md
+Cabal-version:       >=1.10
 
-executable schuif
-  main-is:             Main.hs
-  ghc-options:         -Wall
-  hs-source-dirs:      src
-  default-language:    Haskell2010
+Executable schuif
+  Main-is:           Main.hs
+  Ghc-options:       -Wall
+  Hs-source-dirs:    src
+  Default-language:  Haskell2010
 
-  build-depends:
+  Build-depends:
     ansi-wl-pprint >= 0.6  && < 0.7,
     ansi-terminal  >= 0.6  && < 0.7,
     base           >= 4.9  && < 4.10,
