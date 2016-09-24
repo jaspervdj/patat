@@ -1,8 +1,11 @@
 patat
 =====
 
-`patat` (Presentations In The ANSI Terminal) is a small tool that allows you to
-show presentations using only an ANSI terminal.  It does not require `ncurses`.
+`patat` (**P**resentations **A**nd **T**he **A**NSI **T**erminal) is a small
+tool that allows you to show presentations using only an ANSI terminal.  It does
+not require `ncurses`.
+
+![screenshot](extra/screenshot.png?raw=true)
 
 `patat` is written in [Haskell] and built upon the great [Pandoc] library.  This
 means it is not limited to Markdown, but it supports basically every input
