@@ -74,18 +74,22 @@ displayPresentation Presentation {..} = do
 
 
 --------------------------------------------------------------------------------
-updatePresentation :: Char -> Presentation -> IO (Maybe Presentation)
+updatePresentation :: String -> Presentation -> IO (Maybe Presentation)
 
 updatePresentation char presentation = case char of
-    'q'    -> return Nothing
-    '\n'   -> return $ goToSlide nextSlide
-    '\DEL' -> return $ goToSlide prevSlide
-    'j'    -> return $ goToSlide nextSlide
-    'k'    -> return $ goToSlide prevSlide
-    'h'    -> return $ goToSlide nextSlide
-    'l'    -> return $ goToSlide prevSlide
-    'r'    -> reloadPresentation
-    _      -> return $ Just presentation
+    "q"      -> return Nothing
+    "\n"     -> return $ goToSlide nextSlide
+    "\DEL"   -> return $ goToSlide prevSlide
+    "j"      -> return $ goToSlide nextSlide
+    "k"      -> return $ goToSlide prevSlide
+    "h"      -> return $ goToSlide nextSlide
+    "l"      -> return $ goToSlide prevSlide
+    "\ESC[C" -> return $ goToSlide nextSlide  -- Right arrow
+    "\ESC[D" -> return $ goToSlide prevSlide  -- Left arrow
+    "\ESC[B" -> return $ goToSlide nextSlide  -- Down arrow
+    "\ESC[A" -> return $ goToSlide prevSlide  -- Up arrow
+    "r"      -> reloadPresentation
+    _        -> return $ Just presentation
   where
     numSlides = length (pSlides presentation)
     nextSlide = pActiveSlide presentation + 1
@@ -172,7 +176,8 @@ prettyInline (Pandoc.Emph inlines) = PP.dullgreen $ prettyInlines inlines
 prettyInline (Pandoc.Strong inlines) =
     PP.dullred $ PP.bold $ prettyInlines inlines
 
-prettyInline (Pandoc.Code _ txt) = PP.onwhite $ PP.black $ PP.string txt
+prettyInline (Pandoc.Code _ txt) =
+    PP.ondullblack $ PP.dullwhite $ PP.string txt
 
 prettyInline (Pandoc.Link _ title (target, _))
     | [Pandoc.Str target] == title =
@@ -200,8 +205,23 @@ main = do
   where
     loop pres0 = do
         displayPresentation pres0
-        c       <- getChar
+        c       <- readKey
         mbPres1 <- updatePresentation c pres0
         case mbPres1 of
             Nothing    -> return ()
             Just pres1 -> loop pres1
+
+
+--------------------------------------------------------------------------------
+readKey :: IO String
+readKey = do
+    c0 <- getChar
+    case c0 of
+        '\ESC' -> do
+            c1 <- getChar
+            case c1 of
+                '[' -> do
+                    c2 <- getChar
+                    return [c0, c1, c2]
+                _ -> return [c0, c1]
+        _ -> return [c0]
