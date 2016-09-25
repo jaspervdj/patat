@@ -4,7 +4,7 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE RecordWildCards            #-}
 module Patat.Presentation.Interactive
-    ( PresentationCommand
+    ( PresentationCommand (..)
     , readPresentationCommand
 
     , UpdatedPresentation (..)
@@ -18,22 +18,50 @@ import           Patat.Presentation.Read
 
 
 --------------------------------------------------------------------------------
-type PresentationCommand = String
+data PresentationCommand
+    = Exit
+    | Forward
+    | Backward
+    | SkipForward
+    | SkipBackward
+    | First
+    | Last
+    | Reload
 
 
 --------------------------------------------------------------------------------
 readPresentationCommand :: IO PresentationCommand
 readPresentationCommand = do
-    c0 <- getChar
-    case c0 of
-        '\ESC' -> do
-            c1 <- getChar
-            case c1 of
-                '[' -> do
-                    c2 <- getChar
-                    return [c0, c1, c2]
-                _ -> return [c0, c1]
-        _ -> return [c0]
+    k <- readKey
+    case k of
+        "q"      -> return Exit
+        "\n"     -> return Forward
+        "\DEL"   -> return Backward
+        "h"      -> return Backward
+        "j"      -> return SkipForward
+        "k"      -> return SkipBackward
+        "l"      -> return Forward
+        "\ESC[C" -> return Forward
+        "\ESC[D" -> return Backward
+        "\ESC[B" -> return SkipForward
+        "\ESC[A" -> return SkipBackward
+        "0"      -> return First
+        "G"      -> return Last
+        "r"      -> return Reload
+        _        -> readPresentationCommand
+  where
+    readKey :: IO String
+    readKey = do
+        c0 <- getChar
+        case c0 of
+            '\ESC' -> do
+                c1 <- getChar
+                case c1 of
+                    '[' -> do
+                        c2 <- getChar
+                        return [c0, c1, c2]
+                    _ -> return [c0, c1]
+            _ -> return [c0]
 
 
 --------------------------------------------------------------------------------
@@ -48,30 +76,18 @@ data UpdatedPresentation
 updatePresentation
     :: PresentationCommand -> Presentation -> IO UpdatedPresentation
 
-updatePresentation char presentation = case char of
-    "q"      -> return ExitedPresentation
-    "\n"     -> return $ goToSlide fwd
-    "\DEL"   -> return $ goToSlide bwd
-    "h"      -> return $ goToSlide bwd
-    "j"      -> return $ goToSlide skipFwd
-    "k"      -> return $ goToSlide skipBwd
-    "l"      -> return $ goToSlide fwd
-    "\ESC[C" -> return $ goToSlide fwd      -- Right arrow
-    "\ESC[D" -> return $ goToSlide bwd      -- Left arrow
-    "\ESC[B" -> return $ goToSlide skipFwd  -- Down arrow
-    "\ESC[A" -> return $ goToSlide skipBwd  -- Up arrow
-    "0"      -> return $ goToSlide (const 0)
-    "G"      -> return $ goToSlide (const $ numSlides - 1)
-    "r"      -> reloadPresentation
-    _        -> return $ UpdatedPresentation presentation
+updatePresentation cmd presentation = case cmd of
+    Exit         -> return ExitedPresentation
+    Forward      -> return $ goToSlide (\x -> x + 1)
+    Backward     -> return $ goToSlide (\x -> x - 1)
+    SkipForward  -> return $ goToSlide (\x -> x + 10)
+    SkipBackward -> return $ goToSlide (\x -> x - 10)
+    First        -> return $ goToSlide (\_ -> 0)
+    Last         -> return $ goToSlide (\_ -> numSlides - 1)
+    Reload       -> reloadPresentation
   where
     numSlides = length (pSlides presentation)
     clip idx  = min (max 0 idx) (numSlides - 1)
-
-    fwd       = \x -> x + 1
-    bwd       = \x -> x - 1
-    skipFwd   = \x -> x + 10
-    skipBwd   = \x -> x - 10
 
     goToSlide f = UpdatedPresentation $
         presentation {pActiveSlide = clip (f $ pActiveSlide presentation)}

@@ -113,7 +113,7 @@ main = do
         mtime0 <- getModificationTime (pFilePath pres0)
         let watcher mtime = do
                 mtime' <- getModificationTime (pFilePath pres0)
-                when (mtime' > mtime) $ Chan.writeChan commandChan "r"
+                when (mtime' > mtime) $ Chan.writeChan commandChan Reload
                 threadDelay (200 * 1000)
                 watcher mtime'
 

@@ -4,7 +4,7 @@ module Patat.Presentation
     , displayPresentation
     , dumpPresentation
 
-    , PresentationCommand
+    , PresentationCommand (..)
     , readPresentationCommand
     , UpdatedPresentation (..)
     , updatePresentation
