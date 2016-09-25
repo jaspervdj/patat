@@ -48,7 +48,8 @@ readExtension fileExt = case fileExt of
 
 
 --------------------------------------------------------------------------------
-pandocToPresentation :: FilePath -> Pandoc.Pandoc -> Either String Presentation
+pandocToPresentation
+    :: FilePath -> Pandoc.Pandoc -> Either String Presentation
 pandocToPresentation pFilePath pandoc@(Pandoc.Pandoc meta _) = do
     let pTitle       = Pandoc.docTitle meta
         pSlides      = pandocToSlides pandoc

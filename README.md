@@ -33,7 +33,7 @@ also available from [Hackage].
 Running
 -------
 
-    patat presentation.md
+    patat [--watch] presentation.md
 
 Controls:
 
@@ -45,6 +45,14 @@ Controls:
 - **Last slide**: `G`
 - **Reload file**: `r`
 - **Quit**: `q`
+
+The `r` key is very useful since it allows you to preview your slides while you
+are writing them.  You can also use this to fix artifacts when the terminal is
+resized.
+
+If you provide the `--watch` flag, `patat` will watch the presentation file for
+changes and reload automatically.  This is very useful when you are writing the
+presentation.
 
 Input format
 ------------

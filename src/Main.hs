@@ -6,13 +6,16 @@ module Main where
 
 
 --------------------------------------------------------------------------------
-import           Control.Monad                (unless)
+import           Control.Concurrent           (forkIO, threadDelay)
+import qualified Control.Concurrent.Chan      as Chan
+import           Control.Monad                (forever, unless, when)
 import           Data.Monoid                  ((<>))
 import           Data.Version                 (showVersion)
 import qualified Options.Applicative          as OA
 import           Patat.Presentation
 import qualified Paths_patat
 import qualified System.Console.ANSI          as Ansi
+import           System.Directory             (getModificationTime)
 import           System.Exit                  (exitFailure)
 import qualified System.IO                    as IO
 import qualified Text.PrettyPrint.ANSI.Leijen as PP
@@ -23,6 +26,7 @@ data Options = Options
     { oFilePath :: !FilePath
     , oForce    :: !Bool
     , oDump     :: !Bool
+    , oWatch    :: !Bool
     } deriving (Show)
 
 
@@ -41,6 +45,9 @@ parseOptions = Options
             OA.short   'd' <>
             OA.help    "Just dump all slides and exit" <>
             OA.hidden)
+    <*> (OA.switch $
+            OA.long    "watch" <>
+            OA.help    "Watch file for changes")
 
 
 --------------------------------------------------------------------------------
@@ -93,13 +100,34 @@ main = do
 
     if oDump options
         then dumpPresentation pres
-        else IO.hSetBuffering IO.stdin IO.NoBuffering >> loop pres
+        else interactiveLoop options pres
+
   where
-    loop pres0 = do
-        displayPresentation pres0
-        c      <- readPresentationCommand
-        update <- updatePresentation c pres0
-        case update of
-            ExitedPresentation        -> return ()
-            UpdatedPresentation pres1 -> loop pres1
-            ErroredPresentation err   -> errorAndExit [err]
+    interactiveLoop options pres0 = do
+        IO.hSetBuffering IO.stdin IO.NoBuffering
+        commandChan <- Chan.newChan
+
+        _ <- forkIO $ forever $
+            readPresentationCommand >>= Chan.writeChan commandChan
+
+        mtime0 <- getModificationTime (pFilePath pres0)
+        let watcher mtime = do
+                mtime' <- getModificationTime (pFilePath pres0)
+                when (mtime' > mtime) $ Chan.writeChan commandChan "r"
+                threadDelay (200 * 1000)
+                watcher mtime'
+
+        when (oWatch options) $ do
+            _ <- forkIO $ watcher mtime0
+            return ()
+
+        let loop pres = do
+                displayPresentation pres
+                c      <- Chan.readChan commandChan
+                update <- updatePresentation c pres
+                case update of
+                    ExitedPresentation        -> return ()
+                    UpdatedPresentation pres' -> loop pres'
+                    ErroredPresentation err   -> errorAndExit [err]
+
+        loop pres0

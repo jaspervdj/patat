@@ -12,11 +12,11 @@ import qualified Text.Pandoc as Pandoc
 
 --------------------------------------------------------------------------------
 data Presentation = Presentation
-    { pFilePath    :: !FilePath
-    , pTitle       :: ![Pandoc.Inline]
-    , pAuthor      :: ![Pandoc.Inline]
-    , pSlides      :: [Slide]
-    , pActiveSlide :: !Int
+    { pFilePath         :: !FilePath
+    , pTitle            :: ![Pandoc.Inline]
+    , pAuthor           :: ![Pandoc.Inline]
+    , pSlides           :: [Slide]
+    , pActiveSlide      :: !Int
     } deriving (Show)
 
 
