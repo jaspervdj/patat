@@ -38,6 +38,7 @@ parseOptions = Options
             OA.help    "Input file")
     <*> (OA.switch $
             OA.long    "force" <>
+            OA.short   'f' <>
             OA.help    "Force ANSI terminal" <>
             OA.hidden)
     <*> (OA.switch $
@@ -47,6 +48,7 @@ parseOptions = Options
             OA.hidden)
     <*> (OA.switch $
             OA.long    "watch" <>
+            OA.short   'w' <>
             OA.help    "Watch file for changes")
 
 
