@@ -12,11 +12,11 @@ module Patat.Presentation.Display
 import           Data.List                    (intersperse)
 import           Data.Monoid                  ((<>))
 import           Patat.Presentation.Internal
+import           Patat.PrettyPrint            ((<+>))
+import qualified Patat.PrettyPrint            as PP
 import qualified System.Console.ANSI          as Ansi
 import qualified System.Console.Terminal.Size as Terminal
 import qualified Text.Pandoc                  as Pandoc
-import           Text.PrettyPrint.ANSI.Leijen ((<+>))
-import qualified Text.PrettyPrint.ANSI.Leijen as PP
 
 
 --------------------------------------------------------------------------------
@@ -29,7 +29,7 @@ displayPresentation Presentation {..} = do
     mbWindow <- Terminal.size
     let termWidth   = maybe 72 Terminal.width  mbWindow
         termHeight  = maybe 24 Terminal.height mbWindow
-        title       = show (prettyInlines pTitle)
+        title       = PP.toString (prettyInlines pTitle)
         titleWidth  = length title
         titleOffset = (termWidth - titleWidth) `div` 2
 
@@ -71,16 +71,16 @@ prettyBlock :: Pandoc.Block -> PP.Doc
 
 prettyBlock (Pandoc.Plain inlines) = prettyInlines inlines
 
-prettyBlock (Pandoc.Para inlines) = prettyInlines inlines <> PP.line
+prettyBlock (Pandoc.Para inlines) = prettyInlines inlines <> PP.newline
 
 prettyBlock (Pandoc.Header i _ inlines) =
     PP.dullblue (PP.string (replicate i '#') <+> prettyInlines inlines) <>
-    PP.line
+    PP.newline
 
 prettyBlock (Pandoc.CodeBlock _ txt) = PP.vcat
-    [ PP.indent 3 $ PP.ondullblack $ PP.dullwhite $ PP.string line
+    [ PP.indent "   " "   " $ PP.ondullblack $ PP.dullwhite $ PP.string line
     | line <- blockified txt
-    ] <> PP.line
+    ] <> PP.newline
   where
     blockified str =
         let ls       = lines str
@@ -89,26 +89,29 @@ prettyBlock (Pandoc.CodeBlock _ txt) = PP.vcat
         map extend $ [""] ++ ls ++ [""]
 
 prettyBlock (Pandoc.BulletList bss) = PP.vcat
-    [ PP.dullmagenta "-" <+> PP.align (prettyBlocks bs)
+    [ PP.indent (PP.dullmagenta "-   ") "    " (prettyBlocks bs)
     | bs <- bss
-    ] <> PP.line
+    ] <> PP.newline
 
 prettyBlock (Pandoc.OrderedList _ bss) = PP.vcat
-    [ PP.dullmagenta (PP.string prefix) <+> PP.align (prettyBlocks bs)
+    [ PP.indent
+        (PP.dullmagenta $ PP.string prefix)
+        "    "
+        (prettyBlocks bs)
     | (prefix, bs) <- zip padded bss
-    ] <> PP.line
+    ] <> PP.newline
   where
-    longest = foldr max 0 (map length numbers)
-    padded  = [n ++ replicate (longest - length n) ' ' | n <- numbers]
+    padded  = [n ++ replicate (4 - length n) ' ' | n <- numbers]
     numbers =
         [ show i ++ "."
         | i <- [1 .. length bss]
         ]
 
-prettyBlock (Pandoc.RawBlock _ t) = PP.string t <> PP.line
+prettyBlock (Pandoc.RawBlock _ t) = PP.string t <> PP.newline
 
 prettyBlock Pandoc.HorizontalRule = "---"
--- prettyBlock unsupported = PP.ondullred $ PP.string $ show unsupported
+
+prettyBlock unsupported = PP.ondullred $ PP.string $ show unsupported
 
 
 --------------------------------------------------------------------------------
@@ -139,9 +142,9 @@ prettyInline (Pandoc.Link _ title (target, _))
         "[" <> PP.dullgreen (prettyInlines title) <> "](" <>
         PP.dullcyan (PP.underline (PP.string target)) <> ")"
 
-prettyInline Pandoc.SoftBreak = PP.softline
+prettyInline Pandoc.SoftBreak = PP.newline
 
-prettyInline Pandoc.LineBreak = PP.hardline
+prettyInline Pandoc.LineBreak = PP.newline
 
 prettyInline (Pandoc.Strikeout t) =
     "~~" <> PP.ondullred (prettyInlines t) <> "~~"
