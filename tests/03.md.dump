@@ -1,4 +1,4 @@
-Inline markups:
+[mInline[0m[m [0m[mmarkups:[0m
 
-[35m-[0m ~~[41mstriked out[0m~~
-[35m-[0m <[36m[4mhttp://example.com[0;36m[0m>
+[35m-   [0m[m~~[0m[41mstriked[0m[41m [0m[41mout[0m[m~~[0m
+[35m-   [0m[m<[0m[36;4mhttp://example.com[0m[m>[0m

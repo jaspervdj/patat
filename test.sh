@@ -3,20 +3,21 @@ set -o nounset -o errexit -o pipefail
 
 dumps=$(find 'tests/' -name '*.dump')
 
-for dump in $dumps; do
-    src=$(echo "$dump" | sed 's/\.dump$//')
+for expected in $dumps; do
+    src=$(echo "$expected" | sed 's/\.dump$//')
     echo -n "Testing $src... "
-    expected=$(stack exec patat -- --dump --force "$src")
+    actual=$(mktemp)
+    stack exec patat -- --dump --force "$src" >"$actual"
 
     if [[ $@ == "--fix" ]]; then
-        echo "$expected" >"$dump"
+        cp "$actual" "$expected"
         echo 'Fixed'
     else
-        actual=$(cat "$dump")
-        if [[ "$expected" == "$actual" ]]; then
+        if [[ "$(cat "$expected")" == "$(cat "$actual")" ]]; then
             echo 'OK'
         else
             echo 'files differ'
+            diff "$actual" "$expected"
             exit 1
         fi
     fi
