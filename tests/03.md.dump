@@ -1,4 +1,48 @@
 [mInline[0m[m [0m[mmarkups:[0m
 
-[35m-   [0m[m~~[0m[41mstriked[0m[41m [0m[41mout[0m[m~~[0m
-[35m-   [0m[m<[0m[36;4mhttp://example.com[0m[m>[0m
+[35m  - [0m[m~~[0m[41mstriked[0m[41m [0m[41mout[0m[m~~[0m
+[35m  - [0m[m<[0m[36;4mhttp://example.com[0m[m>[0m
+
+[m----------[0m
+[32m> [0m[mSome[0m[m [0m[mquote[0m
+
+[32m> [0m[mQuote[0m[m [0m[mwith[0m[m [0m[membedded[0m[m [0m[mlist:[0m
+[32m> [0m
+[32m> [0m[35m  - [0m[mHello[0m
+[32m> [0m[35m  - [0m[mWorld[0m
+
+[m----------[0m
+[35m  - [0m[mList[0m[m [0m[mwith[0m[m [0m[man[0m[m [0m[membedded[0m[m [0m[mquote:[0m
+
+[m    [0m[32m> [0m[mTu[0m[m [0m[mquoque[0m
+
+[m    [0m[mWow[0m[m [0m[mrad[0m[m [0m[mstuff.[0m
+
+[35m  - [0m[mSecond[0m[m [0m[mitem[0m[m [0m[min[0m[m [0m[mthat[0m[m [0m[mlist.[0m
+
+
+[m----------[0m
+[mCode[0m[m [0m[mwith[0m[m [0m[mempty[0m[m [0m[mline:[0m
+
+[m   [0m[40;37m              [0m
+[m   [0m[40;37m puts "wow"   [0m
+[m   [0m[40;37m              [0m
+[m   [0m[40;37m puts "amaze" [0m
+[m   [0m[40;37m              [0m
+
+[m----------[0m
+[mCode[0m[m [0m[min[0m[m [0m[mordered[0m[m [0m[mlist:[0m
+
+[35m1.  [0m[mDo[0m[m [0m[myou[0m[m [0m[mknow[0m[m [0m[mthe[0m[m [0m[mcoolest[0m[m [0m[mcodes?[0m
+
+[m    [0m[mIt's[0m[m [0m[mthis:[0m
+
+[m    [0m[m   [0m[40;37m                 [0m
+[m    [0m[m   [0m[40;37m fire_missiles() [0m
+[m    [0m[m   [0m[40;37m cancel()        [0m
+[m    [0m[m   [0m[40;37m                 [0m
+
+[m    [0m[mGreat[0m
+
+[35m2.  [0m[mAlso[0m[m [0m[40;37m [0m[40;37mfib[0m[40;37m [0m[m [0m[mis[0m[m [0m[mpretty[0m[m [0m[mcool[0m[m [0m[myeah[0m
+

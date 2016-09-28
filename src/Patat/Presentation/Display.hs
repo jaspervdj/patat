@@ -117,8 +117,7 @@ prettyBlock Pandoc.HorizontalRule = "---"
 
 prettyBlock (Pandoc.BlockQuote bs) =
     let quote = PP.NotTrimmable (PP.dullgreen "> ") in
-    PP.indent quote quote (prettyBlocks bs) <>
-    PP.newline
+    PP.indent quote quote (prettyBlocks bs)
 
 prettyBlock unsupported = PP.ondullred $ PP.string $ show unsupported
 
