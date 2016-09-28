@@ -78,7 +78,8 @@ prettyBlock (Pandoc.Header i _ inlines) =
     PP.newline
 
 prettyBlock (Pandoc.CodeBlock _ txt) = PP.vcat
-    [ PP.indent "   " "   " $ PP.ondullblack $ PP.dullwhite $ PP.string line
+    [ let ind = PP.NotTrimmable "   " in
+      PP.indent ind ind $ PP.ondullblack $ PP.dullwhite $ PP.string line
     | line <- blockified txt
     ] <> PP.newline
   where
@@ -89,14 +90,17 @@ prettyBlock (Pandoc.CodeBlock _ txt) = PP.vcat
         map extend $ [""] ++ ls ++ [""]
 
 prettyBlock (Pandoc.BulletList bss) = PP.vcat
-    [ PP.indent (PP.dullmagenta "-   ") "    " (prettyBlocks bs)
+    [ PP.indent
+        (PP.NotTrimmable $ PP.dullmagenta "  - ")
+        (PP.Trimmable "    ")
+        (prettyBlocks bs)
     | bs <- bss
     ] <> PP.newline
 
 prettyBlock (Pandoc.OrderedList _ bss) = PP.vcat
     [ PP.indent
-        (PP.dullmagenta $ PP.string prefix)
-        "    "
+        (PP.NotTrimmable $ PP.dullmagenta $ PP.string prefix)
+        (PP.Trimmable "    ")
         (prettyBlocks bs)
     | (prefix, bs) <- zip padded bss
     ] <> PP.newline
@@ -110,6 +114,11 @@ prettyBlock (Pandoc.OrderedList _ bss) = PP.vcat
 prettyBlock (Pandoc.RawBlock _ t) = PP.string t <> PP.newline
 
 prettyBlock Pandoc.HorizontalRule = "---"
+
+prettyBlock (Pandoc.BlockQuote bs) =
+    let quote = PP.NotTrimmable (PP.dullgreen "> ") in
+    PP.indent quote quote (prettyBlocks bs) <>
+    PP.newline
 
 prettyBlock unsupported = PP.ondullred $ PP.string $ show unsupported
 

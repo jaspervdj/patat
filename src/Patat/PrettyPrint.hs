@@ -1,5 +1,8 @@
 --------------------------------------------------------------------------------
 -- | This is a small pretty-printing library.
+{-# LANGUAGE DeriveFoldable             #-}
+{-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE DeriveTraversable          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RecordWildCards            #-}
 module Patat.PrettyPrint
@@ -11,6 +14,8 @@ module Patat.PrettyPrint
     , string
     , space
     , newline
+
+    , Trimmable (..)
     , indent
 
     , (<+>)
@@ -34,6 +39,7 @@ module Patat.PrettyPrint
 
 
 --------------------------------------------------------------------------------
+import           Control.Monad        (unless)
 import           Control.Monad.Reader (asks, local)
 import           Control.Monad.RWS    (RWS, runRWS)
 import           Control.Monad.State  (get, modify)
@@ -77,8 +83,8 @@ data DocE
         , ansiDoc  :: Doc
         }
     | Indent
-        { indentFirstLine  :: Doc
-        , indentOtherLines :: Doc
+        { indentFirstLine  :: LineBuffer
+        , indentOtherLines :: LineBuffer
         , indentDoc        :: Doc
         }
 
@@ -101,7 +107,7 @@ instance Show Doc where
 --------------------------------------------------------------------------------
 data DocEnv = DocEnv
     { deCodes  :: [Ansi.SGR]  -- ^ Most recent ones first in the list
-    , deIndent :: [Chunk]     -- ^ Don't need to store first-line indent
+    , deIndent :: LineBuffer  -- ^ Don't need to store first-line indent
     }
 
 
@@ -110,60 +116,66 @@ type DocM = RWS DocEnv [Chunk] LineBuffer
 
 
 --------------------------------------------------------------------------------
-data LineBuffer
-    = IndentOnly    [Chunk]
-    | ActualContent [Chunk]
+data Trimmable a
+    = NotTrimmable !a
+    | Trimmable    !a
+    deriving (Foldable, Functor, Traversable)
 
 
 --------------------------------------------------------------------------------
-instance Monoid LineBuffer where
-    mempty = IndentOnly mempty
-
-    mappend (IndentOnly    x) (IndentOnly    y) = IndentOnly    (x <> y)
-    mappend (IndentOnly    x) (ActualContent y) = ActualContent (x <> y)
-    mappend (ActualContent x) (ActualContent y) = ActualContent (x <> y)
-    mappend (ActualContent x) (IndentOnly    y) = ActualContent (x <> y)
+-- | Note that this is reversed so we have fast append
+type LineBuffer = [Trimmable Chunk]
 
 
 --------------------------------------------------------------------------------
 bufferToChunks :: LineBuffer -> [Chunk]
-bufferToChunks (IndentOnly    _) = []
-bufferToChunks (ActualContent c) = c
+bufferToChunks = map trimmableToChunk . reverse . dropWhile isTrimmable
+  where
+    isTrimmable (NotTrimmable _) = False
+    isTrimmable (Trimmable    _) = True
+
+    trimmableToChunk (NotTrimmable c) = c
+    trimmableToChunk (Trimmable    c) = c
 
 
 --------------------------------------------------------------------------------
 docToChunks :: Doc -> [Chunk]
 docToChunks doc0 =
     let env0        = DocEnv [] []
-        ((), b, cs) = runRWS (mapM_ go $ unDoc doc0) env0 mempty in
+        ((), b, cs) = runRWS (go $ unDoc doc0) env0 mempty in
     cs <> bufferToChunks b
   where
-    go :: DocE -> DocM ()
+    go :: [DocE] -> DocM ()
 
-    go (String str) = do
+    go [] = return ()
+
+    go (String str : docs) = do
         chunk <- makeChunk str
-        modify (<> ActualContent [chunk])
+        modify (NotTrimmable chunk :)
+        go docs
 
-    go Space = do
+    go (Space : docs) = do
         chunk <- makeChunk " "
-        modify (<> ActualContent [chunk])
+        modify (NotTrimmable chunk :)
+        go docs
 
-    go Newline = do
+    go (Newline : docs) = do
         buffer <- get
         tell $ bufferToChunks buffer <> [NewlineChunk]
         indentation <- asks deIndent
-        modify $ \_ -> IndentOnly indentation
+        modify $ \_ -> if null docs then [] else indentation
+        go docs
 
-    go Ansi {..} = do
+    go (Ansi {..} : docs) = do
         local (\env -> env {deCodes = ansiCode : deCodes env}) $
-            mapM_ go (unDoc ansiDoc)
+            go (unDoc ansiDoc)
+        go docs
 
-    go Indent {..} = do
-        let firstLine  = docToChunks indentFirstLine
-            otherLines = docToChunks indentOtherLines
-        local (\env -> env {deIndent = deIndent env <> otherLines}) $ do
-            modify (<> ActualContent firstLine)
-            mapM_ go (unDoc indentDoc)
+    go (Indent {..} : docs) = do
+        local (\env -> env {deIndent = indentOtherLines ++ deIndent env}) $ do
+            modify (indentFirstLine ++)
+            go (unDoc indentDoc)
+        go docs
 
     makeChunk :: String -> DocM Chunk
     makeChunk str = do
@@ -207,8 +219,12 @@ newline = mkDoc Newline
 
 
 --------------------------------------------------------------------------------
-indent :: Doc -> Doc -> Doc -> Doc
-indent indentFirstLine indentOtherLines indentDoc = mkDoc Indent {..}
+indent :: Trimmable Doc -> Trimmable Doc -> Doc -> Doc
+indent firstLineDoc otherLinesDoc doc = mkDoc $ Indent
+    { indentFirstLine  = traverse docToChunks firstLineDoc
+    , indentOtherLines = traverse docToChunks otherLinesDoc
+    , indentDoc        = doc
+    }
 
 
 --------------------------------------------------------------------------------
