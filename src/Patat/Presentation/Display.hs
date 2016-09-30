@@ -127,7 +127,9 @@ prettyBlock (Pandoc.Table caption aligns _ headers rows) = prettyTable Table
     , tRows    = map (map prettyBlocks) rows
     }
 
-prettyBlock unsupported = PP.ondullred $ PP.string $ show unsupported
+prettyBlock (Pandoc.Div _attrs blocks) = prettyBlocks blocks
+
+prettyBlock Pandoc.Null = mempty
 
 
 --------------------------------------------------------------------------------
