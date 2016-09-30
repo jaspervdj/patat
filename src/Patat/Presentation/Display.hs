@@ -120,13 +120,12 @@ prettyBlock (Pandoc.BlockQuote bs) =
     let quote = PP.NotTrimmable (PP.dullgreen "> ") in
     PP.indent quote quote (prettyBlocks bs)
 
-prettyBlock (Pandoc.Table caption aligns _ headers rows) =
-    prettyTable prettyBlocks prettyInlines Table
-        { tCaption = caption
-        , tAligns  = aligns
-        , tHeaders = headers
-        , tRows    = rows
-        }
+prettyBlock (Pandoc.Table caption aligns _ headers rows) = prettyTable Table
+    { tCaption = prettyInlines caption
+    , tAligns  = aligns
+    , tHeaders = map prettyBlocks headers
+    , tRows    = map (map prettyBlocks) rows
+    }
 
 prettyBlock unsupported = PP.ondullred $ PP.string $ show unsupported
 

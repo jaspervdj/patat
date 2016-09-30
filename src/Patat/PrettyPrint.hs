@@ -9,6 +9,7 @@ module Patat.PrettyPrint
     ( Doc
     , toString
     , dimensions
+    , null
 
     , hPutDoc
     , putDoc
@@ -46,9 +47,10 @@ import           Control.Monad.Reader (asks, local)
 import           Control.Monad.RWS    (RWS, runRWS)
 import           Control.Monad.State  (get, modify)
 import           Control.Monad.Writer (tell)
-import           Data.List            (intersperse)
+import           qualified Data.List            as L
 import           Data.Monoid          ((<>))
 import           Data.String          (IsString (..))
+import           Prelude              hiding (null)
 import qualified System.Console.ANSI  as Ansi
 import qualified System.IO            as IO
 
@@ -177,7 +179,7 @@ docToChunks doc0 =
         buffer <- get
         tell $ bufferToChunks buffer <> [NewlineChunk]
         indentation <- asks deIndent
-        modify $ \_ -> if null docs then [] else indentation
+        modify $ \_ -> if L.null docs then [] else indentation
         go docs
 
     go (Ansi {..} : docs) = do
@@ -208,6 +210,11 @@ dimensions :: Doc -> (Int, Int)
 dimensions doc =
     let ls = lines (toString doc) in
     (length ls, foldr max 0 (map length ls))
+
+
+--------------------------------------------------------------------------------
+null :: Doc -> Bool
+null doc = case unDoc doc of [] -> True; _ -> False
 
 
 --------------------------------------------------------------------------------
@@ -263,7 +270,7 @@ infixr 5 <$$>
 
 --------------------------------------------------------------------------------
 vcat :: [Doc] -> Doc
-vcat = mconcat . intersperse newline
+vcat = mconcat . L.intersperse newline
 
 
 --------------------------------------------------------------------------------

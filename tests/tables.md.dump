@@ -1,7 +1,17 @@
-[34mRight[0m[m  [0m[34mLeft[0m[m  [0m[34mCenter[0m[m  [0m[34mDefault[0m
-[35m-----[0m[m  [0m[35m----[0m[m  [0m[35m------[0m[m  [0m[35m-------[0m
-[m   12  12      12    12     [0m
-[m  123  123     123   123    [0m
-[m    1  1        1    1      [0m
+[34m# Normal simple table[0m
 
-[mTable: Demonstration of simple table syntax.[0m
+[m  [0m[34mRight[0m[m  [0m[34mLeft[0m[m  [0m[34mCenter[0m[m  [0m[34mDefault[0m
+[m  [0m[35m-----[0m[m  [0m[35m----[0m[m  [0m[35m------[0m[m  [0m[35m-------[0m
+[m     12  12      12    12     [0m
+[m    123  123     123   123    [0m
+[m      1  1        1    1      [0m
+
+[m  Table: Demonstration of simple table syntax.[0m
+[m----------[0m
+[34m# Headerless table[0m
+
+[m  [0m[35m---[0m[m  [0m[35m---[0m[m  [0m[35m---[0m[m  [0m[35m---[0m
+[m   12  12    12   12[0m
+[m  123  123  123  123[0m
+[m    1  1     1    1 [0m
+[m  [0m[35m---[0m[m  [0m[35m---[0m[m  [0m[35m---[0m[m  [0m[35m---[0m
