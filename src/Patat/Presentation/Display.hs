@@ -122,10 +122,15 @@ prettyBlock (Pandoc.BlockQuote bs) =
 
 prettyBlock (Pandoc.Table caption aligns _ headers rows) = prettyTable Table
     { tCaption = prettyInlines caption
-    , tAligns  = aligns
+    , tAligns  = map align aligns
     , tHeaders = map prettyBlocks headers
     , tRows    = map (map prettyBlocks) rows
     }
+  where
+    align Pandoc.AlignLeft    = PP.AlignLeft
+    align Pandoc.AlignCenter  = PP.AlignCenter
+    align Pandoc.AlignDefault = PP.AlignLeft
+    align Pandoc.AlignRight   = PP.AlignRight
 
 prettyBlock (Pandoc.Div _attrs blocks) = prettyBlocks blocks
 

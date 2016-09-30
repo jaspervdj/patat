@@ -39,6 +39,9 @@ module Patat.PrettyPrint
 
     , ondullblack
     , ondullred
+
+    , Alignment (..)
+    , align
     ) where
 
 
@@ -60,6 +63,7 @@ import qualified System.IO            as IO
 data Chunk
     = StringChunk [Ansi.SGR] String
     | NewlineChunk
+    deriving (Eq)
 
 
 --------------------------------------------------------------------------------
@@ -95,7 +99,7 @@ data DocE
     | Space
     | Newline
     | Ansi
-        { ansiCode :: Ansi.SGR
+        { ansiCode :: [Ansi.SGR] -> [Ansi.SGR]  -- ^ Modifies current codes.
         , ansiDoc  :: Doc
         }
     | Indent
@@ -183,7 +187,7 @@ docToChunks doc0 =
         go docs
 
     go (Ansi {..} : docs) = do
-        local (\env -> env {deCodes = ansiCode : deCodes env}) $
+        local (\env -> env {deCodes = ansiCode (deCodes env)}) $
             go (unDoc ansiDoc)
         go docs
 
@@ -275,17 +279,20 @@ vcat = mconcat . L.intersperse newline
 
 --------------------------------------------------------------------------------
 bold :: Doc -> Doc
-bold = mkDoc . Ansi (Ansi.SetConsoleIntensity Ansi.BoldIntensity)
+bold = mkDoc . Ansi
+    (\codes -> Ansi.SetConsoleIntensity Ansi.BoldIntensity : codes)
 
 
 --------------------------------------------------------------------------------
 underline :: Doc -> Doc
-underline = mkDoc . Ansi (Ansi.SetUnderlining Ansi.SingleUnderline)
+underline = mkDoc . Ansi
+    (\codes -> Ansi.SetUnderlining Ansi.SingleUnderline : codes)
 
 
 --------------------------------------------------------------------------------
 dullcolor :: Ansi.Color -> Doc -> Doc
-dullcolor c = mkDoc . Ansi (Ansi.SetColor Ansi.Foreground Ansi.Dull c)
+dullcolor c = mkDoc . Ansi
+    (\codes -> Ansi.SetColor Ansi.Foreground Ansi.Dull c : codes)
 
 
 --------------------------------------------------------------------------------
@@ -303,7 +310,8 @@ dullwhite   = dullcolor Ansi.White
 
 --------------------------------------------------------------------------------
 ondullcolor :: Ansi.Color -> Doc -> Doc
-ondullcolor c = mkDoc . Ansi (Ansi.SetColor Ansi.Background Ansi.Dull c)
+ondullcolor c = mkDoc . Ansi
+    (\codes -> Ansi.SetColor Ansi.Background Ansi.Dull c : codes)
 
 
 --------------------------------------------------------------------------------
@@ -314,3 +322,42 @@ ondullblack = ondullcolor Ansi.Black
 --------------------------------------------------------------------------------
 ondullred :: Doc -> Doc
 ondullred = ondullcolor Ansi.Red
+
+
+--------------------------------------------------------------------------------
+data Alignment = AlignLeft | AlignCenter | AlignRight deriving (Eq, Ord, Show)
+
+
+--------------------------------------------------------------------------------
+align :: Int -> Alignment -> Doc -> Doc
+align width alignment doc0 =
+    let chunks0 = docToChunks doc0
+        lines_  = splitLines chunks0 in
+    vcat
+        [ Doc (map chunkToDocE (alignLine line))
+        | line <- lines_
+        ]
+  where
+    splitLines :: [Chunk] -> [[Chunk]]
+    splitLines chunks = case break (== NewlineChunk) chunks of
+        (xs, _newline : ys) -> xs : splitLines ys
+        (xs, [])            -> [xs]
+
+    lineWidth :: [Chunk] -> Int
+    lineWidth = sum . map (length . chunkToString)
+
+    alignLine :: [Chunk] -> [Chunk]
+    alignLine line =
+        let actual   = lineWidth line
+            spaces n = [StringChunk [] (replicate n ' ')] in
+        case alignment of
+            AlignLeft   -> line <> spaces (width - actual)
+            AlignRight  -> spaces (width - actual) <> line
+            AlignCenter ->
+                let r = (width - actual) `div` 2
+                    l = (width - actual) - r in
+                spaces l <> line <> spaces r
+
+    chunkToDocE :: Chunk -> DocE
+    chunkToDocE NewlineChunk            = Newline
+    chunkToDocE (StringChunk codes str) = Ansi (\_ -> codes) (Doc [String str])

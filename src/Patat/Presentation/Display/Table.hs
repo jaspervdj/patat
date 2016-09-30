@@ -18,7 +18,7 @@ import qualified Text.Pandoc       as Pandoc
 --------------------------------------------------------------------------------
 data Table = Table
     { tCaption :: PP.Doc
-    , tAligns  :: [Pandoc.Alignment]
+    , tAligns  :: [PP.Alignment]
     , tHeaders :: [PP.Doc]
     , tRows    :: [[PP.Doc]]
     }
@@ -31,13 +31,13 @@ prettyTable Table {..}
     | all (all isSimpleCell) (tHeaders : tRows) =
         PP.indent (PP.Trimmable "  ") (PP.Trimmable "  ") $
             lineIf (not isHeaderLess) (hcat2
-                [ PP.dullblue (prettySimpleCell w a header)
+                [ PP.dullblue (PP.align w a header)
                 | (w, a, header) <- zip3 columnWidths tAligns tHeaders
                 ]) <>
             headerSeparator <$$>
             PP.vcat
                 [ hcat2
-                    [ prettySimpleCell w a cell
+                    [ PP.align w a cell
                     | (w, a, cell) <- zip3 columnWidths tAligns row
                     ]
                 | row <- tRows
@@ -71,17 +71,3 @@ prettyTable Table {..}
         [ foldr max 0 (map snd col)
         | col <- transpose rowDimensions
         ]
-
-prettySimpleCell :: Int -> Pandoc.Alignment -> PP.Doc -> PP.Doc
-prettySimpleCell width align doc = case align of
-    Pandoc.AlignLeft    -> doc <> spaces (width - actual)
-    Pandoc.AlignDefault -> doc <> spaces (width - actual)
-    Pandoc.AlignRight   -> spaces (width - actual) <> doc
-    Pandoc.AlignCenter  ->
-        let r = (width - actual) `div` 2
-            l = width - actual - r in
-        spaces l <> doc <> spaces r
-  where
-    (_, actual) = PP.dimensions doc
-    spaces n    = PP.string (replicate n ' ')
-
