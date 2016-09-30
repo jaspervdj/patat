@@ -1,8 +1,8 @@
-[mThis[0m[m [0m[mis[0m[m [0m[mhow[0m[m [0m[mto[0m[m [0m[mdo[0m[m [0m[32mHello[0m[32m [0m[32mWorld[0m[m [0m[min[0m[m [0m[mHaskell:[0m
+[mThis is how to do [0m[32mHello World[0m[m in Haskell:[0m
 
 [m   [0m[40;37m                                [0m
 [m   [0m[40;37m main :: IO ()                  [0m
 [m   [0m[40;37m main = putStrLn "Hello World!" [0m
 [m   [0m[40;37m                                [0m
 
-[mCool,[0m[m [0m[mright?[0m
+[mCool, right?[0m

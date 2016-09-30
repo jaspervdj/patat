@@ -76,6 +76,18 @@ chunkToString (StringChunk _ str) = str
 
 
 --------------------------------------------------------------------------------
+-- | If two neighboring chunks have the same set of ANSI codes, we can group
+-- them together.
+optimizeChunks :: [Chunk] -> [Chunk]
+optimizeChunks (StringChunk c1 s1 : StringChunk c2 s2 : chunks)
+    | c1 == c2  = optimizeChunks (StringChunk c1 (s1 <> s2) : chunks)
+    | otherwise =
+        StringChunk c1 s1 : optimizeChunks (StringChunk c2 s2 : chunks)
+optimizeChunks (x : chunks) = x : optimizeChunks chunks
+optimizeChunks [] = []
+
+
+--------------------------------------------------------------------------------
 data DocE
     = String String
     | Space
@@ -145,7 +157,7 @@ docToChunks :: Doc -> [Chunk]
 docToChunks doc0 =
     let env0        = DocEnv [] []
         ((), b, cs) = runRWS (go $ unDoc doc0) env0 mempty in
-    cs <> bufferToChunks b
+    optimizeChunks (cs <> bufferToChunks b)
   where
     go :: [DocE] -> DocM ()
 
