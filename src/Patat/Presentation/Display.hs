@@ -9,14 +9,15 @@ module Patat.Presentation.Display
 
 
 --------------------------------------------------------------------------------
-import           Data.List                    (intersperse, transpose)
-import           Data.Monoid                  ((<>))
+import           Data.List                        (intersperse)
+import           Data.Monoid                      ((<>))
+import           Patat.Presentation.Display.Table
 import           Patat.Presentation.Internal
-import           Patat.PrettyPrint            ((<+>), (<$$>))
-import qualified Patat.PrettyPrint            as PP
-import qualified System.Console.ANSI          as Ansi
-import qualified System.Console.Terminal.Size as Terminal
-import qualified Text.Pandoc                  as Pandoc
+import           Patat.PrettyPrint                ((<+>))
+import qualified Patat.PrettyPrint                as PP
+import qualified System.Console.ANSI              as Ansi
+import qualified System.Console.Terminal.Size     as Terminal
+import qualified Text.Pandoc                      as Pandoc
 
 
 --------------------------------------------------------------------------------
@@ -119,56 +120,13 @@ prettyBlock (Pandoc.BlockQuote bs) =
     let quote = PP.NotTrimmable (PP.dullgreen "> ") in
     PP.indent quote quote (prettyBlocks bs)
 
-prettyBlock (Pandoc.Table caption aligns _ headers rows)
-    | all (all isSimpleCell) (headers : rows) =
-        hcat2
-            [ PP.dullblue (prettySimpleCell w a header)
-            | (w, a, header) <- zip3 columnWidths aligns headers
-            ] <$$>
-        hcat2
-            [ PP.dullmagenta (PP.string (replicate w '-'))
-            | w <- columnWidths
-            ] <$$>
-        PP.vcat
-            [ hcat2
-                [ prettySimpleCell w a cell
-                | (w, a, cell) <- zip3 columnWidths aligns row
-                ]
-            | row <- rows
-            ] <$$>
-        (case caption of
-            [] -> mempty
-            _  -> PP.newline <> "Table: " <> prettyInlines caption)
-    | otherwise                               = undefined
-  where
-    isSimpleCell [Pandoc.Plain _] = True
-    isSimpleCell _                = False
-
-    hcat2 :: [PP.Doc] -> PP.Doc
-    hcat2 = mconcat . intersperse (PP.string "  ")
-
-    prettySimpleCell :: Int -> Pandoc.Alignment -> Pandoc.TableCell -> PP.Doc
-    prettySimpleCell width align blocks = case align of
-        Pandoc.AlignLeft    -> doc <> spaces (width - actual)
-        Pandoc.AlignDefault -> doc <> spaces (width - actual)
-        Pandoc.AlignRight   -> spaces (width - actual) <> doc
-        Pandoc.AlignCenter  ->
-            let r = (width - actual) `div` 2
-                l = width - actual - r in
-            spaces l <> doc <> spaces r
-      where
-        doc         = prettyBlocks blocks
-        (_, actual) = PP.dimensions doc
-        spaces n    = PP.string (replicate n ' ')
-
-    rowDimensions :: [[(Int, Int)]]
-    rowDimensions = map (map (PP.dimensions . prettyBlocks)) (headers : rows)
-
-    columnWidths :: [Int]
-    columnWidths =
-        [ foldr max 0 (map snd col)
-        | col <- transpose rowDimensions
-        ]
+prettyBlock (Pandoc.Table caption aligns _ headers rows) =
+    prettyTable prettyBlocks prettyInlines Table
+        { tCaption = caption
+        , tAligns  = aligns
+        , tHeaders = headers
+        , tRows    = rows
+        }
 
 prettyBlock unsupported = PP.ondullred $ PP.string $ show unsupported
 

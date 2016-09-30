@@ -2,7 +2,7 @@
 set -o nounset -o errexit -o pipefail
 
 dumps=$(find 'tests/' -name '*.dump')
-found_diff=false
+stuff_went_wrong=false
 
 for expected in $dumps; do
     src=$(echo "$expected" | sed 's/\.dump$//')
@@ -19,11 +19,11 @@ for expected in $dumps; do
         else
             echo 'files differ'
             diff "$actual" "$expected" || true
-            found_diff=true
+            stuff_went_wrong=true
         fi
     fi
 done
 
-if [[ "$found_diff" = true ]]; then
+if [[ "$stuff_went_wrong" = true ]]; then
     exit 1
 fi
