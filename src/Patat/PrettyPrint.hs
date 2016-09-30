@@ -8,6 +8,8 @@
 module Patat.PrettyPrint
     ( Doc
     , toString
+    , dimensions
+
     , hPutDoc
     , putDoc
 
@@ -19,6 +21,7 @@ module Patat.PrettyPrint
     , indent
 
     , (<+>)
+    , (<$$>)
     , vcat
 
     , bold
@@ -39,7 +42,6 @@ module Patat.PrettyPrint
 
 
 --------------------------------------------------------------------------------
-import           Control.Monad        (unless)
 import           Control.Monad.Reader (asks, local)
 import           Control.Monad.RWS    (RWS, runRWS)
 import           Control.Monad.State  (get, modify)
@@ -189,6 +191,14 @@ toString = concat . map chunkToString . docToChunks
 
 
 --------------------------------------------------------------------------------
+-- | Returns the rows and columns necessary to render this document
+dimensions :: Doc -> (Int, Int)
+dimensions doc =
+    let ls = lines (toString doc) in
+    (length ls, foldr max 0 (map length ls))
+
+
+--------------------------------------------------------------------------------
 hPutDoc :: IO.Handle -> Doc -> IO ()
 hPutDoc h = mapM_ (hPutChunk h) . docToChunks
 
@@ -231,6 +241,12 @@ indent firstLineDoc otherLinesDoc doc = mkDoc $ Indent
 (<+>) :: Doc -> Doc -> Doc
 x <+> y = x <> space <> y
 infixr 6 <+>
+
+
+--------------------------------------------------------------------------------
+(<$$>) :: Doc -> Doc -> Doc
+x <$$> y = x <> newline <> y
+infixr 5 <$$>
 
 
 --------------------------------------------------------------------------------
