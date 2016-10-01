@@ -1,5 +1,4 @@
 --------------------------------------------------------------------------------
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 module Patat.Presentation.Display.Table
@@ -10,10 +9,10 @@ module Patat.Presentation.Display.Table
 
 --------------------------------------------------------------------------------
 import           Data.List         (intersperse, transpose)
-import           Data.Monoid       ((<>))
-import           Patat.Prelude
+import           Data.Monoid       (mconcat, (<>))
 import           Patat.PrettyPrint ((<$$>))
 import qualified Patat.PrettyPrint as PP
+import           Prelude
 
 
 --------------------------------------------------------------------------------

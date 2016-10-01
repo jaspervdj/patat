@@ -1,6 +1,5 @@
 --------------------------------------------------------------------------------
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE NoImplicitPrelude          #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE RecordWildCards            #-}
 module Patat.Presentation.Display
@@ -11,8 +10,7 @@ module Patat.Presentation.Display
 
 --------------------------------------------------------------------------------
 import           Data.List                        (intersperse)
-import           Data.Monoid                      ((<>))
-import           Patat.Prelude
+import           Data.Monoid                      (mconcat, (<>))
 import           Patat.Presentation.Display.Table
 import           Patat.Presentation.Internal
 import           Patat.PrettyPrint                ((<+>))
@@ -20,6 +18,7 @@ import qualified Patat.PrettyPrint                as PP
 import qualified System.Console.ANSI              as Ansi
 import qualified System.Console.Terminal.Size     as Terminal
 import qualified Text.Pandoc                      as Pandoc
+import           Prelude
 
 
 --------------------------------------------------------------------------------

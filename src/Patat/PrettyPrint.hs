@@ -4,7 +4,6 @@
 {-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE DeriveTraversable          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE NoImplicitPrelude          #-}
 {-# LANGUAGE RecordWildCards            #-}
 module Patat.PrettyPrint
     ( Doc
@@ -53,12 +52,14 @@ import           Control.Monad.Reader (asks, local)
 import           Control.Monad.RWS    (RWS, runRWS)
 import           Control.Monad.State  (get, modify)
 import           Control.Monad.Writer (tell)
+import           Data.Foldable        (Foldable)
 import qualified Data.List            as L
-import           Data.Monoid          ((<>))
+import           Data.Monoid          (mconcat, (<>))
 import           Data.String          (IsString (..))
-import           Patat.Prelude        hiding (null)
+import           Data.Traversable     (traverse)
 import qualified System.Console.ANSI  as Ansi
 import qualified System.IO            as IO
+import           Prelude              hiding (null)
 
 
 --------------------------------------------------------------------------------
