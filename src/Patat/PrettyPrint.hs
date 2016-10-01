@@ -40,8 +40,10 @@ module Patat.PrettyPrint
     , ondullblack
     , ondullred
 
+    -- * Exotic combinators
     , Alignment (..)
     , align
+    , paste
     ) where
 
 
@@ -67,6 +69,10 @@ data Chunk
 
 
 --------------------------------------------------------------------------------
+type Chunks = [Chunk]
+
+
+--------------------------------------------------------------------------------
 hPutChunk :: IO.Handle -> Chunk -> IO ()
 hPutChunk h NewlineChunk            = IO.hPutStrLn h ""
 hPutChunk h (StringChunk codes str) = do
@@ -84,13 +90,20 @@ chunkToString (StringChunk _ str) = str
 --------------------------------------------------------------------------------
 -- | If two neighboring chunks have the same set of ANSI codes, we can group
 -- them together.
-optimizeChunks :: [Chunk] -> [Chunk]
+optimizeChunks :: Chunks -> Chunks
 optimizeChunks (StringChunk c1 s1 : StringChunk c2 s2 : chunks)
     | c1 == c2  = optimizeChunks (StringChunk c1 (s1 <> s2) : chunks)
     | otherwise =
         StringChunk c1 s1 : optimizeChunks (StringChunk c2 s2 : chunks)
 optimizeChunks (x : chunks) = x : optimizeChunks chunks
 optimizeChunks [] = []
+
+
+--------------------------------------------------------------------------------
+chunkLines :: Chunks -> [Chunks]
+chunkLines chunks = case break (== NewlineChunk) chunks of
+    (xs, _newline : ys) -> xs : chunkLines ys
+    (xs, [])            -> [xs]
 
 
 --------------------------------------------------------------------------------
@@ -107,6 +120,12 @@ data DocE
         , indentOtherLines :: LineBuffer
         , indentDoc        :: Doc
         }
+
+
+--------------------------------------------------------------------------------
+chunkToDocE :: Chunk -> DocE
+chunkToDocE NewlineChunk            = Newline
+chunkToDocE (StringChunk codes str) = Ansi (\_ -> codes) (Doc [String str])
 
 
 --------------------------------------------------------------------------------
@@ -132,7 +151,7 @@ data DocEnv = DocEnv
 
 
 --------------------------------------------------------------------------------
-type DocM = RWS DocEnv [Chunk] LineBuffer
+type DocM = RWS DocEnv Chunks LineBuffer
 
 
 --------------------------------------------------------------------------------
@@ -148,7 +167,7 @@ type LineBuffer = [Trimmable Chunk]
 
 
 --------------------------------------------------------------------------------
-bufferToChunks :: LineBuffer -> [Chunk]
+bufferToChunks :: LineBuffer -> Chunks
 bufferToChunks = map trimmableToChunk . reverse . dropWhile isTrimmable
   where
     isTrimmable (NotTrimmable _) = False
@@ -159,7 +178,7 @@ bufferToChunks = map trimmableToChunk . reverse . dropWhile isTrimmable
 
 
 --------------------------------------------------------------------------------
-docToChunks :: Doc -> [Chunk]
+docToChunks :: Doc -> Chunks
 docToChunks doc0 =
     let env0        = DocEnv [] []
         ((), b, cs) = runRWS (go $ unDoc doc0) env0 mempty in
@@ -332,17 +351,12 @@ data Alignment = AlignLeft | AlignCenter | AlignRight deriving (Eq, Ord, Show)
 align :: Int -> Alignment -> Doc -> Doc
 align width alignment doc0 =
     let chunks0 = docToChunks doc0
-        lines_  = splitLines chunks0 in
+        lines_  = chunkLines chunks0 in
     vcat
         [ Doc (map chunkToDocE (alignLine line))
         | line <- lines_
         ]
   where
-    splitLines :: [Chunk] -> [[Chunk]]
-    splitLines chunks = case break (== NewlineChunk) chunks of
-        (xs, _newline : ys) -> xs : splitLines ys
-        (xs, [])            -> [xs]
-
     lineWidth :: [Chunk] -> Int
     lineWidth = sum . map (length . chunkToString)
 
@@ -358,6 +372,13 @@ align width alignment doc0 =
                     l = (width - actual) - r in
                 spaces l <> line <> spaces r
 
-    chunkToDocE :: Chunk -> DocE
-    chunkToDocE NewlineChunk            = Newline
-    chunkToDocE (StringChunk codes str) = Ansi (\_ -> codes) (Doc [String str])
+
+--------------------------------------------------------------------------------
+-- | Like the unix program 'paste'.
+paste :: [Doc] -> Doc
+paste docs0 =
+    let chunkss = map docToChunks docs0                   :: [Chunks]
+        cols    = map chunkLines chunkss                  :: [[Chunks]]
+        rows0   = L.transpose cols                        :: [[Chunks]]
+        rows1   = map (map (Doc . map chunkToDocE)) rows0 :: [[Doc]] in
+    vcat $ map mconcat rows1
