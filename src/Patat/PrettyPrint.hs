@@ -54,9 +54,9 @@ import           Control.Monad.State  (get, modify)
 import           Control.Monad.Writer (tell)
 import           Data.Foldable        (Foldable)
 import qualified Data.List            as L
-import           Data.Monoid          (mconcat, (<>))
+import           Data.Monoid          (Monoid, mconcat, mempty, (<>))
 import           Data.String          (IsString (..))
-import           Data.Traversable     (traverse)
+import           Data.Traversable     (Traversable, traverse)
 import qualified System.Console.ANSI  as Ansi
 import qualified System.IO            as IO
 import           Prelude              hiding (null)
