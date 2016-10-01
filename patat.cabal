@@ -29,7 +29,7 @@ Executable patat
     optparse-applicative >= 0.12 && < 0.14,
     pandoc               >= 1.17 && < 1.18,
     terminal-size        >= 0.3  && < 0.4,
-    time                 >= 1.6  && < 1.7
+    time                 >= 1.4  && < 1.7
 
   Other-modules:
     Patat.Presentation
