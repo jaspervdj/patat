@@ -4,6 +4,7 @@
 {-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE DeriveTraversable          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE NoImplicitPrelude          #-}
 {-# LANGUAGE RecordWildCards            #-}
 module Patat.PrettyPrint
     ( Doc
@@ -54,10 +55,8 @@ import           Control.Monad.State  (get, modify)
 import           Control.Monad.Writer (tell)
 import qualified Data.List            as L
 import           Data.Monoid          ((<>))
-import qualified Data.Monoid          as Monoid
 import           Data.String          (IsString (..))
-import qualified Data.Traversable     as T
-import           Prelude              hiding (null)
+import           Patat.Prelude        hiding (null)
 import qualified System.Console.ANSI  as Ansi
 import qualified System.IO            as IO
 
@@ -275,8 +274,8 @@ newline = mkDoc Newline
 --------------------------------------------------------------------------------
 indent :: Trimmable Doc -> Trimmable Doc -> Doc -> Doc
 indent firstLineDoc otherLinesDoc doc = mkDoc $ Indent
-    { indentFirstLine  = T.traverse docToChunks firstLineDoc
-    , indentOtherLines = T.traverse docToChunks otherLinesDoc
+    { indentFirstLine  = traverse docToChunks firstLineDoc
+    , indentOtherLines = traverse docToChunks otherLinesDoc
     , indentDoc        = doc
     }
 
@@ -295,7 +294,7 @@ infixr 5 <$$>
 
 --------------------------------------------------------------------------------
 vcat :: [Doc] -> Doc
-vcat = Monoid.mconcat . L.intersperse newline
+vcat = mconcat . L.intersperse newline
 
 
 --------------------------------------------------------------------------------
@@ -383,4 +382,4 @@ paste docs0 =
         cols    = map chunkLines chunkss                  :: [[Chunks]]
         rows0   = L.transpose cols                        :: [[Chunks]]
         rows1   = map (map (Doc . map chunkToDocE)) rows0 :: [[Doc]] in
-    vcat $ map Monoid.mconcat rows1
+    vcat $ map mconcat rows1
