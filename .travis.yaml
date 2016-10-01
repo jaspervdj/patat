@@ -1,0 +1,6 @@
+language: haskell
+sudo: false
+install:
+    - cabal install
+script:
+    - bash test.sh
