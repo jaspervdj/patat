@@ -9,16 +9,17 @@ module Patat.Presentation.Display
 
 
 --------------------------------------------------------------------------------
+import           Data.Data.Extended               (grecQ)
 import           Data.List                        (intersperse)
 import           Data.Monoid                      (mconcat, (<>))
 import           Patat.Presentation.Display.Table
 import           Patat.Presentation.Internal
-import           Patat.PrettyPrint                ((<+>), (<$$>))
+import           Patat.PrettyPrint                ((<$$>), (<+>))
 import qualified Patat.PrettyPrint                as PP
+import           Prelude
 import qualified System.Console.ANSI              as Ansi
 import qualified System.Console.Terminal.Size     as Terminal
 import qualified Text.Pandoc.Extended             as Pandoc
-import           Prelude
 
 
 --------------------------------------------------------------------------------
@@ -65,7 +66,11 @@ dumpPresentation =
 
 --------------------------------------------------------------------------------
 prettySlide :: Slide -> PP.Doc
-prettySlide = prettyBlocks . unSlide
+prettySlide slide@(Slide blocks) =
+    prettyBlocks blocks <>
+    case prettyReferences slide of
+        []   -> mempty
+        refs -> PP.newline <> PP.vcat refs
 
 
 --------------------------------------------------------------------------------
@@ -171,12 +176,11 @@ prettyInline (Pandoc.Strong inlines) =
 prettyInline (Pandoc.Code _ txt) =
     PP.ondullblack $ PP.dullwhite $ " " <> PP.string txt <> " "
 
-prettyInline (Pandoc.Link _ title (target, _))
-    | [Pandoc.Str target] == title =
-        "<" <> PP.dullcyan (PP.underline $ PP.string target) <> ">"
+prettyInline link@(Pandoc.Link _attrs text (target, _title))
+    | isReferenceLink link =
+        "[" <> PP.dullcyan (prettyInlines text) <> "]"
     | otherwise =
-        "[" <> PP.dullgreen (prettyInlines title) <> "](" <>
-        PP.dullcyan (PP.underline (PP.string target)) <> ")"
+        "<" <> PP.dullcyan (PP.underline $ PP.string target) <> ">"
 
 prettyInline Pandoc.SoftBreak = PP.newline
 
@@ -210,3 +214,30 @@ prettyInline (Pandoc.SmallCaps   t) = prettyInlines t
 --------------------------------------------------------------------------------
 prettyInlines :: [Pandoc.Inline] -> PP.Doc
 prettyInlines = mconcat . map prettyInline
+
+
+--------------------------------------------------------------------------------
+prettyReferences :: Slide -> [PP.Doc]
+prettyReferences =
+    map prettyReference . getReferences . unSlide
+  where
+    getReferences :: [Pandoc.Block] -> [Pandoc.Inline]
+    getReferences = filter isReferenceLink . grecQ
+
+    prettyReference :: Pandoc.Inline -> PP.Doc
+    prettyReference (Pandoc.Link _attrs text (target, title)) =
+        "[" <> PP.dullgreen (prettyInlines $ Pandoc.newlineToSpace text) <>
+        "](" <>
+        PP.dullcyan (PP.underline (PP.string target)) <>
+        (if null title
+            then mempty
+            else PP.space <> "\"" <> PP.string title <> "\"")
+        <> ")"
+    prettyReference _ = mempty
+
+
+--------------------------------------------------------------------------------
+isReferenceLink :: Pandoc.Inline -> Bool
+isReferenceLink (Pandoc.Link _attrs text (target, _)) =
+    [Pandoc.Str target] /= text
+isReferenceLink _ = False

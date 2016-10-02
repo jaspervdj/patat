@@ -32,6 +32,7 @@ Executable patat
     time                 >= 1.4  && < 1.7
 
   Other-modules:
+    Data.Data.Extended
     Patat.Presentation
     Patat.Presentation.Display
     Patat.Presentation.Display.Table
