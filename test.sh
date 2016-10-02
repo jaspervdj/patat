@@ -8,7 +8,7 @@ for src in $srcs; do
     expected="$src.dump"
     echo -n "Testing $src... "
     actual=$(mktemp)
-    stack exec patat -- --dump --force "$src" >"$actual"
+    patat --dump --force "$src" >"$actual"
 
     if [[ $@ == "--fix" ]]; then
         cp "$actual" "$expected"
