@@ -6,6 +6,7 @@ module Main where
 
 
 --------------------------------------------------------------------------------
+import           Control.Applicative          ((<$>), (<*>))
 import           Control.Concurrent           (forkIO, threadDelay)
 import qualified Control.Concurrent.Chan      as Chan
 import           Control.Monad                (forever, unless, when)
@@ -19,6 +20,7 @@ import           System.Directory             (getModificationTime)
 import           System.Exit                  (exitFailure)
 import qualified System.IO                    as IO
 import qualified Text.PrettyPrint.ANSI.Leijen as PP
+import           Prelude
 
 
 --------------------------------------------------------------------------------

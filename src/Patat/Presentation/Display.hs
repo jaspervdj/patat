@@ -16,10 +16,10 @@ import           Patat.Presentation.Display.Table
 import           Patat.Presentation.Internal
 import           Patat.PrettyPrint                ((<$$>), (<+>))
 import qualified Patat.PrettyPrint                as PP
-import           Prelude
 import qualified System.Console.ANSI              as Ansi
 import qualified System.Console.Terminal.Size     as Terminal
 import qualified Text.Pandoc.Extended             as Pandoc
+import           Prelude
 
 
 --------------------------------------------------------------------------------
