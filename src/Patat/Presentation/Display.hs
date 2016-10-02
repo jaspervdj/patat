@@ -11,7 +11,7 @@ module Patat.Presentation.Display
 --------------------------------------------------------------------------------
 import           Data.Data.Extended               (grecQ)
 import           Data.List                        (intersperse)
-import           Data.Monoid                      (mconcat, (<>))
+import           Data.Monoid                      (mconcat, mempty, (<>))
 import           Patat.Presentation.Display.Table
 import           Patat.Presentation.Internal
 import           Patat.PrettyPrint                ((<$$>), (<+>))
