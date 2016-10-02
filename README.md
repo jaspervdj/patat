@@ -1,6 +1,8 @@
 patat
 =====
 
+[![Build Status](https://travis-ci.org/jaspervdj/patat.svg?branch=master)](https://travis-ci.org/jaspervdj/patat)
+
 `patat` (**P**resentations **A**nd **T**he **A**NSI **T**erminal) is a small
 tool that allows you to show presentations using only an ANSI terminal.  It does
 not require `ncurses`.
