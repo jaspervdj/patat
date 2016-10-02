@@ -1,0 +1,24 @@
+[34mTerm 1[0m
+
+[35m:   [0m[mDefinition 1[0m
+
+[34mTerm 2 with [0m[34;32minline markup[0m
+
+[35m:   [0m[mDefinition 2[0m
+
+[m       [0m[40;37m                                     [0m
+[m       [0m[40;37m { some code, part of Definition 2 } [0m
+[m       [0m[40;37m                                     [0m
+
+[m    Third paragraph of definition 2.[0m
+
+[m----------[0m
+[34mTerm 1[0m
+
+[35m:   [0m[mDefinition 1[0m
+
+[34mTerm 2[0m
+
+[35m:   [0m[mDefinition 2a[0m
+
+[35m:   [0m[mDefinition 2b[0m

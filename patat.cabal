@@ -39,3 +39,4 @@ Executable patat
     Patat.Presentation.Internal
     Patat.Presentation.Read
     Patat.PrettyPrint
+    Text.Pandoc.Extended

@@ -13,11 +13,11 @@ import           Data.List                        (intersperse)
 import           Data.Monoid                      (mconcat, (<>))
 import           Patat.Presentation.Display.Table
 import           Patat.Presentation.Internal
-import           Patat.PrettyPrint                ((<+>))
+import           Patat.PrettyPrint                ((<+>), (<$$>))
 import qualified Patat.PrettyPrint                as PP
 import qualified System.Console.ANSI              as Ansi
 import qualified System.Console.Terminal.Size     as Terminal
-import qualified Text.Pandoc                      as Pandoc
+import qualified Text.Pandoc.Extended             as Pandoc
 import           Prelude
 
 
@@ -134,6 +134,18 @@ prettyBlock (Pandoc.Table caption aligns _ headers rows) = prettyTable Table
     align Pandoc.AlignRight   = PP.AlignRight
 
 prettyBlock (Pandoc.Div _attrs blocks) = prettyBlocks blocks
+
+prettyBlock (Pandoc.DefinitionList terms) =
+    PP.vcat $ map prettyDefinition terms
+  where
+    prettyDefinition (term, definitions) =
+        PP.dullblue (prettyInlines term) <$$> PP.newline <> PP.vcat
+        [ PP.indent
+            (PP.NotTrimmable (PP.dullmagenta ":   "))
+            (PP.Trimmable "    ") $
+            prettyBlocks (Pandoc.plainToPara definition)
+        | definition <- definitions
+        ]
 
 prettyBlock Pandoc.Null = mempty
 
