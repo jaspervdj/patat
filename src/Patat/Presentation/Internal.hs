@@ -7,16 +7,18 @@ module Patat.Presentation.Internal
 
 
 --------------------------------------------------------------------------------
+import           Data.Monoid (Monoid)
 import qualified Text.Pandoc as Pandoc
+import           Prelude
 
 
 --------------------------------------------------------------------------------
 data Presentation = Presentation
-    { pFilePath         :: !FilePath
-    , pTitle            :: ![Pandoc.Inline]
-    , pAuthor           :: ![Pandoc.Inline]
-    , pSlides           :: [Slide]
-    , pActiveSlide      :: !Int
+    { pFilePath    :: !FilePath
+    , pTitle       :: ![Pandoc.Inline]
+    , pAuthor      :: ![Pandoc.Inline]
+    , pSlides      :: [Slide]
+    , pActiveSlide :: !Int
     } deriving (Show)
 
 
