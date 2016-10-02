@@ -13,6 +13,10 @@ Build-type:          Simple
 Extra-source-files:  CHANGELOG.md
 Cabal-version:       >=1.10
 
+Source-repository head
+  Type:     git
+  Location: git://github.com/jaspervdj/patat.git
+
 Executable patat
   Main-is:           Main.hs
   Ghc-options:       -Wall -threaded -rtsopts "-with-rtsopts=-N"
