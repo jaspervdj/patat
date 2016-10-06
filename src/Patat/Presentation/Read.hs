@@ -38,6 +38,7 @@ readExtension fileExt = case fileExt of
     ".md"  -> Just $ Pandoc.readMarkdown Pandoc.def
     ".lhs" -> Just $ Pandoc.readMarkdown lhsOpts
     ""     -> Just $ Pandoc.readMarkdown Pandoc.def
+    ".org" -> Just $ Pandoc.readOrg Pandoc.def
     _      -> Nothing
 
   where
