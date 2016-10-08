@@ -11,11 +11,14 @@ module Patat.Presentation.Display
 --------------------------------------------------------------------------------
 import           Data.Data.Extended               (grecQ)
 import           Data.List                        (intersperse)
+import           Data.Maybe                       (fromMaybe)
 import           Data.Monoid                      (mconcat, mempty, (<>))
 import           Patat.Presentation.Display.Table
 import           Patat.Presentation.Internal
 import           Patat.PrettyPrint                ((<$$>), (<+>))
 import qualified Patat.PrettyPrint                as PP
+import           Patat.Theme                      (Theme)
+import qualified Patat.Theme                      as Theme
 import qualified System.Console.ANSI              as Ansi
 import qualified System.Console.Terminal.Size     as Terminal
 import qualified Text.Pandoc.Extended             as Pandoc
@@ -30,9 +33,10 @@ displayPresentation Presentation {..} = do
 
     -- Get terminal width/title
     mbWindow <- Terminal.size
-    let termWidth   = maybe 72 Terminal.width  mbWindow
+    let theme       = fromMaybe Theme.defaultTheme (psTheme pSettings)
+        termWidth   = maybe 72 Terminal.width  mbWindow
         termHeight  = maybe 24 Terminal.height mbWindow
-        title       = PP.toString (prettyInlines pTitle)
+        title       = PP.toString (prettyInlines theme pTitle)
         titleWidth  = length title
         titleOffset = (termWidth - titleWidth) `div` 2
 
@@ -45,14 +49,14 @@ displayPresentation Presentation {..} = do
             []      -> mempty
             (s : _) -> s
 
-    PP.putDoc $ prettySlide slide
+    PP.putDoc $ prettySlide theme slide
     putStrLn ""
 
     let active      = show (pActiveSlide + 1) ++ " / " ++ show (length pSlides)
         activeWidth = length active
 
     Ansi.setCursorPosition (termHeight - 2) 0
-    PP.putDoc $ " " <> PP.dullyellow (prettyInlines pAuthor)
+    PP.putDoc $ " " <> PP.dullyellow (prettyInlines theme pAuthor)
     Ansi.setCursorColumn (termWidth - activeWidth - 1)
     PP.putDoc $ PP.dullyellow $ PP.string active
     putStrLn ""
@@ -60,31 +64,34 @@ displayPresentation Presentation {..} = do
 
 --------------------------------------------------------------------------------
 dumpPresentation :: Presentation -> IO ()
-dumpPresentation =
-    PP.putDoc . PP.vcat . intersperse "----------" . map prettySlide . pSlides
+dumpPresentation pres =
+    let theme = fromMaybe Theme.defaultTheme (psTheme $ pSettings pres) in
+    PP.putDoc $ PP.vcat $ intersperse "----------" $
+        map (prettySlide theme) $ pSlides pres
 
 
 --------------------------------------------------------------------------------
-prettySlide :: Slide -> PP.Doc
-prettySlide slide@(Slide blocks) =
-    prettyBlocks blocks <>
-    case prettyReferences slide of
+prettySlide :: Theme -> Slide -> PP.Doc
+prettySlide theme slide@(Slide blocks) =
+    prettyBlocks theme blocks <>
+    case prettyReferences theme slide of
         []   -> mempty
         refs -> PP.newline <> PP.vcat refs
 
 
 --------------------------------------------------------------------------------
-prettyBlock :: Pandoc.Block -> PP.Doc
+prettyBlock :: Theme -> Pandoc.Block -> PP.Doc
 
-prettyBlock (Pandoc.Plain inlines) = prettyInlines inlines
+prettyBlock theme (Pandoc.Plain inlines) = prettyInlines theme inlines
 
-prettyBlock (Pandoc.Para inlines) = prettyInlines inlines <> PP.newline
+prettyBlock theme (Pandoc.Para inlines) =
+    prettyInlines theme inlines <> PP.newline
 
-prettyBlock (Pandoc.Header i _ inlines) =
-    PP.dullblue (PP.string (replicate i '#') <+> prettyInlines inlines) <>
+prettyBlock theme (Pandoc.Header i _ inlines) =
+    PP.dullblue (PP.string (replicate i '#') <+> prettyInlines theme inlines) <>
     PP.newline
 
-prettyBlock (Pandoc.CodeBlock _ txt) = PP.vcat
+prettyBlock _theme (Pandoc.CodeBlock _ txt) = PP.vcat
     [ let ind = PP.NotTrimmable "   " in
       PP.indent ind ind $ PP.ondullblack $ PP.dullwhite $ PP.string line
     | line <- blockified txt
@@ -96,19 +103,19 @@ prettyBlock (Pandoc.CodeBlock _ txt) = PP.vcat
             extend l = " " ++ l ++ replicate (longest - length l) ' ' ++ " " in
         map extend $ [""] ++ ls ++ [""]
 
-prettyBlock (Pandoc.BulletList bss) = PP.vcat
+prettyBlock theme (Pandoc.BulletList bss) = PP.vcat
     [ PP.indent
         (PP.NotTrimmable $ PP.dullmagenta "  - ")
         (PP.Trimmable "    ")
-        (prettyBlocks bs)
+        (prettyBlocks theme bs)
     | bs <- bss
     ] <> PP.newline
 
-prettyBlock (Pandoc.OrderedList _ bss) = PP.vcat
+prettyBlock theme (Pandoc.OrderedList _ bss) = PP.vcat
     [ PP.indent
         (PP.NotTrimmable $ PP.dullmagenta $ PP.string prefix)
         (PP.Trimmable "    ")
-        (prettyBlocks bs)
+        (prettyBlocks theme bs)
     | (prefix, bs) <- zip padded bss
     ] <> PP.newline
   where
@@ -118,107 +125,108 @@ prettyBlock (Pandoc.OrderedList _ bss) = PP.vcat
         | i <- [1 .. length bss]
         ]
 
-prettyBlock (Pandoc.RawBlock _ t) = PP.string t <> PP.newline
+prettyBlock _theme (Pandoc.RawBlock _ t) = PP.string t <> PP.newline
 
-prettyBlock Pandoc.HorizontalRule = "---"
+prettyBlock _theme Pandoc.HorizontalRule = "---"
 
-prettyBlock (Pandoc.BlockQuote bs) =
+prettyBlock theme (Pandoc.BlockQuote bs) =
     let quote = PP.NotTrimmable (PP.dullgreen "> ") in
-    PP.indent quote quote (prettyBlocks bs)
+    PP.indent quote quote (prettyBlocks theme bs)
 
-prettyBlock (Pandoc.Table caption aligns _ headers rows) = prettyTable Table
-    { tCaption = prettyInlines caption
-    , tAligns  = map align aligns
-    , tHeaders = map prettyBlocks headers
-    , tRows    = map (map prettyBlocks) rows
-    }
+prettyBlock theme (Pandoc.Table caption aligns _ headers rows) =
+    prettyTable Table
+        { tCaption = prettyInlines theme caption
+        , tAligns  = map align aligns
+        , tHeaders = map (prettyBlocks theme) headers
+        , tRows    = map (map (prettyBlocks theme)) rows
+        }
   where
     align Pandoc.AlignLeft    = PP.AlignLeft
     align Pandoc.AlignCenter  = PP.AlignCenter
     align Pandoc.AlignDefault = PP.AlignLeft
     align Pandoc.AlignRight   = PP.AlignRight
 
-prettyBlock (Pandoc.Div _attrs blocks) = prettyBlocks blocks
+prettyBlock theme (Pandoc.Div _attrs blocks) = prettyBlocks theme blocks
 
-prettyBlock (Pandoc.DefinitionList terms) =
+prettyBlock theme (Pandoc.DefinitionList terms) =
     PP.vcat $ map prettyDefinition terms
   where
     prettyDefinition (term, definitions) =
-        PP.dullblue (prettyInlines term) <$$> PP.newline <> PP.vcat
+        PP.dullblue (prettyInlines theme term) <$$> PP.newline <> PP.vcat
         [ PP.indent
             (PP.NotTrimmable (PP.dullmagenta ":   "))
             (PP.Trimmable "    ") $
-            prettyBlocks (Pandoc.plainToPara definition)
+            prettyBlocks theme (Pandoc.plainToPara definition)
         | definition <- definitions
         ]
 
-prettyBlock Pandoc.Null = mempty
+prettyBlock _theme Pandoc.Null = mempty
 
 
 --------------------------------------------------------------------------------
-prettyBlocks :: [Pandoc.Block] -> PP.Doc
-prettyBlocks = PP.vcat . map prettyBlock
+prettyBlocks :: Theme -> [Pandoc.Block] -> PP.Doc
+prettyBlocks theme = PP.vcat . map (prettyBlock theme)
 
 
 --------------------------------------------------------------------------------
-prettyInline :: Pandoc.Inline -> PP.Doc
+prettyInline :: Theme -> Pandoc.Inline -> PP.Doc
 
-prettyInline Pandoc.Space = PP.space
+prettyInline _theme Pandoc.Space = PP.space
 
-prettyInline (Pandoc.Str str) = PP.string str
+prettyInline _theme (Pandoc.Str str) = PP.string str
 
-prettyInline (Pandoc.Emph inlines) =
-    PP.dullgreen $ prettyInlines inlines
+prettyInline theme (Pandoc.Emph inlines) =
+    PP.dullgreen $ prettyInlines theme inlines
 
-prettyInline (Pandoc.Strong inlines) =
-    PP.dullred $ PP.bold $ prettyInlines inlines
+prettyInline theme (Pandoc.Strong inlines) =
+    PP.dullred $ PP.bold $ prettyInlines theme inlines
 
-prettyInline (Pandoc.Code _ txt) =
+prettyInline _theme (Pandoc.Code _ txt) =
     PP.ondullblack $ PP.dullwhite $ " " <> PP.string txt <> " "
 
-prettyInline link@(Pandoc.Link _attrs text (target, _title))
+prettyInline theme link@(Pandoc.Link _attrs text (target, _title))
     | isReferenceLink link =
-        "[" <> PP.dullcyan (prettyInlines text) <> "]"
+        "[" <> PP.dullcyan (prettyInlines theme text) <> "]"
     | otherwise =
         "<" <> PP.dullcyan (PP.underline $ PP.string target) <> ">"
 
-prettyInline Pandoc.SoftBreak = PP.newline
+prettyInline _theme Pandoc.SoftBreak = PP.newline
 
-prettyInline Pandoc.LineBreak = PP.newline
+prettyInline _theme Pandoc.LineBreak = PP.newline
 
-prettyInline (Pandoc.Strikeout t) =
-    "~~" <> PP.ondullred (prettyInlines t) <> "~~"
+prettyInline theme (Pandoc.Strikeout t) =
+    "~~" <> PP.ondullred (prettyInlines theme t) <> "~~"
 
-prettyInline (Pandoc.Quoted Pandoc.SingleQuote t) =
-    "'" <> PP.dullgreen (prettyInlines t) <> "'"
-prettyInline (Pandoc.Quoted Pandoc.DoubleQuote t) =
-    "'" <> PP.dullgreen (prettyInlines t) <> "'"
+prettyInline theme (Pandoc.Quoted Pandoc.SingleQuote t) =
+    "'" <> PP.dullgreen (prettyInlines theme t) <> "'"
+prettyInline theme (Pandoc.Quoted Pandoc.DoubleQuote t) =
+    "'" <> PP.dullgreen (prettyInlines theme t) <> "'"
 
-prettyInline (Pandoc.Math _ t) = PP.dullgreen (PP.string t)
+prettyInline _theme (Pandoc.Math _ t) = PP.dullgreen (PP.string t)
 
-prettyInline (Pandoc.Image _ _ (tit, src)) =
+prettyInline _theme (Pandoc.Image _ _ (tit, src)) =
     "![" <> PP.dullgreen (PP.string tit) <> "](" <>
     PP.dullcyan (PP.underline (PP.string src)) <> ")"
 
 -- These elements aren't really supported.
-prettyInline (Pandoc.Cite      _ t) = prettyInlines t
-prettyInline (Pandoc.Span      _ t) = prettyInlines t
-prettyInline (Pandoc.RawInline _ t) = PP.string t
-prettyInline (Pandoc.Note        t) = prettyBlocks t
-prettyInline (Pandoc.Superscript t) = prettyInlines t
-prettyInline (Pandoc.Subscript   t) = prettyInlines t
-prettyInline (Pandoc.SmallCaps   t) = prettyInlines t
+prettyInline theme  (Pandoc.Cite      _ t) = prettyInlines theme t
+prettyInline theme  (Pandoc.Span      _ t) = prettyInlines theme t
+prettyInline _theme (Pandoc.RawInline _ t) = PP.string t
+prettyInline theme  (Pandoc.Note        t) = prettyBlocks  theme t
+prettyInline theme  (Pandoc.Superscript t) = prettyInlines theme t
+prettyInline theme  (Pandoc.Subscript   t) = prettyInlines theme t
+prettyInline theme  (Pandoc.SmallCaps   t) = prettyInlines theme t
 -- prettyInline unsupported = PP.ondullred $ PP.string $ show unsupported
 
 
 --------------------------------------------------------------------------------
-prettyInlines :: [Pandoc.Inline] -> PP.Doc
-prettyInlines = mconcat . map prettyInline
+prettyInlines :: Theme -> [Pandoc.Inline] -> PP.Doc
+prettyInlines theme = mconcat . map (prettyInline theme)
 
 
 --------------------------------------------------------------------------------
-prettyReferences :: Slide -> [PP.Doc]
-prettyReferences =
+prettyReferences :: Theme -> Slide -> [PP.Doc]
+prettyReferences theme =
     map prettyReference . getReferences . unSlide
   where
     getReferences :: [Pandoc.Block] -> [Pandoc.Inline]
@@ -226,7 +234,8 @@ prettyReferences =
 
     prettyReference :: Pandoc.Inline -> PP.Doc
     prettyReference (Pandoc.Link _attrs text (target, title)) =
-        "[" <> PP.dullgreen (prettyInlines $ Pandoc.newlineToSpace text) <>
+        "[" <>
+        PP.dullgreen (prettyInlines theme $ Pandoc.newlineToSpace text) <>
         "](" <>
         PP.dullcyan (PP.underline (PP.string target)) <>
         (if null title
