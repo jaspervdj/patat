@@ -3,8 +3,9 @@
 {-# LANGUAGE TemplateHaskell            #-}
 module Patat.Theme
     ( Theme (..)
-    , Style (..)
     , defaultTheme
+    , style
+    , Style (..)
     ) where
 
 
@@ -23,16 +24,18 @@ import qualified System.Console.ANSI    as Ansi
 data Theme = Theme
     { themeEmph   :: !(Maybe Style)
     , themeStrong :: !(Maybe Style)
+    , themeCode   :: !(Maybe Style)
     } deriving (Show)
 
 
 --------------------------------------------------------------------------------
 instance Monoid Theme where
-    mempty = Theme Nothing Nothing
+    mempty = Theme Nothing Nothing Nothing
 
     mappend l r = Theme
-        { themeEmph   = themeEmph l   `mplus` themeEmph   r
+        { themeEmph   = themeEmph   l `mplus` themeEmph   r
         , themeStrong = themeStrong l `mplus` themeStrong r
+        , themeCode   = themeCode   l `mplus` themeCode   r
         }
 
 
@@ -41,10 +44,18 @@ defaultTheme :: Theme
 defaultTheme = Theme
     { themeEmph   = dull Ansi.Green
     , themeStrong = dull Ansi.Red <> bold
+    , themeCode   = dull Ansi.White <> ondull Ansi.Black
     }
   where
-    dull c = Just $ Style [Ansi.SetColor Ansi.Foreground Ansi.Dull c]
-    bold = Just $ Style [Ansi.SetConsoleIntensity Ansi.BoldIntensity]
+    dull   c = Just $ Style [Ansi.SetColor Ansi.Foreground Ansi.Dull c]
+    ondull c = Just $ Style [Ansi.SetColor Ansi.Background Ansi.Dull c]
+    bold     = Just $ Style [Ansi.SetConsoleIntensity Ansi.BoldIntensity]
+
+
+--------------------------------------------------------------------------------
+-- | Easier accessor
+style :: (Theme -> Maybe Style) -> Theme -> [Ansi.SGR]
+style f = maybe [] unStyle . f
 
 
 --------------------------------------------------------------------------------

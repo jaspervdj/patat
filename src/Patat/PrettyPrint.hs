@@ -21,6 +21,8 @@ module Patat.PrettyPrint
     , Trimmable (..)
     , indent
 
+    , ansi
+
     , (<+>)
     , (<$$>)
     , vcat
@@ -279,6 +281,11 @@ indent firstLineDoc otherLinesDoc doc = mkDoc $ Indent
     , indentOtherLines = traverse docToChunks otherLinesDoc
     , indentDoc        = doc
     }
+
+
+--------------------------------------------------------------------------------
+ansi :: [Ansi.SGR] -> Doc -> Doc
+ansi codes =  mkDoc . Ansi (codes ++)
 
 
 --------------------------------------------------------------------------------

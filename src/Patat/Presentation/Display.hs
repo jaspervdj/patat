@@ -71,6 +71,13 @@ dumpPresentation pres =
 
 
 --------------------------------------------------------------------------------
+themed :: Theme -> (Theme -> Maybe Theme.Style) -> PP.Doc -> PP.Doc
+themed theme f = case Theme.style f theme of
+    []    -> id
+    style -> PP.ansi style
+
+
+--------------------------------------------------------------------------------
 prettySlide :: Theme -> Slide -> PP.Doc
 prettySlide theme slide@(Slide blocks) =
     prettyBlocks theme blocks <>
@@ -176,13 +183,16 @@ prettyInline _theme Pandoc.Space = PP.space
 prettyInline _theme (Pandoc.Str str) = PP.string str
 
 prettyInline theme (Pandoc.Emph inlines) =
-    PP.dullgreen $ prettyInlines theme inlines
+    themed theme Theme.themeEmph $
+    prettyInlines theme inlines
 
 prettyInline theme (Pandoc.Strong inlines) =
-    PP.dullred $ PP.bold $ prettyInlines theme inlines
+    themed theme Theme.themeStrong $
+    prettyInlines theme inlines
 
-prettyInline _theme (Pandoc.Code _ txt) =
-    PP.ondullblack $ PP.dullwhite $ " " <> PP.string txt <> " "
+prettyInline theme (Pandoc.Code _ txt) =
+    themed theme Theme.themeCode $
+    " " <> PP.string txt <> " "
 
 prettyInline theme link@(Pandoc.Link _attrs text (target, _title))
     | isReferenceLink link =
