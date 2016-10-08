@@ -11,7 +11,10 @@ import           Control.Concurrent           (forkIO, threadDelay)
 import qualified Control.Concurrent.Chan      as Chan
 import           Control.Monad                (forever, unless, when)
 import           Data.Monoid                  ((<>))
+import qualified Data.Text                    as T
+import qualified Data.Text.Encoding           as T
 import           Data.Version                 (showVersion)
+import qualified Data.Yaml                    as Yaml
 import qualified Options.Applicative          as OA
 import           Patat.Presentation
 import qualified Paths_patat
@@ -101,6 +104,8 @@ main = do
     pres      <- either (errorAndExit . return) return errOrPres
 
     unless (oForce options) assertAnsiFeatures
+
+    putStrLn $ T.unpack $ T.decodeUtf8 $ Yaml.encode $ pSettings pres
 
     if oDump options
         then dumpPresentation pres

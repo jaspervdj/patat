@@ -1,4 +1,5 @@
 -- | Read a presentation from disk.
+{-# LANGUAGE BangPatterns    #-}
 {-# LANGUAGE RecordWildCards #-}
 module Patat.Presentation.Read
     ( readPresentation
@@ -6,11 +7,13 @@ module Patat.Presentation.Read
 
 
 --------------------------------------------------------------------------------
+import qualified Data.Aeson                  as A
+import           Data.Monoid                 ((<>))
 import qualified Data.Set                    as Set
 import           Patat.Presentation.Internal
 import           System.FilePath             (takeExtension)
-import qualified Text.Pandoc                 as Pandoc
 import qualified Text.Pandoc.Error           as Pandoc
+import qualified Text.Pandoc.Extended        as Pandoc
 
 
 --------------------------------------------------------------------------------
@@ -52,11 +55,27 @@ readExtension fileExt = case fileExt of
 pandocToPresentation
     :: FilePath -> Pandoc.Pandoc -> Either String Presentation
 pandocToPresentation pFilePath pandoc@(Pandoc.Pandoc meta _) = do
-    let pTitle       = Pandoc.docTitle meta
-        pSlides      = pandocToSlides pandoc
-        pActiveSlide = 0
-        pAuthor      = concat (Pandoc.docAuthors meta)
+    let !pTitle       = Pandoc.docTitle meta
+        !pSlides      = pandocToSlides pandoc
+        !pActiveSlide = 0
+        !pAuthor      = concat (Pandoc.docAuthors meta)
+    !pSettings <- readSettings meta
     return Presentation {..}
+
+
+--------------------------------------------------------------------------------
+readSettings :: Pandoc.Meta -> Either String PresentationSettings
+readSettings meta = case Pandoc.lookupMeta "patat" meta of
+    Nothing  -> return defaultPresentationSettings
+    Just val -> do
+        let !json = Pandoc.metaToJson val
+        settings <- resultToEither $ A.fromJSON json
+        return (settings <> defaultPresentationSettings)
+  where
+    resultToEither :: A.Result a -> Either String a
+    resultToEither (A.Success x) = Right x
+    resultToEither (A.Error   e) = Left $!
+        "Error parsing patat settings from metadata: " ++ e
 
 
 --------------------------------------------------------------------------------
