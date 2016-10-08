@@ -16,8 +16,9 @@ import qualified Data.Aeson.TH.Extended as A
 import           Data.List              (intercalate)
 import qualified Data.Map               as M
 import           Data.Maybe             (mapMaybe, maybeToList)
-import           Data.Monoid            ((<>))
+import           Data.Monoid            (Monoid (..), (<>))
 import qualified System.Console.ANSI    as Ansi
+import           Prelude
 
 
 --------------------------------------------------------------------------------
