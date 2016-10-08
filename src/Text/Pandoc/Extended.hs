@@ -14,7 +14,9 @@ module Text.Pandoc.Extended
 import qualified Data.Aeson         as A
 import           Data.Data.Extended (grecT)
 import qualified Data.Map           as M
+import           Data.Monoid        (mempty)
 import           Text.Pandoc
+import           Prelude
 
 
 --------------------------------------------------------------------------------
