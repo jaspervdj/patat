@@ -37,7 +37,7 @@ Executable patat
     terminal-size        >= 0.3  && < 0.4,
     text                 >= 1.2  && < 1.3,
     time                 >= 1.4  && < 1.7,
-    yaml                 >= 0.8  && < 0.9
+    yaml                 >= 0.7  && < 0.9
 
   Other-modules:
     Data.Aeson.TH.Extended
