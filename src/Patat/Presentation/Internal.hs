@@ -11,10 +11,10 @@ module Patat.Presentation.Internal
 
 --------------------------------------------------------------------------------
 import qualified Data.Aeson.TH.Extended as A
-import           Data.Monoid            (Monoid)
+import           Data.Monoid            (Monoid (..))
 import qualified Patat.Theme            as Theme
-import           Prelude
 import qualified Text.Pandoc            as Pandoc
+import           Prelude
 
 
 --------------------------------------------------------------------------------
