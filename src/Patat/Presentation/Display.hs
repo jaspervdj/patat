@@ -17,7 +17,7 @@ import           Patat.Presentation.Display.Table
 import           Patat.Presentation.Internal
 import           Patat.PrettyPrint                ((<$$>), (<+>))
 import qualified Patat.PrettyPrint                as PP
-import           Patat.Theme                      (Theme)
+import           Patat.Theme                      (Theme (..))
 import qualified Patat.Theme                      as Theme
 import qualified System.Console.ANSI              as Ansi
 import qualified System.Console.Terminal.Size     as Terminal
@@ -71,10 +71,10 @@ dumpPresentation pres =
 
 
 --------------------------------------------------------------------------------
-themed :: Theme -> (Theme -> Maybe Theme.Style) -> PP.Doc -> PP.Doc
-themed theme f = case Theme.style f theme of
-    []    -> id
-    style -> PP.ansi style
+themed :: Maybe Theme.Style -> PP.Doc -> PP.Doc
+themed Nothing                    = id
+themed (Just (Theme.Style []))    = id
+themed (Just (Theme.Style codes)) = PP.ansi codes
 
 
 --------------------------------------------------------------------------------
@@ -182,35 +182,35 @@ prettyInline _theme Pandoc.Space = PP.space
 
 prettyInline _theme (Pandoc.Str str) = PP.string str
 
-prettyInline theme (Pandoc.Emph inlines) =
-    themed theme Theme.themeEmph $
+prettyInline theme@Theme {..} (Pandoc.Emph inlines) =
+    themed themeEmph $
     prettyInlines theme inlines
 
-prettyInline theme (Pandoc.Strong inlines) =
-    themed theme Theme.themeStrong $
+prettyInline theme@Theme {..} (Pandoc.Strong inlines) =
+    themed themeStrong $
     prettyInlines theme inlines
 
-prettyInline theme (Pandoc.Code _ txt) =
-    themed theme Theme.themeCode $
+prettyInline Theme {..} (Pandoc.Code _ txt) =
+    themed themeCode $
     " " <> PP.string txt <> " "
 
-prettyInline theme link@(Pandoc.Link _attrs text (target, _title))
+prettyInline theme@Theme {..} link@(Pandoc.Link _attrs text (target, _title))
     | isReferenceLink link =
-        "[" <> PP.dullcyan (prettyInlines theme text) <> "]"
+        "[" <> themed themeLink (prettyInlines theme text) <> "]"
     | otherwise =
-        "<" <> PP.dullcyan (PP.underline $ PP.string target) <> ">"
+        "<" <> themed themeLink (PP.string target) <> ">"
 
 prettyInline _theme Pandoc.SoftBreak = PP.newline
 
 prettyInline _theme Pandoc.LineBreak = PP.newline
 
-prettyInline theme (Pandoc.Strikeout t) =
-    "~~" <> PP.ondullred (prettyInlines theme t) <> "~~"
+prettyInline theme@Theme {..} (Pandoc.Strikeout t) =
+    "~~" <> themed themeStrikeout (prettyInlines theme t) <> "~~"
 
-prettyInline theme (Pandoc.Quoted Pandoc.SingleQuote t) =
-    "'" <> PP.dullgreen (prettyInlines theme t) <> "'"
-prettyInline theme (Pandoc.Quoted Pandoc.DoubleQuote t) =
-    "'" <> PP.dullgreen (prettyInlines theme t) <> "'"
+prettyInline theme@Theme {..} (Pandoc.Quoted Pandoc.SingleQuote t) =
+    "'" <> themed themeQuoted (prettyInlines theme t) <> "'"
+prettyInline theme@Theme {..} (Pandoc.Quoted Pandoc.DoubleQuote t) =
+    "'" <> themed themeQuoted (prettyInlines theme t) <> "'"
 
 prettyInline _theme (Pandoc.Math _ t) = PP.dullgreen (PP.string t)
 

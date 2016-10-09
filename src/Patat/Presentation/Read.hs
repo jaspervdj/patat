@@ -12,7 +12,7 @@ import           Control.Monad.Except        (ExceptT (..), runExceptT,
 import           Control.Monad.Trans         (liftIO)
 import qualified Data.Aeson                  as A
 import qualified Data.ByteString             as B
-import           Data.Monoid                 ((<>))
+import           Data.Monoid                 (mempty, (<>))
 import qualified Data.Set                    as Set
 import qualified Data.Yaml                   as Yaml
 import           Patat.Presentation.Internal
@@ -20,6 +20,7 @@ import           System.Directory            (doesFileExist, getHomeDirectory)
 import           System.FilePath             (takeExtension, (</>))
 import qualified Text.Pandoc.Error           as Pandoc
 import qualified Text.Pandoc.Extended        as Pandoc
+import           Prelude
 
 
 --------------------------------------------------------------------------------

@@ -4,7 +4,6 @@
 module Patat.Theme
     ( Theme (..)
     , defaultTheme
-    , style
     , Style (..)
     ) where
 
@@ -23,40 +22,44 @@ import           Prelude
 
 --------------------------------------------------------------------------------
 data Theme = Theme
-    { themeEmph   :: !(Maybe Style)
-    , themeStrong :: !(Maybe Style)
-    , themeCode   :: !(Maybe Style)
+    { themeEmph      :: !(Maybe Style)
+    , themeStrong    :: !(Maybe Style)
+    , themeCode      :: !(Maybe Style)
+    , themeLink      :: !(Maybe Style)
+    , themeStrikeout :: !(Maybe Style)
+    , themeQuoted    :: !(Maybe Style)
     } deriving (Show)
 
 
 --------------------------------------------------------------------------------
 instance Monoid Theme where
-    mempty = Theme Nothing Nothing Nothing
+    mempty = Theme Nothing Nothing Nothing Nothing Nothing Nothing
 
     mappend l r = Theme
-        { themeEmph   = themeEmph   l `mplus` themeEmph   r
-        , themeStrong = themeStrong l `mplus` themeStrong r
-        , themeCode   = themeCode   l `mplus` themeCode   r
+        { themeEmph      = themeEmph      l `mplus` themeEmph      r
+        , themeStrong    = themeStrong    l `mplus` themeStrong    r
+        , themeCode      = themeCode      l `mplus` themeCode      r
+        , themeLink      = themeLink      l `mplus` themeLink      r
+        , themeStrikeout = themeStrikeout l `mplus` themeStrikeout r
+        , themeQuoted    = themeQuoted    l `mplus` themeQuoted    r
         }
 
 
 --------------------------------------------------------------------------------
 defaultTheme :: Theme
 defaultTheme = Theme
-    { themeEmph   = dull Ansi.Green
-    , themeStrong = dull Ansi.Red <> bold
-    , themeCode   = dull Ansi.White <> ondull Ansi.Black
+    { themeEmph      = dull Ansi.Green
+    , themeStrong    = dull Ansi.Red <> bold
+    , themeCode      = dull Ansi.White <> ondull Ansi.Black
+    , themeLink      = dull Ansi.Cyan <> underline
+    , themeStrikeout = ondull Ansi.Red
+    , themeQuoted    = dull Ansi.Green
     }
   where
-    dull   c = Just $ Style [Ansi.SetColor Ansi.Foreground Ansi.Dull c]
-    ondull c = Just $ Style [Ansi.SetColor Ansi.Background Ansi.Dull c]
-    bold     = Just $ Style [Ansi.SetConsoleIntensity Ansi.BoldIntensity]
-
-
---------------------------------------------------------------------------------
--- | Easier accessor
-style :: (Theme -> Maybe Style) -> Theme -> [Ansi.SGR]
-style f = maybe [] unStyle . f
+    dull   c  = Just $ Style [Ansi.SetColor Ansi.Foreground Ansi.Dull c]
+    ondull c  = Just $ Style [Ansi.SetColor Ansi.Background Ansi.Dull c]
+    bold      = Just $ Style [Ansi.SetConsoleIntensity Ansi.BoldIntensity]
+    underline = Just $ Style [Ansi.SetUnderlining Ansi.SingleUnderline]
 
 
 --------------------------------------------------------------------------------
