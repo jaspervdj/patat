@@ -212,7 +212,8 @@ prettyInline theme@Theme {..} (Pandoc.Quoted Pandoc.SingleQuote t) =
 prettyInline theme@Theme {..} (Pandoc.Quoted Pandoc.DoubleQuote t) =
     "'" <> themed themeQuoted (prettyInlines theme t) <> "'"
 
-prettyInline _theme (Pandoc.Math _ t) = PP.dullgreen (PP.string t)
+prettyInline Theme {..} (Pandoc.Math _ t) =
+    themed themeMath (PP.string t)
 
 prettyInline _theme (Pandoc.Image _ _ (tit, src)) =
     "![" <> PP.dullgreen (PP.string tit) <> "](" <>

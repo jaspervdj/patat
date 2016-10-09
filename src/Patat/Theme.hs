@@ -28,12 +28,13 @@ data Theme = Theme
     , themeLink      :: !(Maybe Style)
     , themeStrikeout :: !(Maybe Style)
     , themeQuoted    :: !(Maybe Style)
+    , themeMath      :: !(Maybe Style)
     } deriving (Show)
 
 
 --------------------------------------------------------------------------------
 instance Monoid Theme where
-    mempty = Theme Nothing Nothing Nothing Nothing Nothing Nothing
+    mempty = Theme Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
     mappend l r = Theme
         { themeEmph      = themeEmph      l `mplus` themeEmph      r
@@ -42,6 +43,7 @@ instance Monoid Theme where
         , themeLink      = themeLink      l `mplus` themeLink      r
         , themeStrikeout = themeStrikeout l `mplus` themeStrikeout r
         , themeQuoted    = themeQuoted    l `mplus` themeQuoted    r
+        , themeMath      = themeMath      l `mplus` themeMath      r
         }
 
 
@@ -54,6 +56,7 @@ defaultTheme = Theme
     , themeLink      = dull Ansi.Cyan <> underline
     , themeStrikeout = ondull Ansi.Red
     , themeQuoted    = dull Ansi.Green
+    , themeMath      = dull Ansi.Green
     }
   where
     dull   c  = Just $ Style [Ansi.SetColor Ansi.Foreground Ansi.Dull c]
