@@ -1,9 +1,9 @@
 [mThis is an "automatic link": <[0m[4;36mhttps://jaspervdj.be[0m[m>.[0m
 
-[mThis is an [[0m[4;36minline link[0m[m], and here's [[0m[4;36mone with[0m
-[4;36ma title[0m[m].[0m
+[mThis is an [[0m[32minline link[0m[m], and here's [[0m[32mone with[0m
+[32ma title[0m[m].[0m
 
-[mLet's talk about [[0m[4;36mfoo[0m[m][0m
+[mLet's talk about [[0m[32mfoo[0m[m][0m
 
 [m[[0m[32minline link[0m[m]([0m[36;4m/url[0m[m)[0m
 [m[[0m[32mone with a title[0m[m]([0m[36;4mhttp://fsf.org[0m[m "click here for a good time!")[0m

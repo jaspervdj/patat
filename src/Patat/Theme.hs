@@ -12,6 +12,7 @@ module Patat.Theme
 import           Control.Monad          (mplus)
 import qualified Data.Aeson             as A
 import qualified Data.Aeson.TH.Extended as A
+import           Data.Char              (toUpper)
 import           Data.List              (intercalate)
 import qualified Data.Map               as M
 import           Data.Maybe             (mapMaybe, maybeToList)
@@ -22,41 +23,52 @@ import           Prelude
 
 --------------------------------------------------------------------------------
 data Theme = Theme
-    { themeEmph      :: !(Maybe Style)
-    , themeStrong    :: !(Maybe Style)
-    , themeCode      :: !(Maybe Style)
-    , themeLink      :: !(Maybe Style)
-    , themeStrikeout :: !(Maybe Style)
-    , themeQuoted    :: !(Maybe Style)
-    , themeMath      :: !(Maybe Style)
+    { themeEmph        :: !(Maybe Style)
+    , themeStrong      :: !(Maybe Style)
+    , themeCode        :: !(Maybe Style)
+    , themeLinkText    :: !(Maybe Style)
+    , themeLinkTarget  :: !(Maybe Style)
+    , themeStrikeout   :: !(Maybe Style)
+    , themeQuoted      :: !(Maybe Style)
+    , themeMath        :: !(Maybe Style)
+    , themeImageText   :: !(Maybe Style)
+    , themeImageTarget :: !(Maybe Style)
     } deriving (Show)
 
 
 --------------------------------------------------------------------------------
 instance Monoid Theme where
-    mempty = Theme Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+    mempty = Theme
+        Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+        Nothing
 
     mappend l r = Theme
-        { themeEmph      = themeEmph      l `mplus` themeEmph      r
-        , themeStrong    = themeStrong    l `mplus` themeStrong    r
-        , themeCode      = themeCode      l `mplus` themeCode      r
-        , themeLink      = themeLink      l `mplus` themeLink      r
-        , themeStrikeout = themeStrikeout l `mplus` themeStrikeout r
-        , themeQuoted    = themeQuoted    l `mplus` themeQuoted    r
-        , themeMath      = themeMath      l `mplus` themeMath      r
+        { themeEmph        = themeEmph        l `mplus` themeEmph        r
+        , themeStrong      = themeStrong      l `mplus` themeStrong      r
+        , themeCode        = themeCode        l `mplus` themeCode        r
+        , themeLinkText    = themeLinkText    l `mplus` themeLinkText    r
+        , themeLinkTarget  = themeLinkTarget  l `mplus` themeLinkTarget  r
+        , themeStrikeout   = themeStrikeout   l `mplus` themeStrikeout   r
+        , themeQuoted      = themeQuoted      l `mplus` themeQuoted      r
+        , themeMath        = themeMath        l `mplus` themeMath        r
+        , themeImageText   = themeImageText   l `mplus` themeImageText   r
+        , themeImageTarget = themeImageTarget l `mplus` themeImageTarget r
         }
 
 
 --------------------------------------------------------------------------------
 defaultTheme :: Theme
 defaultTheme = Theme
-    { themeEmph      = dull Ansi.Green
-    , themeStrong    = dull Ansi.Red <> bold
-    , themeCode      = dull Ansi.White <> ondull Ansi.Black
-    , themeLink      = dull Ansi.Cyan <> underline
-    , themeStrikeout = ondull Ansi.Red
-    , themeQuoted    = dull Ansi.Green
-    , themeMath      = dull Ansi.Green
+    { themeEmph        = dull Ansi.Green
+    , themeStrong      = dull Ansi.Red <> bold
+    , themeCode        = dull Ansi.White <> ondull Ansi.Black
+    , themeLinkText    = dull Ansi.Green
+    , themeLinkTarget  = dull Ansi.Cyan <> underline
+    , themeStrikeout   = ondull Ansi.Red
+    , themeQuoted      = dull Ansi.Green
+    , themeMath        = dull Ansi.Green
+    , themeImageText   = dull Ansi.Green
+    , themeImageTarget = dull Ansi.Cyan <> underline
     }
   where
     dull   c  = Just $ Style [Ansi.SetColor Ansi.Foreground Ansi.Dull c]
@@ -92,21 +104,24 @@ instance A.FromJSON Style where
 --------------------------------------------------------------------------------
 nameForSGR :: Ansi.SGR -> Maybe String
 nameForSGR (Ansi.SetColor layer intensity color) = Just $
-    (case layer of
-        Ansi.Foreground -> ""
-        Ansi.Background -> "on") ++
+    (\str -> case layer of
+        Ansi.Foreground -> str
+        Ansi.Background -> "on" ++ capitalize str) $
     (case intensity of
         Ansi.Dull  -> "dull"
         Ansi.Vivid -> "vivid") ++
     (case color of
-        Ansi.Black   -> "black"
-        Ansi.Red     -> "red"
-        Ansi.Green   -> "green"
-        Ansi.Yellow  -> "yellow"
-        Ansi.Blue    -> "blue"
-        Ansi.Magenta -> "magenta"
-        Ansi.Cyan    -> "cyan"
-        Ansi.White   -> "white")
+        Ansi.Black   -> "Black"
+        Ansi.Red     -> "Red"
+        Ansi.Green   -> "Green"
+        Ansi.Yellow  -> "Yellow"
+        Ansi.Blue    -> "Blue"
+        Ansi.Magenta -> "Magenta"
+        Ansi.Cyan    -> "Cyan"
+        Ansi.White   -> "White")
+  where
+    capitalize ""       = ""
+    capitalize (x : xs) = toUpper x : xs
 
 nameForSGR (Ansi.SetUnderlining Ansi.SingleUnderline) = Just "underline"
 

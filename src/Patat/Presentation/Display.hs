@@ -196,9 +196,9 @@ prettyInline Theme {..} (Pandoc.Code _ txt) =
 
 prettyInline theme@Theme {..} link@(Pandoc.Link _attrs text (target, _title))
     | isReferenceLink link =
-        "[" <> themed themeLink (prettyInlines theme text) <> "]"
+        "[" <> themed themeLinkText (prettyInlines theme text) <> "]"
     | otherwise =
-        "<" <> themed themeLink (PP.string target) <> ">"
+        "<" <> themed themeLinkTarget (PP.string target) <> ">"
 
 prettyInline _theme Pandoc.SoftBreak = PP.newline
 
@@ -215,9 +215,9 @@ prettyInline theme@Theme {..} (Pandoc.Quoted Pandoc.DoubleQuote t) =
 prettyInline Theme {..} (Pandoc.Math _ t) =
     themed themeMath (PP.string t)
 
-prettyInline _theme (Pandoc.Image _ _ (tit, src)) =
-    "![" <> PP.dullgreen (PP.string tit) <> "](" <>
-    PP.dullcyan (PP.underline (PP.string src)) <> ")"
+prettyInline theme@Theme {..} (Pandoc.Image _attrs text (target, _title)) =
+    "![" <> themed themeImageText (prettyInlines theme text) <> "](" <>
+    themed themeImageTarget (PP.string target) <> ")"
 
 -- These elements aren't really supported.
 prettyInline theme  (Pandoc.Cite      _ t) = prettyInlines theme t
