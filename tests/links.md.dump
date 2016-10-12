@@ -5,6 +5,6 @@
 
 [mLet's talk about [[0m[32mfoo[0m[m][0m
 
-[m[[0m[32minline link[0m[m]([0m[36;4m/url[0m[m)[0m
-[m[[0m[32mone with a title[0m[m]([0m[36;4mhttp://fsf.org[0m[m "click here for a good time!")[0m
-[m[[0m[32mfoo[0m[m]([0m[36;4mhttp://foo.com/[0m[m)[0m
+[m[[0m[32minline link[0m[m]([0m[4;36m/url[0m[m)[0m
+[m[[0m[32mone with a title[0m[m]([0m[4;36mhttp://fsf.org[0m[m "click here for a good time!")[0m
+[m[[0m[32mfoo[0m[m]([0m[4;36mhttp://foo.com/[0m[m)[0m

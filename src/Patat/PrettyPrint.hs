@@ -27,21 +27,6 @@ module Patat.PrettyPrint
     , (<$$>)
     , vcat
 
-    , bold
-    , underline
-
-    , dullblack
-    , dullred
-    , dullgreen
-    , dullyellow
-    , dullblue
-    , dullmagenta
-    , dullcyan
-    , dullwhite
-
-    , ondullblack
-    , ondullred
-
     -- * Exotic combinators
     , Alignment (..)
     , align
@@ -303,53 +288,6 @@ infixr 5 <$$>
 --------------------------------------------------------------------------------
 vcat :: [Doc] -> Doc
 vcat = mconcat . L.intersperse newline
-
-
---------------------------------------------------------------------------------
-bold :: Doc -> Doc
-bold = mkDoc . Ansi
-    (\codes -> Ansi.SetConsoleIntensity Ansi.BoldIntensity : codes)
-
-
---------------------------------------------------------------------------------
-underline :: Doc -> Doc
-underline = mkDoc . Ansi
-    (\codes -> Ansi.SetUnderlining Ansi.SingleUnderline : codes)
-
-
---------------------------------------------------------------------------------
-dullcolor :: Ansi.Color -> Doc -> Doc
-dullcolor c = mkDoc . Ansi
-    (\codes -> Ansi.SetColor Ansi.Foreground Ansi.Dull c : codes)
-
-
---------------------------------------------------------------------------------
-dullblack, dullred, dullgreen, dullyellow, dullblue, dullmagenta, dullcyan,
-    dullwhite :: Doc -> Doc
-dullblack   = dullcolor Ansi.Black
-dullred     = dullcolor Ansi.Red
-dullgreen   = dullcolor Ansi.Green
-dullyellow  = dullcolor Ansi.Yellow
-dullblue    = dullcolor Ansi.Blue
-dullmagenta = dullcolor Ansi.Magenta
-dullcyan    = dullcolor Ansi.Cyan
-dullwhite   = dullcolor Ansi.White
-
-
---------------------------------------------------------------------------------
-ondullcolor :: Ansi.Color -> Doc -> Doc
-ondullcolor c = mkDoc . Ansi
-    (\codes -> Ansi.SetColor Ansi.Background Ansi.Dull c : codes)
-
-
---------------------------------------------------------------------------------
-ondullblack :: Doc -> Doc
-ondullblack = ondullcolor Ansi.Black
-
-
---------------------------------------------------------------------------------
-ondullred :: Doc -> Doc
-ondullred = ondullcolor Ansi.Red
 
 
 --------------------------------------------------------------------------------
