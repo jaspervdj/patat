@@ -1,5 +1,8 @@
 module Patat.Presentation
-    ( Presentation (..)
+    ( PresentationSettings (..)
+    , defaultPresentationSettings
+
+    , Presentation (..)
     , readPresentation
     , displayPresentation
     , dumpPresentation

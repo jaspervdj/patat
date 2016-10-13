@@ -15,30 +15,21 @@ module Patat.PrettyPrint
     , putDoc
 
     , string
+    , text
     , space
-    , newline
+    , softline
+    , hardline
+
+    , wrapAt
 
     , Trimmable (..)
     , indent
 
+    , ansi
+
     , (<+>)
     , (<$$>)
     , vcat
-
-    , bold
-    , underline
-
-    , dullblack
-    , dullred
-    , dullgreen
-    , dullyellow
-    , dullblue
-    , dullmagenta
-    , dullcyan
-    , dullwhite
-
-    , ondullblack
-    , ondullred
 
     -- * Exotic combinators
     , Alignment (..)
@@ -50,12 +41,13 @@ module Patat.PrettyPrint
 --------------------------------------------------------------------------------
 import           Control.Monad.Reader (asks, local)
 import           Control.Monad.RWS    (RWS, runRWS)
-import           Control.Monad.State  (get, modify)
+import           Control.Monad.State  (get, gets, modify)
 import           Control.Monad.Writer (tell)
 import           Data.Foldable        (Foldable)
 import qualified Data.List            as L
 import           Data.Monoid          (Monoid, mconcat, mempty, (<>))
 import           Data.String          (IsString (..))
+import qualified Data.Text            as T
 import           Data.Traversable     (Traversable, traverse)
 import qualified System.Console.ANSI  as Ansi
 import qualified System.IO            as IO
@@ -111,8 +103,14 @@ chunkLines chunks = case break (== NewlineChunk) chunks of
 --------------------------------------------------------------------------------
 data DocE
     = String String
-    | Space
-    | Newline
+    | Softspace
+    | Hardspace
+    | Softline
+    | Hardline
+    | WrapAt
+        { wrapAtCol :: Maybe Int
+        , wrapDoc   :: Doc
+        }
     | Ansi
         { ansiCode :: [Ansi.SGR] -> [Ansi.SGR]  -- ^ Modifies current codes.
         , ansiDoc  :: Doc
@@ -126,7 +124,7 @@ data DocE
 
 --------------------------------------------------------------------------------
 chunkToDocE :: Chunk -> DocE
-chunkToDocE NewlineChunk            = Newline
+chunkToDocE NewlineChunk            = Hardline
 chunkToDocE (StringChunk codes str) = Ansi (\_ -> codes) (Doc [String str])
 
 
@@ -149,6 +147,7 @@ instance Show Doc where
 data DocEnv = DocEnv
     { deCodes  :: [Ansi.SGR]  -- ^ Most recent ones first in the list
     , deIndent :: LineBuffer  -- ^ Don't need to store first-line indent
+    , deWrap   :: Maybe Int   -- ^ Wrap at columns
     }
 
 
@@ -182,7 +181,7 @@ bufferToChunks = map trimmableToChunk . reverse . dropWhile isTrimmable
 --------------------------------------------------------------------------------
 docToChunks :: Doc -> Chunks
 docToChunks doc0 =
-    let env0        = DocEnv [] []
+    let env0        = DocEnv [] [] Nothing
         ((), b, cs) = runRWS (go $ unDoc doc0) env0 mempty in
     optimizeChunks (cs <> bufferToChunks b)
   where
@@ -195,16 +194,28 @@ docToChunks doc0 =
         modify (NotTrimmable chunk :)
         go docs
 
-    go (Space : docs) = do
+    go (Softspace : docs) = do
+        hard <- softConversion Softspace docs
+        go (hard : docs)
+
+    go (Hardspace : docs) = do
         chunk <- makeChunk " "
         modify (NotTrimmable chunk :)
         go docs
 
-    go (Newline : docs) = do
+    go (Softline : docs) = do
+        hard <- softConversion Softline docs
+        go (hard : docs)
+
+    go (Hardline : docs) = do
         buffer <- get
         tell $ bufferToChunks buffer <> [NewlineChunk]
         indentation <- asks deIndent
         modify $ \_ -> if L.null docs then [] else indentation
+        go docs
+
+    go (WrapAt {..} : docs) = do
+        local (\env -> env {deWrap = wrapAtCol}) $ go (unDoc wrapDoc)
         go docs
 
     go (Ansi {..} : docs) = do
@@ -222,6 +233,40 @@ docToChunks doc0 =
     makeChunk str = do
         codes <- asks deCodes
         return $ StringChunk codes str
+
+    -- Convert 'Softspace' or 'Softline' to 'Hardspace' or 'Hardline'
+    softConversion :: DocE -> [DocE] -> DocM DocE
+    softConversion soft docs = do
+        mbWrapCol <- asks deWrap
+        case mbWrapCol of
+            Nothing     -> return hard
+            Just maxCol -> do
+                -- Slow.
+                currentLine <- gets (concatMap chunkToString . bufferToChunks)
+                let currentCol = length currentLine
+                case nextWordLength docs of
+                    Nothing                            -> return hard
+                    Just l
+                        | currentCol + 1 + l <= maxCol -> return Hardspace
+                        | otherwise                    -> return Hardline
+      where
+        hard = case soft of
+            Softspace -> Hardspace
+            Softline  -> Hardline
+            _         -> soft
+
+    nextWordLength :: [DocE] -> Maybe Int
+    nextWordLength []                 = Nothing
+    nextWordLength (String x : xs)
+        | L.null x                    = nextWordLength xs
+        | otherwise                   = Just (length x)
+    nextWordLength (Softspace : xs)   = nextWordLength xs
+    nextWordLength (Hardspace : xs)   = nextWordLength xs
+    nextWordLength (Softline : xs)    = nextWordLength xs
+    nextWordLength (Hardline : _)     = Nothing
+    nextWordLength (WrapAt {..} : xs) = nextWordLength (unDoc wrapDoc   ++ xs)
+    nextWordLength (Ansi   {..} : xs) = nextWordLength (unDoc ansiDoc   ++ xs)
+    nextWordLength (Indent {..} : xs) = nextWordLength (unDoc indentDoc ++ xs)
 
 
 --------------------------------------------------------------------------------
@@ -263,13 +308,28 @@ string = mkDoc . String  -- TODO (jaspervdj): Newline conversion
 
 
 --------------------------------------------------------------------------------
-space :: Doc
-space = mkDoc Space
+text :: T.Text -> Doc
+text = string . T.unpack
 
 
 --------------------------------------------------------------------------------
-newline :: Doc
-newline = mkDoc Newline
+space :: Doc
+space = mkDoc Softspace
+
+
+--------------------------------------------------------------------------------
+softline :: Doc
+softline = mkDoc Softline
+
+
+--------------------------------------------------------------------------------
+hardline :: Doc
+hardline = mkDoc Hardline
+
+
+--------------------------------------------------------------------------------
+wrapAt :: Maybe Int -> Doc -> Doc
+wrapAt wrapAtCol wrapDoc = mkDoc WrapAt {..}
 
 
 --------------------------------------------------------------------------------
@@ -282,6 +342,11 @@ indent firstLineDoc otherLinesDoc doc = mkDoc $ Indent
 
 
 --------------------------------------------------------------------------------
+ansi :: [Ansi.SGR] -> Doc -> Doc
+ansi codes =  mkDoc . Ansi (codes ++)
+
+
+--------------------------------------------------------------------------------
 (<+>) :: Doc -> Doc -> Doc
 x <+> y = x <> space <> y
 infixr 6 <+>
@@ -289,60 +354,13 @@ infixr 6 <+>
 
 --------------------------------------------------------------------------------
 (<$$>) :: Doc -> Doc -> Doc
-x <$$> y = x <> newline <> y
+x <$$> y = x <> hardline <> y
 infixr 5 <$$>
 
 
 --------------------------------------------------------------------------------
 vcat :: [Doc] -> Doc
-vcat = mconcat . L.intersperse newline
-
-
---------------------------------------------------------------------------------
-bold :: Doc -> Doc
-bold = mkDoc . Ansi
-    (\codes -> Ansi.SetConsoleIntensity Ansi.BoldIntensity : codes)
-
-
---------------------------------------------------------------------------------
-underline :: Doc -> Doc
-underline = mkDoc . Ansi
-    (\codes -> Ansi.SetUnderlining Ansi.SingleUnderline : codes)
-
-
---------------------------------------------------------------------------------
-dullcolor :: Ansi.Color -> Doc -> Doc
-dullcolor c = mkDoc . Ansi
-    (\codes -> Ansi.SetColor Ansi.Foreground Ansi.Dull c : codes)
-
-
---------------------------------------------------------------------------------
-dullblack, dullred, dullgreen, dullyellow, dullblue, dullmagenta, dullcyan,
-    dullwhite :: Doc -> Doc
-dullblack   = dullcolor Ansi.Black
-dullred     = dullcolor Ansi.Red
-dullgreen   = dullcolor Ansi.Green
-dullyellow  = dullcolor Ansi.Yellow
-dullblue    = dullcolor Ansi.Blue
-dullmagenta = dullcolor Ansi.Magenta
-dullcyan    = dullcolor Ansi.Cyan
-dullwhite   = dullcolor Ansi.White
-
-
---------------------------------------------------------------------------------
-ondullcolor :: Ansi.Color -> Doc -> Doc
-ondullcolor c = mkDoc . Ansi
-    (\codes -> Ansi.SetColor Ansi.Background Ansi.Dull c : codes)
-
-
---------------------------------------------------------------------------------
-ondullblack :: Doc -> Doc
-ondullblack = ondullcolor Ansi.Black
-
-
---------------------------------------------------------------------------------
-ondullred :: Doc -> Doc
-ondullred = ondullcolor Ansi.Red
+vcat = mconcat . L.intersperse hardline
 
 
 --------------------------------------------------------------------------------

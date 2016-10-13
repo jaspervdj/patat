@@ -1,4 +1,5 @@
 -- | Read a presentation from disk.
+{-# LANGUAGE BangPatterns    #-}
 {-# LANGUAGE RecordWildCards #-}
 module Patat.Presentation.Read
     ( readPresentation
@@ -6,27 +7,38 @@ module Patat.Presentation.Read
 
 
 --------------------------------------------------------------------------------
+import           Control.Monad.Except        (ExceptT (..), runExceptT,
+                                              throwError)
+import           Control.Monad.Trans         (liftIO)
+import qualified Data.Aeson                  as A
+import qualified Data.ByteString             as B
+import           Data.Monoid                 (mempty, (<>))
 import qualified Data.Set                    as Set
+import qualified Data.Yaml                   as Yaml
 import           Patat.Presentation.Internal
-import           System.FilePath             (takeExtension)
-import qualified Text.Pandoc                 as Pandoc
+import           System.Directory            (doesFileExist, getHomeDirectory)
+import           System.FilePath             (takeExtension, (</>))
 import qualified Text.Pandoc.Error           as Pandoc
+import qualified Text.Pandoc.Extended        as Pandoc
+import           Prelude
 
 
 --------------------------------------------------------------------------------
 readPresentation :: FilePath -> IO (Either String Presentation)
-readPresentation filePath = do
-    src <- readFile filePath
-    return $ do
-        reader <- case readExtension ext of
-            Nothing -> Left $ "Unknown extension: " ++ ext
-            Just r  -> Right r
+readPresentation filePath = runExceptT $ do
+    src    <- liftIO $ readFile filePath
+    reader <- case readExtension ext of
+        Nothing -> throwError $ "Unknown file extension: " ++ show ext
+        Just x  -> return x
+    doc@(Pandoc.Pandoc meta _) <- case reader src of
+        Left  e -> throwError $ "Could not parse document: " ++ show e
+        Right x -> return x
 
-        doc <- case reader src of
-            Left err -> Left $ "Pandoc parsing error: " ++ show err
-            Right x  -> Right x
+    homeSettings <- ExceptT readHomeSettings
+    metaSettings <- ExceptT $ return $ readMetaSettings meta
+    let settings = metaSettings <> homeSettings <> defaultPresentationSettings
 
-        pandocToPresentation filePath doc
+    ExceptT $ return $ pandocToPresentation filePath settings doc
   where
     ext = takeExtension filePath
 
@@ -50,13 +62,41 @@ readExtension fileExt = case fileExt of
 
 --------------------------------------------------------------------------------
 pandocToPresentation
-    :: FilePath -> Pandoc.Pandoc -> Either String Presentation
-pandocToPresentation pFilePath pandoc@(Pandoc.Pandoc meta _) = do
-    let pTitle       = Pandoc.docTitle meta
-        pSlides      = pandocToSlides pandoc
-        pActiveSlide = 0
-        pAuthor      = concat (Pandoc.docAuthors meta)
+    :: FilePath -> PresentationSettings -> Pandoc.Pandoc
+    -> Either String Presentation
+pandocToPresentation pFilePath pSettings pandoc@(Pandoc.Pandoc meta _) = do
+    let !pTitle       = Pandoc.docTitle meta
+        !pSlides      = pandocToSlides pandoc
+        !pActiveSlide = 0
+        !pAuthor      = concat (Pandoc.docAuthors meta)
     return Presentation {..}
+
+
+--------------------------------------------------------------------------------
+-- | Read settings from the metadata block in the Pandoc document.
+readMetaSettings :: Pandoc.Meta -> Either String PresentationSettings
+readMetaSettings meta = case Pandoc.lookupMeta "patat" meta of
+    Nothing  -> return mempty
+    Just val -> resultToEither $! A.fromJSON $! Pandoc.metaToJson val
+  where
+    resultToEither :: A.Result a -> Either String a
+    resultToEither (A.Success x) = Right x
+    resultToEither (A.Error   e) = Left $!
+        "Error parsing patat settings from metadata: " ++ e
+
+
+--------------------------------------------------------------------------------
+-- | Read settings from "$HOME/.patat.yaml".
+readHomeSettings :: IO (Either String PresentationSettings)
+readHomeSettings = do
+    home <- getHomeDirectory
+    let path = home </> ".patat.yaml"
+    exists <- doesFileExist path
+    if not exists
+        then return (Right mempty)
+        else do
+            contents <- B.readFile path
+            return $! Yaml.decodeEither contents
 
 
 --------------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 [mInline markups:[0m
 
 [35m  - [0m[m~~[0m[41mstriked out[0m[m~~[0m
-[35m  - [0m[m<[0m[36;4mhttp://example.com[0m[m>[0m
+[35m  - [0m[m<[0m[4;36mhttp://example.com[0m[m>[0m
 
 [m----------[0m
 [32m> [0m[mSome quote[0m

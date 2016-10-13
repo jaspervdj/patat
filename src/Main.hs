@@ -96,7 +96,7 @@ assertAnsiFeatures = do
 --------------------------------------------------------------------------------
 main :: IO ()
 main = do
-    options   <- OA.execParser parserInfo
+    options   <- OA.customExecParser (OA.prefs OA.showHelpOnError) parserInfo
     errOrPres <- readPresentation (oFilePath options)
     pres      <- either (errorAndExit . return) return errOrPres
 

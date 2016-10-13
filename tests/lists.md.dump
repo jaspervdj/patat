@@ -1,0 +1,15 @@
+[35m  - [0m[mThis is a nested list.[0m
+
+[m    [0m[35m  * [0m[mThe nested items should have different list markers.[0m
+
+[m    [0m[35m  * [0m[mI mean, they can be the same, but it doesn't look nice.[0m
+
+[m        printf("Nested code block!\n")[0m
+
+[m    [0m[35m  * [0m[mCool right?[0m
+
+[m        Definitely super cool[0m
+
+
+[35m  - [0m[mOne final item[0m
+

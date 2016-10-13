@@ -20,8 +20,12 @@ Table of Contents
 -----------------
 
 -   [Installation](#installation)
+    -   [Using stack](#using-stack)
+    -   [Using cabal](#using-cabal)
 -   [Running](#running)
 -   [Input format](#input-format)
+-   [Configuration](#configuration)
+    -   [Theming](#theming)
 -   [Trivia](#trivia)
 
 Installation
@@ -126,6 +130,116 @@ This means the following document is equivalent:
     - Markdown
     - Haskell
     - Pandoc
+
+Configuration
+-------------
+
+`patat` is fairly configurable.  The configuration is done using [YAML].  There
+are two places where you can put your configuration:
+
+1. In the presentation file itself, using the [Pandoc metadata header].
+2. In `$HOME/.patat.yaml`
+
+[YAML]: http://yaml.org/
+[Pandoc metadata header]: http://pandoc.org/MANUAL.html#extension-yaml_metadata_block
+
+For example, we can turn on line wrapping by using the following file:
+
+    ---
+    title: Presentation with wrapping
+    author: John Doe
+    patat:
+        wrap: true
+    ...
+
+    This is a split
+    line which should
+    be re-wrapped.
+
+Or we can use a normal presentation and have the following `$HOME/.patat.yaml`:
+
+    wrap: true
+
+### Theming
+
+Colors and other properties can also be changed using this configuration.  For
+example, we can have:
+
+    ---
+    author: 'Jasper Van der Jeugt'
+    title: 'This is a test'
+    patat:
+        wrap: true
+        theme:
+            emph: [vividBlue, onVividBlack, bold]
+            imageTarget: [onDullWhite, vividRed]
+    ...
+
+    # This is a presentation
+
+    This is _emph_ text.
+
+    ![Hello](foo.png)
+
+The properties that can be given a list of styles are:
+
+- `borders`
+- `header`
+- `codeBlock`
+- `bulletList`
+- `orderedList`
+- `blockQuote`
+- `definitionTerm`
+- `definitionList`
+- `tableHeader`
+- `tableSeparator`
+- `emph`
+- `strong`
+- `code`
+- `linkText`
+- `linkTarget`
+- `strikeout`
+- `quoted`
+- `math`
+- `imageText`
+- `imageTarget`
+
+The accepted styles are:
+
+- `bold`
+- `dullBlack`
+- `dullBlue`
+- `dullCyan`
+- `dullGreen`
+- `dullMagenta`
+- `dullRed`
+- `dullWhite`
+- `dullYellow`
+- `onDullBlack`
+- `onDullBlue`
+- `onDullCyan`
+- `onDullGreen`
+- `onDullMagenta`
+- `onDullRed`
+- `onDullWhite`
+- `onDullYellow`
+- `onVividBlack`
+- `onVividBlue`
+- `onVividCyan`
+- `onVividGreen`
+- `onVividMagenta`
+- `onVividRed`
+- `onVividWhite`
+- `onVividYellow`
+- `underline`
+- `vividBlack`
+- `vividBlue`
+- `vividCyan`
+- `vividGreen`
+- `vividMagenta`
+- `vividRed`
+- `vividWhite`
+- `vividYellow`
 
 Trivia
 ------
