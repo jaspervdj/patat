@@ -10,6 +10,8 @@ module Patat.Presentation.Internal
 
 
 --------------------------------------------------------------------------------
+import           Control.Monad          (mplus)
+import qualified Data.Aeson.Extended    as A
 import qualified Data.Aeson.TH.Extended as A
 import           Data.Monoid            (Monoid (..))
 import qualified Patat.Theme            as Theme
@@ -32,22 +34,28 @@ data Presentation = Presentation
 -- | These are patat-specific settings.  That is where they differ from more
 -- general metadata (author, title...)
 data PresentationSettings = PresentationSettings
-    { psTheme :: !(Maybe Theme.Theme)
+    { psRows    :: !(Maybe (A.FlexibleNum Int))
+    , psColumns :: !(Maybe (A.FlexibleNum Int))
+    , psTheme   :: !(Maybe Theme.Theme)
     } deriving (Show)
 
 
 --------------------------------------------------------------------------------
 instance Monoid PresentationSettings where
-    mempty      = PresentationSettings Nothing
+    mempty      = PresentationSettings Nothing Nothing Nothing
     mappend l r = PresentationSettings
-        { psTheme = psTheme l `mappend` psTheme r
+        { psRows    = psRows l    `mplus`   psRows r
+        , psColumns = psColumns l `mplus`   psColumns r
+        , psTheme   = psTheme l   `mappend` psTheme r
         }
 
 
 --------------------------------------------------------------------------------
 defaultPresentationSettings :: PresentationSettings
 defaultPresentationSettings = PresentationSettings
-    { psTheme = Just Theme.defaultTheme
+    { psRows    = Nothing
+    , psColumns = Nothing
+    , psTheme   = Just Theme.defaultTheme
     }
 
 

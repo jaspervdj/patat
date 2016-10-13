@@ -10,6 +10,8 @@ module Patat.Presentation.Display
 
 --------------------------------------------------------------------------------
 import           Control.Applicative              ((<$>))
+import           Control.Monad                    (mplus)
+import qualified Data.Aeson.Extended              as A
 import           Data.Data.Extended               (grecQ)
 import           Data.List                        (intersperse)
 import           Data.Maybe                       (fromMaybe)
@@ -34,12 +36,17 @@ displayPresentation Presentation {..} = do
 
     -- Get terminal width/title
     mbWindow <- Terminal.size
+    let columns = fromMaybe 72 $
+            (A.unFlexibleNum <$> psColumns pSettings) `mplus`
+            (Terminal.width  <$> mbWindow)
+        rows    = fromMaybe 24 $
+            (A.unFlexibleNum <$> psRows pSettings) `mplus`
+            (Terminal.height <$> mbWindow)
+
     let theme       = fromMaybe Theme.defaultTheme (psTheme pSettings)
-        termWidth   = maybe 72 Terminal.width  mbWindow
-        termHeight  = maybe 24 Terminal.height mbWindow
         title       = PP.toString (prettyInlines theme pTitle)
         titleWidth  = length title
-        titleOffset = (termWidth - titleWidth) `div` 2
+        titleOffset = (columns - titleWidth) `div` 2
         borders     = themed (themeBorders theme)
 
     Ansi.setCursorColumn titleOffset
@@ -57,9 +64,9 @@ displayPresentation Presentation {..} = do
     let active      = show (pActiveSlide + 1) ++ " / " ++ show (length pSlides)
         activeWidth = length active
 
-    Ansi.setCursorPosition (termHeight - 2) 0
+    Ansi.setCursorPosition (rows - 2) 0
     PP.putDoc $ " " <> borders (prettyInlines theme pAuthor)
-    Ansi.setCursorColumn (termWidth - activeWidth - 1)
+    Ansi.setCursorColumn (columns - activeWidth - 1)
     PP.putDoc $ borders $ PP.string active
     putStrLn ""
 

@@ -41,6 +41,7 @@ Executable patat
     yaml                 >= 0.7  && < 0.9
 
   Other-modules:
+    Data.Aeson.Extended
     Data.Aeson.TH.Extended
     Data.Data.Extended
     Patat.Presentation
