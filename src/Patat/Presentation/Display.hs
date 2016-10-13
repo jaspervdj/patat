@@ -9,6 +9,7 @@ module Patat.Presentation.Display
 
 
 --------------------------------------------------------------------------------
+import           Control.Applicative              ((<$>))
 import           Data.Data.Extended               (grecQ)
 import           Data.List                        (intersperse)
 import           Data.Maybe                       (fromMaybe)
