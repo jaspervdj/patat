@@ -104,13 +104,24 @@ prettyBlock Theme {..} (Pandoc.CodeBlock _ txt) = PP.vcat
             extend l = " " ++ l ++ replicate (longest - length l) ' ' ++ " " in
         map extend $ [""] ++ ls ++ [""]
 
-prettyBlock theme@Theme {..} (Pandoc.BulletList bss) = PP.vcat
+prettyBlock theme (Pandoc.BulletList bss) = PP.vcat
     [ PP.indent
-        (PP.NotTrimmable $ themed themeBulletList "  - ")
+        (PP.NotTrimmable $ themed (themeBulletList theme) prefix)
         (PP.Trimmable "    ")
-        (prettyBlocks theme bs)
+        (prettyBlocks theme' bs)
     | bs <- bss
     ] <> PP.newline
+  where
+    prefix = "  " <> PP.string [marker] <> " "
+    marker = case themeBulletListMarkers theme of
+        Just (x : _) -> x
+        _            -> '-'
+
+    -- Cycle the markers.
+    theme' = theme
+        { themeBulletListMarkers =
+            (\ls -> drop 1 ls ++ take 1 ls) <$> themeBulletListMarkers theme
+        }
 
 prettyBlock theme@Theme {..} (Pandoc.OrderedList _ bss) = PP.vcat
     [ PP.indent

@@ -15,6 +15,7 @@ module Patat.PrettyPrint
     , putDoc
 
     , string
+    , text
     , space
     , newline
 
@@ -43,6 +44,7 @@ import           Data.Foldable        (Foldable)
 import qualified Data.List            as L
 import           Data.Monoid          (Monoid, mconcat, mempty, (<>))
 import           Data.String          (IsString (..))
+import qualified Data.Text            as T
 import           Data.Traversable     (Traversable, traverse)
 import qualified System.Console.ANSI  as Ansi
 import qualified System.IO            as IO
@@ -247,6 +249,11 @@ mkDoc e = Doc [e]
 --------------------------------------------------------------------------------
 string :: String -> Doc
 string = mkDoc . String  -- TODO (jaspervdj): Newline conversion
+
+
+--------------------------------------------------------------------------------
+text :: T.Text -> Doc
+text = string . T.unpack
 
 
 --------------------------------------------------------------------------------

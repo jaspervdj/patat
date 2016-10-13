@@ -17,32 +17,33 @@ import           Data.List              (intercalate)
 import qualified Data.Map               as M
 import           Data.Maybe             (mapMaybe, maybeToList)
 import           Data.Monoid            (Monoid (..), (<>))
-import           Prelude
 import qualified System.Console.ANSI    as Ansi
+import           Prelude
 
 
 --------------------------------------------------------------------------------
 data Theme = Theme
-    { themeBorders        :: !(Maybe Style)
-    , themeHeader         :: !(Maybe Style)
-    , themeCodeBlock      :: !(Maybe Style)
-    , themeBulletList     :: !(Maybe Style)
-    , themeOrderedList    :: !(Maybe Style)
-    , themeBlockQuote     :: !(Maybe Style)
-    , themeDefinitionTerm :: !(Maybe Style)
-    , themeDefinitionList :: !(Maybe Style)
-    , themeTableHeader    :: !(Maybe Style)
-    , themeTableSeparator :: !(Maybe Style)
-    , themeEmph           :: !(Maybe Style)
-    , themeStrong         :: !(Maybe Style)
-    , themeCode           :: !(Maybe Style)
-    , themeLinkText       :: !(Maybe Style)
-    , themeLinkTarget     :: !(Maybe Style)
-    , themeStrikeout      :: !(Maybe Style)
-    , themeQuoted         :: !(Maybe Style)
-    , themeMath           :: !(Maybe Style)
-    , themeImageText      :: !(Maybe Style)
-    , themeImageTarget    :: !(Maybe Style)
+    { themeBorders           :: !(Maybe Style)
+    , themeHeader            :: !(Maybe Style)
+    , themeCodeBlock         :: !(Maybe Style)
+    , themeBulletList        :: !(Maybe Style)
+    , themeBulletListMarkers :: !(Maybe String)
+    , themeOrderedList       :: !(Maybe Style)
+    , themeBlockQuote        :: !(Maybe Style)
+    , themeDefinitionTerm    :: !(Maybe Style)
+    , themeDefinitionList    :: !(Maybe Style)
+    , themeTableHeader       :: !(Maybe Style)
+    , themeTableSeparator    :: !(Maybe Style)
+    , themeEmph              :: !(Maybe Style)
+    , themeStrong            :: !(Maybe Style)
+    , themeCode              :: !(Maybe Style)
+    , themeLinkText          :: !(Maybe Style)
+    , themeLinkTarget        :: !(Maybe Style)
+    , themeStrikeout         :: !(Maybe Style)
+    , themeQuoted            :: !(Maybe Style)
+    , themeMath              :: !(Maybe Style)
+    , themeImageText         :: !(Maybe Style)
+    , themeImageTarget       :: !(Maybe Style)
     } deriving (Show)
 
 
@@ -51,29 +52,30 @@ instance Monoid Theme where
     mempty = Theme
         Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
         Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-        Nothing Nothing
+        Nothing Nothing Nothing
 
     mappend l r = Theme
-        { themeBorders        = mplusOn themeBorders
-        , themeHeader         = mplusOn themeHeader
-        , themeCodeBlock      = mplusOn themeCodeBlock
-        , themeBulletList     = mplusOn themeBulletList
-        , themeOrderedList    = mplusOn themeOrderedList
-        , themeBlockQuote     = mplusOn themeBlockQuote
-        , themeDefinitionTerm = mplusOn themeDefinitionTerm
-        , themeDefinitionList = mplusOn themeDefinitionList
-        , themeTableHeader    = mplusOn themeTableHeader
-        , themeTableSeparator = mplusOn themeTableSeparator
-        , themeEmph           = mplusOn themeEmph
-        , themeStrong         = mplusOn themeStrong
-        , themeCode           = mplusOn themeCode
-        , themeLinkText       = mplusOn themeLinkText
-        , themeLinkTarget     = mplusOn themeLinkTarget
-        , themeStrikeout      = mplusOn themeStrikeout
-        , themeQuoted         = mplusOn themeQuoted
-        , themeMath           = mplusOn themeMath
-        , themeImageText      = mplusOn themeImageText
-        , themeImageTarget    = mplusOn themeImageTarget
+        { themeBorders           = mplusOn themeBorders
+        , themeHeader            = mplusOn themeHeader
+        , themeCodeBlock         = mplusOn themeCodeBlock
+        , themeBulletList        = mplusOn themeBulletList
+        , themeBulletListMarkers = mplusOn themeBulletListMarkers
+        , themeOrderedList       = mplusOn themeOrderedList
+        , themeBlockQuote        = mplusOn themeBlockQuote
+        , themeDefinitionTerm    = mplusOn themeDefinitionTerm
+        , themeDefinitionList    = mplusOn themeDefinitionList
+        , themeTableHeader       = mplusOn themeTableHeader
+        , themeTableSeparator    = mplusOn themeTableSeparator
+        , themeEmph              = mplusOn themeEmph
+        , themeStrong            = mplusOn themeStrong
+        , themeCode              = mplusOn themeCode
+        , themeLinkText          = mplusOn themeLinkText
+        , themeLinkTarget        = mplusOn themeLinkTarget
+        , themeStrikeout         = mplusOn themeStrikeout
+        , themeQuoted            = mplusOn themeQuoted
+        , themeMath              = mplusOn themeMath
+        , themeImageText         = mplusOn themeImageText
+        , themeImageTarget       = mplusOn themeImageTarget
         }
       where
         mplusOn f = f l `mplus` f r
@@ -82,26 +84,27 @@ instance Monoid Theme where
 --------------------------------------------------------------------------------
 defaultTheme :: Theme
 defaultTheme = Theme
-    { themeBorders        = dull Ansi.Yellow
-    , themeHeader         = dull Ansi.Blue
-    , themeCodeBlock      = dull Ansi.White <> ondull Ansi.Black
-    , themeBulletList     = dull Ansi.Magenta
-    , themeOrderedList    = dull Ansi.Magenta
-    , themeBlockQuote     = dull Ansi.Green
-    , themeDefinitionTerm = dull Ansi.Blue
-    , themeDefinitionList = dull Ansi.Magenta
-    , themeTableHeader    = dull Ansi.Blue
-    , themeTableSeparator = dull Ansi.Magenta
-    , themeEmph           = dull Ansi.Green
-    , themeStrong         = dull Ansi.Red <> bold
-    , themeCode           = dull Ansi.White <> ondull Ansi.Black
-    , themeLinkText       = dull Ansi.Green
-    , themeLinkTarget     = dull Ansi.Cyan <> underline
-    , themeStrikeout      = ondull Ansi.Red
-    , themeQuoted         = dull Ansi.Green
-    , themeMath           = dull Ansi.Green
-    , themeImageText      = dull Ansi.Green
-    , themeImageTarget    = dull Ansi.Cyan <> underline
+    { themeBorders           = dull Ansi.Yellow
+    , themeHeader            = dull Ansi.Blue
+    , themeCodeBlock         = dull Ansi.White <> ondull Ansi.Black
+    , themeBulletList        = dull Ansi.Magenta
+    , themeBulletListMarkers = Just ['-', '*']
+    , themeOrderedList       = dull Ansi.Magenta
+    , themeBlockQuote        = dull Ansi.Green
+    , themeDefinitionTerm    = dull Ansi.Blue
+    , themeDefinitionList    = dull Ansi.Magenta
+    , themeTableHeader       = dull Ansi.Blue
+    , themeTableSeparator    = dull Ansi.Magenta
+    , themeEmph              = dull Ansi.Green
+    , themeStrong            = dull Ansi.Red <> bold
+    , themeCode              = dull Ansi.White <> ondull Ansi.Black
+    , themeLinkText          = dull Ansi.Green
+    , themeLinkTarget        = dull Ansi.Cyan <> underline
+    , themeStrikeout         = ondull Ansi.Red
+    , themeQuoted            = dull Ansi.Green
+    , themeMath              = dull Ansi.Green
+    , themeImageText         = dull Ansi.Green
+    , themeImageTarget       = dull Ansi.Cyan <> underline
     }
   where
     dull   c  = Just $ Style [Ansi.SetColor Ansi.Foreground Ansi.Dull c]
