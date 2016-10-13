@@ -1,5 +1,6 @@
 --------------------------------------------------------------------------------
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE TemplateHaskell            #-}
 module Patat.Theme
     ( Theme (..)
@@ -17,6 +18,7 @@ import           Data.List              (intercalate)
 import qualified Data.Map               as M
 import           Data.Maybe             (mapMaybe, maybeToList)
 import           Data.Monoid            (Monoid (..), (<>))
+import qualified Data.Text              as T
 import qualified System.Console.ANSI    as Ansi
 import           Prelude
 
@@ -27,7 +29,7 @@ data Theme = Theme
     , themeHeader            :: !(Maybe Style)
     , themeCodeBlock         :: !(Maybe Style)
     , themeBulletList        :: !(Maybe Style)
-    , themeBulletListMarkers :: !(Maybe String)
+    , themeBulletListMarkers :: !(Maybe T.Text)
     , themeOrderedList       :: !(Maybe Style)
     , themeBlockQuote        :: !(Maybe Style)
     , themeDefinitionTerm    :: !(Maybe Style)
@@ -88,7 +90,7 @@ defaultTheme = Theme
     , themeHeader            = dull Ansi.Blue
     , themeCodeBlock         = dull Ansi.White <> ondull Ansi.Black
     , themeBulletList        = dull Ansi.Magenta
-    , themeBulletListMarkers = Just ['-', '*']
+    , themeBulletListMarkers = Just "-*"
     , themeOrderedList       = dull Ansi.Magenta
     , themeBlockQuote        = dull Ansi.Green
     , themeDefinitionTerm    = dull Ansi.Blue

@@ -16,6 +16,7 @@ import           Data.Data.Extended               (grecQ)
 import           Data.List                        (intersperse)
 import           Data.Maybe                       (fromMaybe)
 import           Data.Monoid                      (mconcat, mempty, (<>))
+import qualified Data.Text                        as T
 import           Patat.Presentation.Display.Table
 import           Patat.Presentation.Internal
 import           Patat.PrettyPrint                ((<$$>), (<+>))
@@ -130,14 +131,14 @@ prettyBlock theme (Pandoc.BulletList bss) = PP.vcat
     ] <> PP.hardline
   where
     prefix = "  " <> PP.string [marker] <> " "
-    marker = case themeBulletListMarkers theme of
+    marker = case T.unpack <$> themeBulletListMarkers theme of
         Just (x : _) -> x
         _            -> '-'
 
     -- Cycle the markers.
     theme' = theme
         { themeBulletListMarkers =
-            (\ls -> drop 1 ls ++ take 1 ls) <$> themeBulletListMarkers theme
+            (\ls -> T.drop 1 ls <> T.take 1 ls) <$> themeBulletListMarkers theme
         }
 
 prettyBlock theme@Theme {..} (Pandoc.OrderedList _ bss) = PP.vcat

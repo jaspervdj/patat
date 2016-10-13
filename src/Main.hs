@@ -15,12 +15,12 @@ import           Data.Version                 (showVersion)
 import qualified Options.Applicative          as OA
 import           Patat.Presentation
 import qualified Paths_patat
-import           Prelude
 import qualified System.Console.ANSI          as Ansi
 import           System.Directory             (getModificationTime)
 import           System.Exit                  (exitFailure)
 import qualified System.IO                    as IO
 import qualified Text.PrettyPrint.ANSI.Leijen as PP
+import           Prelude
 
 
 --------------------------------------------------------------------------------
@@ -96,7 +96,7 @@ assertAnsiFeatures = do
 --------------------------------------------------------------------------------
 main :: IO ()
 main = do
-    options   <- OA.execParser parserInfo
+    options   <- OA.customExecParser (OA.prefs OA.showHelpOnError) parserInfo
     errOrPres <- readPresentation (oFilePath options)
     pres      <- either (errorAndExit . return) return errOrPres
 
