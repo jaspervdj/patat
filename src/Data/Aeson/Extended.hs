@@ -5,9 +5,11 @@ module Data.Aeson.Extended
     , FlexibleNum (..)
     ) where
 
+import           Control.Applicative ((<$>))
 import           Data.Aeson
-import qualified Data.Text  as T
-import           Text.Read  (readMaybe)
+import qualified Data.Text           as T
+import           Text.Read           (readMaybe)
+import           Prelude
 
 -- | This can be parsed from a JSON string in addition to a JSON number.
 newtype FlexibleNum a = FlexibleNum {unFlexibleNum :: a}
