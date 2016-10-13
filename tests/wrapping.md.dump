@@ -1,0 +1,11 @@
+[mThis is a long sentence over multiple[0m
+[mlines which can be re-wrapped.[0m
+
+[mThis is a super long sentence over a[0m
+[msingle line which should also be[0m
+[mre-wrapped.[0m
+
+[m  This is  a table  and tables  should not  be wrapped[0m
+[m  [0m[35m-------[0m[m  [0m[35m-------[0m[m  [0m[35m----------[0m[m  [0m[35m----------[0m[m  [0m[35m----------[0m
+[m  1        2        3           4           5         [0m
+[m  6        7        8           9           10        [0m

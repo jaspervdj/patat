@@ -47,9 +47,9 @@ prettyTable theme@Theme {..} Table {..} =
             ] <$$>
         lineIf isHeaderLess (dashedHeaderSeparator theme columnWidths) <>
         lineIf
-            (not $ PP.null tCaption) (PP.newline <> "Table: " <> tCaption)
+            (not $ PP.null tCaption) (PP.hardline <> "Table: " <> tCaption)
   where
-    lineIf cond line = if cond then line <> PP.newline else mempty
+    lineIf cond line = if cond then line <> PP.hardline else mempty
 
     joinRows
         | all (all isSimpleCell) tRows = PP.vcat
@@ -72,7 +72,7 @@ prettyTable theme@Theme {..} Table {..} =
     vpad :: Int -> PP.Doc -> PP.Doc
     vpad height doc =
         let (actual, _) = PP.dimensions doc in
-        doc <> mconcat (replicate (height - actual) PP.newline)
+        doc <> mconcat (replicate (height - actual) PP.hardline)
 
     safeMax = foldr max 0
 
@@ -81,7 +81,7 @@ prettyTable theme@Theme {..} Table {..} =
 
     spaces2 :: Int -> PP.Doc
     spaces2 rowHeight =
-        mconcat $ intersperse PP.newline $
+        mconcat $ intersperse PP.hardline $
         replicate rowHeight (PP.string "  ")
 
 

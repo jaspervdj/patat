@@ -17,7 +17,10 @@ module Patat.PrettyPrint
     , string
     , text
     , space
-    , newline
+    , softline
+    , hardline
+
+    , wrapAt
 
     , Trimmable (..)
     , indent
@@ -38,7 +41,7 @@ module Patat.PrettyPrint
 --------------------------------------------------------------------------------
 import           Control.Monad.Reader (asks, local)
 import           Control.Monad.RWS    (RWS, runRWS)
-import           Control.Monad.State  (get, modify)
+import           Control.Monad.State  (get, gets, modify)
 import           Control.Monad.Writer (tell)
 import           Data.Foldable        (Foldable)
 import qualified Data.List            as L
@@ -100,8 +103,14 @@ chunkLines chunks = case break (== NewlineChunk) chunks of
 --------------------------------------------------------------------------------
 data DocE
     = String String
-    | Space
-    | Newline
+    | Softspace
+    | Hardspace
+    | Softline
+    | Hardline
+    | WrapAt
+        { wrapAtCol :: Maybe Int
+        , wrapDoc   :: Doc
+        }
     | Ansi
         { ansiCode :: [Ansi.SGR] -> [Ansi.SGR]  -- ^ Modifies current codes.
         , ansiDoc  :: Doc
@@ -115,7 +124,7 @@ data DocE
 
 --------------------------------------------------------------------------------
 chunkToDocE :: Chunk -> DocE
-chunkToDocE NewlineChunk            = Newline
+chunkToDocE NewlineChunk            = Hardline
 chunkToDocE (StringChunk codes str) = Ansi (\_ -> codes) (Doc [String str])
 
 
@@ -138,6 +147,7 @@ instance Show Doc where
 data DocEnv = DocEnv
     { deCodes  :: [Ansi.SGR]  -- ^ Most recent ones first in the list
     , deIndent :: LineBuffer  -- ^ Don't need to store first-line indent
+    , deWrap   :: Maybe Int   -- ^ Wrap at columns
     }
 
 
@@ -171,7 +181,7 @@ bufferToChunks = map trimmableToChunk . reverse . dropWhile isTrimmable
 --------------------------------------------------------------------------------
 docToChunks :: Doc -> Chunks
 docToChunks doc0 =
-    let env0        = DocEnv [] []
+    let env0        = DocEnv [] [] Nothing
         ((), b, cs) = runRWS (go $ unDoc doc0) env0 mempty in
     optimizeChunks (cs <> bufferToChunks b)
   where
@@ -184,16 +194,28 @@ docToChunks doc0 =
         modify (NotTrimmable chunk :)
         go docs
 
-    go (Space : docs) = do
+    go (Softspace : docs) = do
+        hard <- softConversion Softspace docs
+        go (hard : docs)
+
+    go (Hardspace : docs) = do
         chunk <- makeChunk " "
         modify (NotTrimmable chunk :)
         go docs
 
-    go (Newline : docs) = do
+    go (Softline : docs) = do
+        hard <- softConversion Softline docs
+        go (hard : docs)
+
+    go (Hardline : docs) = do
         buffer <- get
         tell $ bufferToChunks buffer <> [NewlineChunk]
         indentation <- asks deIndent
         modify $ \_ -> if L.null docs then [] else indentation
+        go docs
+
+    go (WrapAt {..} : docs) = do
+        local (\env -> env {deWrap = wrapAtCol}) $ go (unDoc wrapDoc)
         go docs
 
     go (Ansi {..} : docs) = do
@@ -211,6 +233,40 @@ docToChunks doc0 =
     makeChunk str = do
         codes <- asks deCodes
         return $ StringChunk codes str
+
+    -- Convert 'Softspace' or 'Softline' to 'Hardspace' or 'Hardline'
+    softConversion :: DocE -> [DocE] -> DocM DocE
+    softConversion soft docs = do
+        mbWrapCol <- asks deWrap
+        case mbWrapCol of
+            Nothing     -> return hard
+            Just maxCol -> do
+                -- Slow.
+                currentLine <- gets (concatMap chunkToString . bufferToChunks)
+                let currentCol = length currentLine
+                case nextWordLength docs of
+                    Nothing                            -> return hard
+                    Just l
+                        | currentCol + 1 + l <= maxCol -> return Hardspace
+                        | otherwise                    -> return Hardline
+      where
+        hard = case soft of
+            Softspace -> Hardspace
+            Softline  -> Hardline
+            _         -> soft
+
+    nextWordLength :: [DocE] -> Maybe Int
+    nextWordLength []                 = Nothing
+    nextWordLength (String x : xs)
+        | L.null x                    = nextWordLength xs
+        | otherwise                   = Just (length x)
+    nextWordLength (Softspace : xs)   = nextWordLength xs
+    nextWordLength (Hardspace : xs)   = nextWordLength xs
+    nextWordLength (Softline : xs)    = nextWordLength xs
+    nextWordLength (Hardline : _)     = Nothing
+    nextWordLength (WrapAt {..} : xs) = nextWordLength (unDoc wrapDoc   ++ xs)
+    nextWordLength (Ansi   {..} : xs) = nextWordLength (unDoc ansiDoc   ++ xs)
+    nextWordLength (Indent {..} : xs) = nextWordLength (unDoc indentDoc ++ xs)
 
 
 --------------------------------------------------------------------------------
@@ -258,12 +314,22 @@ text = string . T.unpack
 
 --------------------------------------------------------------------------------
 space :: Doc
-space = mkDoc Space
+space = mkDoc Softspace
 
 
 --------------------------------------------------------------------------------
-newline :: Doc
-newline = mkDoc Newline
+softline :: Doc
+softline = mkDoc Softline
+
+
+--------------------------------------------------------------------------------
+hardline :: Doc
+hardline = mkDoc Hardline
+
+
+--------------------------------------------------------------------------------
+wrapAt :: Maybe Int -> Doc -> Doc
+wrapAt wrapAtCol wrapDoc = mkDoc WrapAt {..}
 
 
 --------------------------------------------------------------------------------
@@ -288,13 +354,13 @@ infixr 6 <+>
 
 --------------------------------------------------------------------------------
 (<$$>) :: Doc -> Doc -> Doc
-x <$$> y = x <> newline <> y
+x <$$> y = x <> hardline <> y
 infixr 5 <$$>
 
 
 --------------------------------------------------------------------------------
 vcat :: [Doc] -> Doc
-vcat = mconcat . L.intersperse newline
+vcat = mconcat . L.intersperse hardline
 
 
 --------------------------------------------------------------------------------

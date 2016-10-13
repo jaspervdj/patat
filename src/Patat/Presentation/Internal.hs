@@ -36,17 +36,19 @@ data Presentation = Presentation
 data PresentationSettings = PresentationSettings
     { psRows    :: !(Maybe (A.FlexibleNum Int))
     , psColumns :: !(Maybe (A.FlexibleNum Int))
+    , psWrap    :: !(Maybe Bool)
     , psTheme   :: !(Maybe Theme.Theme)
     } deriving (Show)
 
 
 --------------------------------------------------------------------------------
 instance Monoid PresentationSettings where
-    mempty      = PresentationSettings Nothing Nothing Nothing
+    mempty      = PresentationSettings Nothing Nothing Nothing Nothing
     mappend l r = PresentationSettings
-        { psRows    = psRows l    `mplus`   psRows r
+        { psRows    = psRows    l `mplus`   psRows    r
         , psColumns = psColumns l `mplus`   psColumns r
-        , psTheme   = psTheme l   `mappend` psTheme r
+        , psWrap    = psWrap    l `mplus`   psWrap    r
+        , psTheme   = psTheme   l `mappend` psTheme   r
         }
 
 
@@ -55,6 +57,7 @@ defaultPresentationSettings :: PresentationSettings
 defaultPresentationSettings = PresentationSettings
     { psRows    = Nothing
     , psColumns = Nothing
+    , psWrap    = Nothing
     , psTheme   = Just Theme.defaultTheme
     }
 
