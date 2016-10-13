@@ -10,7 +10,7 @@ module Patat.Presentation.Display
 
 --------------------------------------------------------------------------------
 import           Control.Applicative              ((<$>))
-import           Control.Monad                    (mplus)
+import           Control.Monad                    (mplus, unless)
 import qualified Data.Aeson.Extended              as A
 import           Data.Data.Extended               (grecQ)
 import           Data.List                        (intersperse)
@@ -51,10 +51,11 @@ displayPresentation Presentation {..} = do
         titleOffset = (columns - titleWidth) `div` 2
         borders     = themed (themeBorders theme)
 
-    Ansi.setCursorColumn titleOffset
-    PP.putDoc $ borders $ PP.string title
-    putStrLn ""
-    putStrLn ""
+    unless (null title) $ do
+        Ansi.setCursorColumn titleOffset
+        PP.putDoc $ borders $ PP.string title
+        putStrLn ""
+        putStrLn ""
 
     let slide = case drop pActiveSlide pSlides of
             []      -> mempty

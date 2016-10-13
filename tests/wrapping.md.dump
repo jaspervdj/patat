@@ -9,3 +9,9 @@
 [m  [0m[35m-------[0m[m  [0m[35m-------[0m[m  [0m[35m----------[0m[m  [0m[35m----------[0m[m  [0m[35m----------[0m
 [m  1        2        3           4           5         [0m
 [m  6        7        8           9           10        [0m
+
+[35m  - [0m[mThis is a list[0m
+[35m  - [0m[mThis list has a really long sentence[0m
+[m    in it which should also be wrapped[0m
+[m    with proper indentation[0m
+[35m  - [0m[mAnother item[0m
