@@ -7,11 +7,18 @@ patat
 tool that allows you to show presentations using only an ANSI terminal.  It does
 not require `ncurses`.
 
-![screenshot](extra/screenshot.png?raw=true)
+Features:
 
-`patat` is written in [Haskell] and built upon the great [Pandoc] library.  This
-means it is theoretically not limited to Markdown, but can support every
-input format that Pandoc supports.
+- Leverages the great [Pandoc] library to support many input formats including
+  [Literate Haskell].
+- Supports [smart slide splitting](#input-format).
+- There is a [live reload](#running) mode.
+- [Theming](#theming) support.
+- Optionally [re-wrapping](#configuration) text to terminal width with proper
+  indentation.
+- Written in [Haskell].
+
+![screenshot](extra/screenshot.png?raw=true)
 
 [Haskell]: http://haskell.org/
 [Pandoc]: http://pandoc.org/
