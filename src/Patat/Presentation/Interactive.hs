@@ -83,18 +83,18 @@ updatePresentation cmd presentation = case cmd of
     SkipForward  -> return $ goToSlide (\x -> x + 10)
     SkipBackward -> return $ goToSlide (\x -> x - 10)
     First        -> return $ goToSlide (\_ -> 0)
-    Last         -> return $ goToSlide (\_ -> numSlides - 1)
+    Last         -> return $ goToSlide (\_ -> numSlides presentation - 1)
     Reload       -> reloadPresentation
   where
-    numSlides = length (pSlides presentation)
-    clip idx  = min (max 0 idx) (numSlides - 1)
+    numSlides pres = length (pSlides pres)
+    clip idx  pres = min (max 0 idx) (numSlides pres - 1)
 
     goToSlide f = UpdatedPresentation $
-        presentation {pActiveSlide = clip (f $ pActiveSlide presentation)}
+        presentation {pActiveSlide = clip (f $ pActiveSlide presentation) presentation}
 
     reloadPresentation = do
         errOrPres <- readPresentation (pFilePath presentation)
         return $ case errOrPres of
             Left  err  -> ErroredPresentation err
             Right pres -> UpdatedPresentation $
-                pres {pActiveSlide = clip (pActiveSlide presentation)}
+                pres {pActiveSlide = clip (pActiveSlide presentation) pres}
