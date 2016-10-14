@@ -44,6 +44,7 @@ Executable patat
     Data.Aeson.Extended
     Data.Aeson.TH.Extended
     Data.Data.Extended
+    Patat.GetKey
     Patat.Presentation
     Patat.Presentation.Display
     Patat.Presentation.Display.Table

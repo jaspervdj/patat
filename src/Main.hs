@@ -13,6 +13,7 @@ import           Control.Monad                (forever, unless, when)
 import           Data.Monoid                  ((<>))
 import           Data.Version                 (showVersion)
 import qualified Options.Applicative          as OA
+import qualified Patat.GetKey                 as GetKey
 import           Patat.Presentation
 import qualified Paths_patat
 import qualified System.Console.ANSI          as Ansi
@@ -108,7 +109,7 @@ main = do
 
   where
     interactiveLoop options pres0 = do
-        IO.hSetBuffering IO.stdin IO.NoBuffering
+        GetKey.initialize
         commandChan <- Chan.newChan
 
         _ <- forkIO $ forever $
