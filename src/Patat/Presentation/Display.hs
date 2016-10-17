@@ -9,23 +9,24 @@ module Patat.Presentation.Display
 
 
 --------------------------------------------------------------------------------
-import           Control.Applicative              ((<$>))
-import           Control.Monad                    (mplus, unless)
-import qualified Data.Aeson.Extended              as A
-import           Data.Data.Extended               (grecQ)
-import           Data.List                        (intersperse)
-import           Data.Maybe                       (fromMaybe)
-import           Data.Monoid                      (mconcat, mempty, (<>))
-import qualified Data.Text                        as T
+import           Control.Applicative                  ((<$>))
+import           Control.Monad                        (mplus, unless)
+import qualified Data.Aeson.Extended                  as A
+import           Data.Data.Extended                   (grecQ)
+import           Data.List                            (intersperse)
+import           Data.Maybe                           (fromMaybe)
+import           Data.Monoid                          (mconcat, mempty, (<>))
+import qualified Data.Text                            as T
+import           Patat.Presentation.Display.CodeBlock
 import           Patat.Presentation.Display.Table
 import           Patat.Presentation.Internal
-import           Patat.PrettyPrint                ((<$$>), (<+>))
-import qualified Patat.PrettyPrint                as PP
-import           Patat.Theme                      (Theme (..))
-import qualified Patat.Theme                      as Theme
-import qualified System.Console.ANSI              as Ansi
-import qualified System.Console.Terminal.Size     as Terminal
-import qualified Text.Pandoc.Extended             as Pandoc
+import           Patat.PrettyPrint                    ((<$$>), (<+>))
+import qualified Patat.PrettyPrint                    as PP
+import           Patat.Theme                          (Theme (..))
+import qualified Patat.Theme                          as Theme
+import qualified System.Console.ANSI                  as Ansi
+import qualified System.Console.Terminal.Size         as Terminal
+import qualified Text.Pandoc.Extended                 as Pandoc
 import           Prelude
 
 
@@ -111,17 +112,8 @@ prettyBlock theme@Theme {..} (Pandoc.Header i _ inlines) =
     themed themeHeader (PP.string (replicate i '#') <+> prettyInlines theme inlines) <>
     PP.hardline
 
-prettyBlock Theme {..} (Pandoc.CodeBlock _ txt) = PP.vcat
-    [ let ind = PP.NotTrimmable "   " in
-      PP.indent ind ind $ themed themeCodeBlock $ PP.string line
-    | line <- blockified txt
-    ] <> PP.hardline
-  where
-    blockified str =
-        let ls       = lines str
-            longest  = foldr max 0 (map length ls)
-            extend l = " " ++ l ++ replicate (longest - length l) ' ' ++ " " in
-        map extend $ [""] ++ ls ++ [""]
+prettyBlock theme (Pandoc.CodeBlock (_, classes, _) txt) =
+    prettyCodeBlock theme classes txt
 
 prettyBlock theme (Pandoc.BulletList bss) = PP.vcat
     [ PP.indent
