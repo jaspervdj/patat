@@ -1,5 +1,9 @@
 # Changelog
 
+- 0.3.0.0 (2016-10-17)
+    * Add syntax highlighting support.
+    * Fixed slide clipping after reload.
+
 - 0.2.0.0 (2016-10-13)
     * Add theming support.
     * Fix links display.
