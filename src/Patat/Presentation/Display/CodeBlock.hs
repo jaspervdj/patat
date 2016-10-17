@@ -10,12 +10,13 @@ module Patat.Presentation.Display.CodeBlock
 --------------------------------------------------------------------------------
 import           Data.Char                        (toLower)
 import           Data.List                        (find)
-import           Data.Monoid                      ((<>))
+import           Data.Monoid                      (mconcat, (<>))
 import qualified Data.Set                         as S
 import           Patat.Presentation.Display.Table (themed)
 import qualified Patat.PrettyPrint                as PP
 import           Patat.Theme
 import qualified Text.Highlighting.Kate           as Kate
+import           Prelude
 
 
 --------------------------------------------------------------------------------
