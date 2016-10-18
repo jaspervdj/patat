@@ -255,6 +255,7 @@ nameForTokenType =
     unCapitalize (x : xs) = toLower x : xs
     unCapitalize xs       = xs
 
+    dropTok :: String -> String
     dropTok str
         | "Tok" `isSuffixOf` str = take (length str - 3) str
         | otherwise              = str
