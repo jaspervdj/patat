@@ -1,5 +1,8 @@
 # Changelog
 
+- 0.3.1.0 (2016-10-18)
+    * Fix compilation with `lts-6.22`.
+
 - 0.3.0.0 (2016-10-17)
     * Add syntax highlighting support.
     * Fixed slide clipping after reload.
