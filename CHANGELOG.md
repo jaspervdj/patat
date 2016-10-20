@@ -1,5 +1,8 @@
 # Changelog
 
+- 0.3.2.0 (2016-10-20)
+    * Keep running even if errors are encountered during reload.
+
 - 0.3.1.0 (2016-10-18)
     * Fix compilation with `lts-6.22`.
 
