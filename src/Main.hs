@@ -11,12 +11,14 @@ import           Control.Concurrent           (forkIO, threadDelay)
 import qualified Control.Concurrent.Chan      as Chan
 import           Control.Monad                (forever, unless, when)
 import           Data.Monoid                  ((<>))
+import           Data.Time                    (UTCTime)
 import           Data.Version                 (showVersion)
 import qualified Options.Applicative          as OA
 import           Patat.Presentation
 import qualified Paths_patat
 import qualified System.Console.ANSI          as Ansi
-import           System.Directory             (getModificationTime)
+import           System.Directory             (doesFileExist,
+                                               getModificationTime)
 import           System.Exit                  (exitFailure)
 import qualified System.IO                    as IO
 import qualified Text.PrettyPrint.ANSI.Leijen as PP
@@ -105,8 +107,8 @@ main = do
     if oDump options
         then dumpPresentation pres
         else interactiveLoop options pres
-
   where
+    interactiveLoop :: Options -> Presentation -> IO ()
     interactiveLoop options pres0 = do
         IO.hSetBuffering IO.stdin IO.NoBuffering
         commandChan <- Chan.newChan
@@ -115,23 +117,34 @@ main = do
             readPresentationCommand >>= Chan.writeChan commandChan
 
         mtime0 <- getModificationTime (pFilePath pres0)
-        let watcher mtime = do
-                mtime' <- getModificationTime (pFilePath pres0)
-                when (mtime' > mtime) $ Chan.writeChan commandChan Reload
-                threadDelay (200 * 1000)
-                watcher mtime'
-
         when (oWatch options) $ do
-            _ <- forkIO $ watcher mtime0
+            _ <- forkIO $ watcher commandChan (pFilePath pres0) mtime0
             return ()
 
-        let loop pres = do
-                displayPresentation pres
+        let loop :: Presentation -> Maybe String -> IO ()
+            loop pres mbError = do
+                case mbError of
+                    Nothing  -> displayPresentation pres
+                    Just err -> displayPresentationError pres err
+
                 c      <- Chan.readChan commandChan
                 update <- updatePresentation c pres
                 case update of
                     ExitedPresentation        -> return ()
-                    UpdatedPresentation pres' -> loop pres'
-                    ErroredPresentation err   -> errorAndExit [err]
+                    UpdatedPresentation pres' -> loop pres' Nothing
+                    ErroredPresentation err   -> loop pres (Just err)
 
-        loop pres0
+        loop pres0 Nothing
+
+
+--------------------------------------------------------------------------------
+watcher :: Chan.Chan PresentationCommand -> FilePath -> UTCTime -> IO a
+watcher chan filePath mtime0 = do
+    -- The extra exists check helps because some editors temporarily make the
+    -- file dissapear while writing.
+    exists <- doesFileExist filePath
+    mtime1 <- if exists then getModificationTime filePath else return mtime0
+
+    when (mtime1 > mtime0) $ Chan.writeChan chan Reload
+    threadDelay (200 * 1000)
+    watcher chan filePath mtime1

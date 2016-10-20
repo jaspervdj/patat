@@ -4,6 +4,7 @@
 {-# LANGUAGE RecordWildCards            #-}
 module Patat.Presentation.Display
     ( displayPresentation
+    , displayPresentationError
     , dumpPresentation
     ) where
 
@@ -31,8 +32,10 @@ import           Prelude
 
 
 --------------------------------------------------------------------------------
-displayPresentation :: Presentation -> IO ()
-displayPresentation Presentation {..} = do
+-- | Display something within the presentation borders that draw the title and
+-- the active slide number and so on.
+displayWithBorders :: Presentation -> (Theme -> PP.Doc) -> IO ()
+displayWithBorders Presentation {..} f = do
     Ansi.clearScreen
     Ansi.setCursorPosition 0 0
 
@@ -58,11 +61,7 @@ displayPresentation Presentation {..} = do
         putStrLn ""
         putStrLn ""
 
-    let slide = case drop pActiveSlide pSlides of
-            []      -> mempty
-            (s : _) -> s
-
-    PP.putDoc $ withWrapSettings settings $ prettySlide theme slide
+    PP.putDoc $ withWrapSettings settings $ f theme
     putStrLn ""
 
     let active      = show (pActiveSlide + 1) ++ " / " ++ show (length pSlides)
@@ -73,6 +72,26 @@ displayPresentation Presentation {..} = do
     Ansi.setCursorColumn (columns - activeWidth - 1)
     PP.putDoc $ borders $ PP.string active
     putStrLn ""
+
+
+--------------------------------------------------------------------------------
+displayPresentation :: Presentation -> IO ()
+displayPresentation pres@Presentation {..} = displayWithBorders pres $ \theme ->
+    let slide = case drop pActiveSlide pSlides of
+            []      -> mempty
+            (s : _) -> s in
+
+    prettySlide theme slide
+
+
+--------------------------------------------------------------------------------
+-- | Displays an error in the place of the presentation.  This is useful if we
+-- want to display an error but keep the presentation running.
+displayPresentationError :: Presentation -> String -> IO ()
+displayPresentationError pres err = displayWithBorders pres $ \Theme {..} ->
+    themed themeStrong "Error occurred in the presentation:" <$$>
+    "" <$$>
+    (PP.string err)
 
 
 --------------------------------------------------------------------------------
