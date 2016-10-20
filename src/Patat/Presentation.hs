@@ -5,6 +5,7 @@ module Patat.Presentation
     , Presentation (..)
     , readPresentation
     , displayPresentation
+    , displayPresentationError
     , dumpPresentation
 
     , PresentationCommand (..)
