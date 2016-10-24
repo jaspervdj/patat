@@ -19,7 +19,7 @@ import qualified Paths_patat
 import qualified System.Console.ANSI          as Ansi
 import           System.Directory             (doesFileExist,
                                                getModificationTime)
-import           System.Exit                  (exitFailure)
+import           System.Exit                  (exitFailure, exitSuccess)
 import qualified System.IO                    as IO
 import qualified Text.PrettyPrint.ANSI.Leijen as PP
 import           Prelude
@@ -27,17 +27,18 @@ import           Prelude
 
 --------------------------------------------------------------------------------
 data Options = Options
-    { oFilePath :: !FilePath
+    { oFilePath :: !(Maybe FilePath)
     , oForce    :: !Bool
     , oDump     :: !Bool
     , oWatch    :: !Bool
+    , oVersion  :: !Bool
     } deriving (Show)
 
 
 --------------------------------------------------------------------------------
 parseOptions :: OA.Parser Options
 parseOptions = Options
-    <$> (OA.strArgument $
+    <$> (OA.optional $ OA.strArgument $
             OA.metavar "FILENAME" <>
             OA.help    "Input file")
     <*> (OA.switch $
@@ -54,6 +55,10 @@ parseOptions = Options
             OA.long    "watch" <>
             OA.short   'w' <>
             OA.help    "Watch file for changes")
+    <*> (OA.switch $
+            OA.long    "version" <>
+            OA.help    "Display version info and exit" <>
+            OA.hidden)
 
 
 --------------------------------------------------------------------------------
@@ -79,6 +84,11 @@ parserInfo = OA.info (OA.helper <*> parseOptions) $
 
 
 --------------------------------------------------------------------------------
+parserPrefs :: OA.ParserPrefs
+parserPrefs = OA.prefs OA.showHelpOnError
+
+
+--------------------------------------------------------------------------------
 errorAndExit :: [String] -> IO a
 errorAndExit msg = do
     mapM_ (IO.hPutStrLn IO.stderr) msg
@@ -98,8 +108,18 @@ assertAnsiFeatures = do
 --------------------------------------------------------------------------------
 main :: IO ()
 main = do
-    options   <- OA.customExecParser (OA.prefs OA.showHelpOnError) parserInfo
-    errOrPres <- readPresentation (oFilePath options)
+    options <- OA.customExecParser parserPrefs parserInfo
+
+    when (oVersion options) $ do
+        putStrLn (showVersion Paths_patat.version)
+        exitSuccess
+
+    filePath <- case oFilePath options of
+        Just fp -> return fp
+        Nothing -> OA.handleParseResult $ OA.Failure $
+            OA.parserFailure parserPrefs parserInfo OA.ShowHelpText mempty
+
+    errOrPres <- readPresentation filePath
     pres      <- either (errorAndExit . return) return errOrPres
 
     unless (oForce options) assertAnsiFeatures
