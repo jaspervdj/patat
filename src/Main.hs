@@ -10,7 +10,7 @@ import           Control.Applicative          ((<$>), (<*>))
 import           Control.Concurrent           (forkIO, threadDelay)
 import qualified Control.Concurrent.Chan      as Chan
 import           Control.Monad                (forever, unless, when)
-import           Data.Monoid                  ((<>))
+import           Data.Monoid                  (mempty, (<>))
 import           Data.Time                    (UTCTime)
 import           Data.Version                 (showVersion)
 import qualified Options.Applicative          as OA
