@@ -6,6 +6,9 @@ module Patat.Presentation.Internal
     , PresentationSettings (..)
     , defaultPresentationSettings
     , Slide (..)
+    , Fragment (..)
+    , Index
+    , getActiveFragment
     ) where
 
 
@@ -13,6 +16,7 @@ module Patat.Presentation.Internal
 import           Control.Monad          (mplus)
 import qualified Data.Aeson.Extended    as A
 import qualified Data.Aeson.TH.Extended as A
+import           Data.Maybe             (listToMaybe)
 import           Data.Monoid            (Monoid (..))
 import qualified Patat.Theme            as Theme
 import qualified Text.Pandoc            as Pandoc
@@ -21,12 +25,12 @@ import           Prelude
 
 --------------------------------------------------------------------------------
 data Presentation = Presentation
-    { pFilePath    :: !FilePath
-    , pTitle       :: ![Pandoc.Inline]
-    , pAuthor      :: ![Pandoc.Inline]
-    , pSettings    :: !PresentationSettings
-    , pSlides      :: [Slide]
-    , pActiveSlide :: !Int
+    { pFilePath       :: !FilePath
+    , pTitle          :: ![Pandoc.Inline]
+    , pAuthor         :: ![Pandoc.Inline]
+    , pSettings       :: !PresentationSettings
+    , pSlides         :: [Slide]
+    , pActiveFragment :: !Index
     } deriving (Show)
 
 
@@ -63,8 +67,26 @@ defaultPresentationSettings = PresentationSettings
 
 
 --------------------------------------------------------------------------------
-newtype Slide = Slide {unSlide :: [Pandoc.Block]}
+newtype Slide = Slide {unSlide :: [Fragment]}
     deriving (Monoid, Show)
+
+
+--------------------------------------------------------------------------------
+newtype Fragment = Fragment {unFragment :: [Pandoc.Block]}
+    deriving (Monoid, Show)
+
+
+--------------------------------------------------------------------------------
+-- | Active slide, active fragment.
+type Index = (Int, Int)
+
+
+--------------------------------------------------------------------------------
+getActiveFragment :: Presentation -> Maybe Fragment
+getActiveFragment presentation = do
+    let (sidx, fidx) = pActiveFragment presentation
+    Slide fragments <- listToMaybe $ drop sidx (pSlides presentation)
+    listToMaybe $ drop fidx fragments
 
 
 --------------------------------------------------------------------------------

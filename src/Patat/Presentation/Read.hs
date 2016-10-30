@@ -15,12 +15,13 @@ import qualified Data.ByteString             as B
 import           Data.Monoid                 (mempty, (<>))
 import qualified Data.Set                    as Set
 import qualified Data.Yaml                   as Yaml
+import           Patat.Presentation.Fragment
 import           Patat.Presentation.Internal
+import           Prelude
 import           System.Directory            (doesFileExist, getHomeDirectory)
 import           System.FilePath             (takeExtension, (</>))
 import qualified Text.Pandoc.Error           as Pandoc
 import qualified Text.Pandoc.Extended        as Pandoc
-import           Prelude
 
 
 --------------------------------------------------------------------------------
@@ -65,10 +66,10 @@ pandocToPresentation
     :: FilePath -> PresentationSettings -> Pandoc.Pandoc
     -> Either String Presentation
 pandocToPresentation pFilePath pSettings pandoc@(Pandoc.Pandoc meta _) = do
-    let !pTitle       = Pandoc.docTitle meta
-        !pSlides      = pandocToSlides pandoc
-        !pActiveSlide = 0
-        !pAuthor      = concat (Pandoc.docAuthors meta)
+    let !pTitle          = Pandoc.docTitle meta
+        !pSlides         = pandocToSlides pandoc
+        !pActiveFragment = (0, 0)
+        !pAuthor         = concat (Pandoc.docAuthors meta)
     return Presentation {..}
 
 
@@ -100,22 +101,29 @@ readHomeSettings = do
 
 
 --------------------------------------------------------------------------------
+pandocToSlides :: Pandoc.Pandoc -> [Slide]
+pandocToSlides pandoc =
+    let blockss = splitSlides pandoc in
+    map (Slide . map Fragment . fragmentBlocks) blockss
+
+
+--------------------------------------------------------------------------------
 -- | Split a pandoc document into slides.  If the document contains horizonal
 -- rules, we use those as slide delimiters.  If there are no horizontal rules,
 -- we split using h1 headers.
-pandocToSlides :: Pandoc.Pandoc -> [Slide]
-pandocToSlides (Pandoc.Pandoc _meta blocks0)
+splitSlides :: Pandoc.Pandoc -> [[Pandoc.Block]]
+splitSlides (Pandoc.Pandoc _meta blocks0)
     | any (== Pandoc.HorizontalRule) blocks0 = splitAtRules blocks0
     | otherwise                              = splitAtH1s   blocks0
   where
     splitAtRules blocks = case break (== Pandoc.HorizontalRule) blocks of
-        (xs, [])           -> [Slide xs]
-        (xs, (_rule : ys)) -> Slide xs : splitAtRules ys
+        (xs, [])           -> [xs]
+        (xs, (_rule : ys)) -> xs : splitAtRules ys
 
     splitAtH1s []       = []
     splitAtH1s (b : bs) = case break isH1 bs of
-        (xs, [])       -> [Slide (b : xs)]
-        (xs, (y : ys)) -> Slide (b : xs) : splitAtH1s (y : ys)
+        (xs, [])       -> [(b : xs)]
+        (xs, (y : ys)) -> (b : xs) : splitAtH1s (y : ys)
 
     isH1 (Pandoc.Header i _ _) = i == 1
     isH1 _                     = False
