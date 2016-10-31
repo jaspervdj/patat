@@ -1,4 +1,5 @@
 --------------------------------------------------------------------------------
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE RecordWildCards            #-}
@@ -205,6 +206,16 @@ prettyBlock theme (Pandoc.Table caption aligns _ headers rows) =
 prettyBlock theme (Pandoc.Div _attrs blocks) = prettyBlocks theme blocks
 
 prettyBlock _theme Pandoc.Null = mempty
+
+#if MIN_VERSION_pandoc(1,18,0)
+-- 'LineBlock' elements are new in pandoc-1.18
+prettyBlock theme@Theme {..} (Pandoc.LineBlock inliness) =
+    let ind = PP.NotTrimmable (themed themeLineBlock "| ") in
+    PP.wrapAt Nothing $
+    PP.indent ind ind $
+    PP.vcat $
+    map (prettyInlines theme) inliness
+#endif
 
 
 --------------------------------------------------------------------------------

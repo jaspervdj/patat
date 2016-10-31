@@ -43,6 +43,7 @@ data Theme = Theme
     , themeDefinitionList     :: !(Maybe Style)
     , themeTableHeader        :: !(Maybe Style)
     , themeTableSeparator     :: !(Maybe Style)
+    , themeLineBlock          :: !(Maybe Style)
     , themeEmph               :: !(Maybe Style)
     , themeStrong             :: !(Maybe Style)
     , themeCode               :: !(Maybe Style)
@@ -62,7 +63,7 @@ instance Monoid Theme where
     mempty = Theme
         Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
         Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-        Nothing Nothing Nothing Nothing
+        Nothing Nothing Nothing Nothing Nothing
 
     mappend l r = Theme
         { themeBorders            = mplusOn   themeBorders
@@ -76,6 +77,7 @@ instance Monoid Theme where
         , themeDefinitionList     = mplusOn   themeDefinitionList
         , themeTableHeader        = mplusOn   themeTableHeader
         , themeTableSeparator     = mplusOn   themeTableSeparator
+        , themeLineBlock          = mplusOn   themeLineBlock
         , themeEmph               = mplusOn   themeEmph
         , themeStrong             = mplusOn   themeStrong
         , themeCode               = mplusOn   themeCode
@@ -107,6 +109,7 @@ defaultTheme = Theme
     , themeDefinitionList     = dull Ansi.Magenta
     , themeTableHeader        = dull Ansi.Blue
     , themeTableSeparator     = dull Ansi.Magenta
+    , themeLineBlock          = dull Ansi.Magenta
     , themeEmph               = dull Ansi.Green
     , themeStrong             = dull Ansi.Red <> bold
     , themeCode               = dull Ansi.White <> ondull Ansi.Black
