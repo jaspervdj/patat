@@ -194,26 +194,26 @@ example, we can have:
 
 The properties that can be given a list of styles are:
 
-- `borders`
-- `header`
-- `codeBlock`
-- `bulletList`
-- `orderedList`
 - `blockQuote`
-- `definitionTerm`
+- `borders`
+- `bulletList`
+- `codeBlock`
+- `code`
 - `definitionList`
+- `definitionTerm`
+- `emph`
+- `header`
+- `imageTarget`
+- `imageText`
+- `linkTarget`
+- `linkText`
+- `math`
+- `orderedList`
+- `quoted`
+- `strikeout`
+- `strong`
 - `tableHeader`
 - `tableSeparator`
-- `emph`
-- `strong`
-- `code`
-- `linkText`
-- `linkTarget`
-- `strikeout`
-- `quoted`
-- `math`
-- `imageText`
-- `imageTarget`
 
 The accepted styles are:
 
