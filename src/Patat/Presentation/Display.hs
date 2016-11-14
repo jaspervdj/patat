@@ -65,7 +65,8 @@ displayWithBorders Presentation {..} f = do
     PP.putDoc $ withWrapSettings settings $ f theme
     putStrLn ""
 
-    let active      = show (pActiveSlide + 1) ++ " / " ++ show (length pSlides)
+    let (sidx, _)   = pActiveFragment
+        active      = show (sidx + 1) ++ " / " ++ show (length pSlides)
         activeWidth = length active
 
     Ansi.setCursorPosition (rows - 2) 0
@@ -78,11 +79,8 @@ displayWithBorders Presentation {..} f = do
 --------------------------------------------------------------------------------
 displayPresentation :: Presentation -> IO ()
 displayPresentation pres@Presentation {..} = displayWithBorders pres $ \theme ->
-    let slide = case drop pActiveSlide pSlides of
-            []      -> mempty
-            (s : _) -> s in
-
-    prettySlide theme slide
+    let fragment = fromMaybe mempty (getActiveFragment pres) in
+    prettyFragment theme fragment
 
 
 --------------------------------------------------------------------------------
@@ -100,8 +98,11 @@ dumpPresentation :: Presentation -> IO ()
 dumpPresentation pres =
     let theme = fromMaybe Theme.defaultTheme (psTheme $ pSettings pres) in
     PP.putDoc $ withWrapSettings (pSettings pres) $
-        PP.vcat $ intersperse "----------" $
-        map (prettySlide theme) $ pSlides pres
+        PP.vcat $ intersperse "----------" $ do
+            Slide fragments <- pSlides pres
+            return $ PP.vcat $ intersperse "~~~~~~~~~~" $ do
+                fragment <- fragments
+                return $ prettyFragment theme fragment
 
 
 --------------------------------------------------------------------------------
@@ -112,10 +113,10 @@ withWrapSettings ps = case (psWrap ps, psColumns ps) of
 
 
 --------------------------------------------------------------------------------
-prettySlide :: Theme -> Slide -> PP.Doc
-prettySlide theme slide@(Slide blocks) =
+prettyFragment :: Theme -> Fragment -> PP.Doc
+prettyFragment theme fragment@(Fragment blocks) =
     prettyBlocks theme blocks <>
-    case prettyReferences theme slide of
+    case prettyReferences theme fragment of
         []   -> mempty
         refs -> PP.hardline <> PP.vcat refs
 
@@ -284,9 +285,9 @@ prettyInlines theme = mconcat . map (prettyInline theme)
 
 
 --------------------------------------------------------------------------------
-prettyReferences :: Theme -> Slide -> [PP.Doc]
+prettyReferences :: Theme -> Fragment -> [PP.Doc]
 prettyReferences theme@Theme {..} =
-    map prettyReference . getReferences . unSlide
+    map prettyReference . getReferences . unFragment
   where
     getReferences :: [Pandoc.Block] -> [Pandoc.Inline]
     getReferences = filter isReferenceLink . grecQ
