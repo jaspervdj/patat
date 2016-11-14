@@ -12,16 +12,17 @@ import           Control.Monad.Except        (ExceptT (..), runExceptT,
 import           Control.Monad.Trans         (liftIO)
 import qualified Data.Aeson                  as A
 import qualified Data.ByteString             as B
+import           Data.Maybe                  (fromMaybe)
 import           Data.Monoid                 (mempty, (<>))
 import qualified Data.Set                    as Set
 import qualified Data.Yaml                   as Yaml
 import           Patat.Presentation.Fragment
 import           Patat.Presentation.Internal
-import           Prelude
 import           System.Directory            (doesFileExist, getHomeDirectory)
 import           System.FilePath             (takeExtension, (</>))
 import qualified Text.Pandoc.Error           as Pandoc
 import qualified Text.Pandoc.Extended        as Pandoc
+import           Prelude
 
 
 --------------------------------------------------------------------------------
@@ -67,7 +68,7 @@ pandocToPresentation
     -> Either String Presentation
 pandocToPresentation pFilePath pSettings pandoc@(Pandoc.Pandoc meta _) = do
     let !pTitle          = Pandoc.docTitle meta
-        !pSlides         = pandocToSlides pandoc
+        !pSlides         = pandocToSlides pSettings pandoc
         !pActiveFragment = (0, 0)
         !pAuthor         = concat (Pandoc.docAuthors meta)
     return Presentation {..}
@@ -101,10 +102,14 @@ readHomeSettings = do
 
 
 --------------------------------------------------------------------------------
-pandocToSlides :: Pandoc.Pandoc -> [Slide]
-pandocToSlides pandoc =
+pandocToSlides :: PresentationSettings -> Pandoc.Pandoc -> [Slide]
+pandocToSlides settings pandoc =
     let blockss = splitSlides pandoc in
-    map (Slide . map Fragment . fragmentBlocks) blockss
+    map (Slide . map Fragment . (fragmentBlocks fragmentSettings)) blockss
+  where
+    fragmentSettings = FragmentSettings
+        { fsIncrementalLists = fromMaybe False (psIncrementalLists settings)
+        }
 
 
 --------------------------------------------------------------------------------

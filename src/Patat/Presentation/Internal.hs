@@ -8,6 +8,8 @@ module Patat.Presentation.Internal
     , Slide (..)
     , Fragment (..)
     , Index
+
+    , getSlide
     , getActiveFragment
     ) where
 
@@ -17,7 +19,7 @@ import           Control.Monad          (mplus)
 import qualified Data.Aeson.Extended    as A
 import qualified Data.Aeson.TH.Extended as A
 import           Data.Maybe             (listToMaybe)
-import           Data.Monoid            (Monoid (..))
+import           Data.Monoid            (Monoid (..), (<>))
 import qualified Patat.Theme            as Theme
 import qualified Text.Pandoc            as Pandoc
 import           Prelude
@@ -38,31 +40,34 @@ data Presentation = Presentation
 -- | These are patat-specific settings.  That is where they differ from more
 -- general metadata (author, title...)
 data PresentationSettings = PresentationSettings
-    { psRows    :: !(Maybe (A.FlexibleNum Int))
-    , psColumns :: !(Maybe (A.FlexibleNum Int))
-    , psWrap    :: !(Maybe Bool)
-    , psTheme   :: !(Maybe Theme.Theme)
+    { psRows             :: !(Maybe (A.FlexibleNum Int))
+    , psColumns          :: !(Maybe (A.FlexibleNum Int))
+    , psWrap             :: !(Maybe Bool)
+    , psTheme            :: !(Maybe Theme.Theme)
+    , psIncrementalLists :: !(Maybe Bool)
     } deriving (Show)
 
 
 --------------------------------------------------------------------------------
 instance Monoid PresentationSettings where
-    mempty      = PresentationSettings Nothing Nothing Nothing Nothing
+    mempty      = PresentationSettings Nothing Nothing Nothing Nothing Nothing
     mappend l r = PresentationSettings
-        { psRows    = psRows    l `mplus`   psRows    r
-        , psColumns = psColumns l `mplus`   psColumns r
-        , psWrap    = psWrap    l `mplus`   psWrap    r
-        , psTheme   = psTheme   l `mappend` psTheme   r
+        { psRows             = psRows             l `mplus` psRows    r
+        , psColumns          = psColumns          l `mplus` psColumns r
+        , psWrap             = psWrap             l `mplus` psWrap    r
+        , psTheme            = psTheme            l <>      psTheme   r
+        , psIncrementalLists = psIncrementalLists l `mplus` psIncrementalLists r
         }
 
 
 --------------------------------------------------------------------------------
 defaultPresentationSettings :: PresentationSettings
 defaultPresentationSettings = PresentationSettings
-    { psRows    = Nothing
-    , psColumns = Nothing
-    , psWrap    = Nothing
-    , psTheme   = Just Theme.defaultTheme
+    { psRows             = Nothing
+    , psColumns          = Nothing
+    , psWrap             = Nothing
+    , psTheme            = Just Theme.defaultTheme
+    , psIncrementalLists = Nothing
     }
 
 
@@ -82,10 +87,15 @@ type Index = (Int, Int)
 
 
 --------------------------------------------------------------------------------
+getSlide :: Int -> Presentation -> Maybe Slide
+getSlide sidx = listToMaybe . drop sidx . pSlides
+
+
+--------------------------------------------------------------------------------
 getActiveFragment :: Presentation -> Maybe Fragment
 getActiveFragment presentation = do
     let (sidx, fidx) = pActiveFragment presentation
-    Slide fragments <- listToMaybe $ drop sidx (pSlides presentation)
+    Slide fragments <- getSlide sidx presentation
     listToMaybe $ drop fidx fragments
 
 

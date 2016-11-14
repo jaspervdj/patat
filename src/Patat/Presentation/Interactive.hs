@@ -78,23 +78,43 @@ updatePresentation
 
 updatePresentation cmd presentation = case cmd of
     Exit         -> return ExitedPresentation
-    Forward      -> return $ goToSlide (\x -> x + 1)
-    Backward     -> return $ goToSlide (\x -> x - 1)
-    SkipForward  -> return $ goToSlide (\x -> x + 10)
-    SkipBackward -> return $ goToSlide (\x -> x - 10)
-    First        -> return $ goToSlide (\_ -> 0)
-    Last         -> return $ goToSlide (\_ -> numSlides presentation - 1)
+    Forward      -> return $ goToSlide $ \(s, f) -> (s, f + 1)
+    Backward     -> return $ goToSlide $ \(s, f) -> (s, f - 1)
+    SkipForward  -> return $ goToSlide $ \(s, _) -> (s + 10, 0)
+    SkipBackward -> return $ goToSlide $ \(s, _) -> (s - 10, 0)
+    First        -> return $ goToSlide $ \_ -> (0, 0)
+    Last         -> return $ goToSlide $ \_ -> (numSlides presentation, 0)
     Reload       -> reloadPresentation
   where
+    numSlides :: Presentation -> Int
     numSlides pres = length (pSlides pres)
-    clip idx  pres = min (max 0 idx) (numSlides pres - 1)
 
-    goToSlide f = UpdatedPresentation $
-        presentation {pActiveSlide = clip (f $ pActiveSlide presentation) presentation}
+    clip :: Index -> Presentation -> Index
+    clip (slide, fragment) pres
+        | slide    >= numSlides pres = (numSlides pres - 1, lastFragments - 1)
+        | slide    <  0              = (0, 0)
+        | fragment >= numFragments slide =
+            if slide + 1 >= numSlides pres
+                then (slide, lastFragments - 1)
+                else (slide + 1, 0)
+        | fragment < 0 =
+            if slide - 1 >= 0
+                then (slide - 1, numFragments (slide - 1) - 1)
+                else (slide, 0)
+        | otherwise                  = (slide, fragment)
+      where
+        numFragments s = maybe 1 (length . unSlide) (getSlide s pres)
+        lastFragments  = numFragments (numSlides pres - 1)
+
+    goToSlide :: (Index -> Index) -> UpdatedPresentation
+    goToSlide f = UpdatedPresentation $ presentation
+        { pActiveFragment = clip (f $ pActiveFragment presentation) presentation
+        }
 
     reloadPresentation = do
         errOrPres <- readPresentation (pFilePath presentation)
         return $ case errOrPres of
             Left  err  -> ErroredPresentation err
-            Right pres -> UpdatedPresentation $
-                pres {pActiveSlide = clip (pActiveSlide presentation) pres}
+            Right pres -> UpdatedPresentation $ pres
+                { pActiveFragment = clip (pActiveFragment presentation) pres
+                }
