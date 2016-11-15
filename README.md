@@ -32,8 +32,10 @@ Table of Contents
 -----------------
 
 -   [Installation](#installation)
-    -   [Using stack](#using-stack)
-    -   [Using cabal](#using-cabal)
+    -   [Pre-built packages](#pre-built-packages)
+    -   [From source](#from-source)
+        -   [Using stack](#using-stack)
+        -   [Using cabal](#using-cabal)
 -   [Running](#running)
 -   [Input format](#input-format)
 -   [Configuration](#configuration)
@@ -46,15 +48,23 @@ Table of Contents
 Installation
 ------------
 
-You can build from source using `stack install` or `cabal install`.  `patat` is
-also available from [Hackage].
+### Pre-built-packages
+
+There is a pre-built package available for Debian:
+
+- <https://packages.debian.org/unstable/patat>
+
+### From source
+
+Installation from source is very easy.  You can build from source using `stack
+install` or `cabal install`.  `patat` is also available from [Hackage].
 
 [Hackage]: https://hackage.haskell.org/package/patat
 
 For people unfamiliar with the Haskell ecosystem, this means you can do either
 of the following:
 
-### Using stack
+#### Using stack
 
 1. Install [stack] for your platform.
 2. Clone this repository.
@@ -64,7 +74,7 @@ of the following:
 
 [stack]: https://docs.haskellstack.org/en/stable/README/
 
-### Using cabal
+#### Using cabal
 
 1. Install [cabal] for your platform.
 2. Run `cabal install patat`.
