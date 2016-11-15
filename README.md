@@ -12,8 +12,10 @@ Features:
 - Leverages the great [Pandoc] library to support many input formats including
   [Literate Haskell].
 - Supports [smart slide splitting](#input-format).
+- Slides can be split up into [multiple fragments](#fragmented-slides)
 - There is a [live reload](#running) mode.
 - [Theming](#theming) support.
+- [Auto advancing](#auto-advancing) with configurable delay.
 - Optionally [re-wrapping](#configuration) text to terminal width with proper
   indentation.
 - Syntax highlighting for nearly one hundred languages generated from [Kate]
