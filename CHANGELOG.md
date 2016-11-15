@@ -1,5 +1,9 @@
 # Changelog
 
+- 0.4.0.0 (2016-11-15)
+    * Add configurable auto advancing.
+    * Support fragmented slides.
+
 - 0.3.3.0 (2016-10-31)
     * Add a `--version` flag.
     * Add support for `pandoc-1.18` which includes a new `LineBlock` element.
