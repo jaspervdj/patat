@@ -45,18 +45,21 @@ data PresentationSettings = PresentationSettings
     , psWrap             :: !(Maybe Bool)
     , psTheme            :: !(Maybe Theme.Theme)
     , psIncrementalLists :: !(Maybe Bool)
+    , psAutoAdvanceDelay :: !(Maybe (A.FlexibleNum Int))
     } deriving (Show)
 
 
 --------------------------------------------------------------------------------
 instance Monoid PresentationSettings where
-    mempty      = PresentationSettings Nothing Nothing Nothing Nothing Nothing
+    mempty      = PresentationSettings
+                    Nothing Nothing Nothing Nothing Nothing Nothing
     mappend l r = PresentationSettings
-        { psRows             = psRows             l `mplus` psRows    r
-        , psColumns          = psColumns          l `mplus` psColumns r
-        , psWrap             = psWrap             l `mplus` psWrap    r
-        , psTheme            = psTheme            l <>      psTheme   r
+        { psRows             = psRows             l `mplus` psRows             r
+        , psColumns          = psColumns          l `mplus` psColumns          r
+        , psWrap             = psWrap             l `mplus` psWrap             r
+        , psTheme            = psTheme            l <>      psTheme            r
         , psIncrementalLists = psIncrementalLists l `mplus` psIncrementalLists r
+        , psAutoAdvanceDelay = psAutoAdvanceDelay l `mplus` psAutoAdvanceDelay r
         }
 
 
@@ -68,6 +71,7 @@ defaultPresentationSettings = PresentationSettings
     , psWrap             = Nothing
     , psTheme            = Just Theme.defaultTheme
     , psIncrementalLists = Nothing
+    , psAutoAdvanceDelay = Nothing
     }
 
 

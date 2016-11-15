@@ -10,19 +10,21 @@ import           Control.Applicative          ((<$>), (<*>))
 import           Control.Concurrent           (forkIO, threadDelay)
 import qualified Control.Concurrent.Chan      as Chan
 import           Control.Monad                (forever, unless, when)
+import qualified Data.Aeson.Extended          as A
 import           Data.Monoid                  (mempty, (<>))
 import           Data.Time                    (UTCTime)
 import           Data.Version                 (showVersion)
 import qualified Options.Applicative          as OA
+import           Patat.AutoAdvance
 import           Patat.Presentation
 import qualified Paths_patat
+import           Prelude
 import qualified System.Console.ANSI          as Ansi
 import           System.Directory             (doesFileExist,
                                                getModificationTime)
 import           System.Exit                  (exitFailure, exitSuccess)
 import qualified System.IO                    as IO
 import qualified Text.PrettyPrint.ANSI.Leijen as PP
-import           Prelude
 
 
 --------------------------------------------------------------------------------
@@ -131,11 +133,17 @@ main = do
     interactiveLoop :: Options -> Presentation -> IO ()
     interactiveLoop options pres0 = do
         IO.hSetBuffering IO.stdin IO.NoBuffering
-        commandChan <- Chan.newChan
+        -- Spawn the initial channel that gives us commands based on user input.
+        commandChan0 <- Chan.newChan
+        _            <- forkIO $ forever $
+            readPresentationCommand >>= Chan.writeChan commandChan0
 
-        _ <- forkIO $ forever $
-            readPresentationCommand >>= Chan.writeChan commandChan
+        -- If an auto delay is set, use 'autoAdvance' to create a new one.
+        commandChan <- case psAutoAdvanceDelay (pSettings pres0) of
+            Nothing                    -> return commandChan0
+            Just (A.FlexibleNum delay) -> autoAdvance delay commandChan0
 
+        -- Spawn a thread that adds 'Reload' commands based on the file time.
         mtime0 <- getModificationTime (pFilePath pres0)
         when (oWatch options) $ do
             _ <- forkIO $ watcher commandChan (pFilePath pres0) mtime0

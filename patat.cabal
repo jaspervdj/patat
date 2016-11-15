@@ -45,6 +45,7 @@ Executable patat
     Data.Aeson.Extended
     Data.Aeson.TH.Extended
     Data.Data.Extended
+    Patat.AutoAdvance
     Patat.Presentation
     Patat.Presentation.Display
     Patat.Presentation.Display.CodeBlock

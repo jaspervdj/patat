@@ -35,6 +35,7 @@ Table of Contents
 -   [Running](#running)
 -   [Input format](#input-format)
 -   [Configuration](#configuration)
+    -   [Auto advancing](#auto-advancing)
     -   [Fragmented slides](#fragmented-slides)
     -   [Theming](#theming)
     -   [Syntax Highlighting](#syntax-highlighting)
@@ -171,6 +172,24 @@ For example, we can turn on line wrapping by using the following file:
 Or we can use a normal presentation and have the following `$HOME/.patat.yaml`:
 
     wrap: true
+
+### Auto advancing
+
+By setting `autoAdvanceDelay` to a number of seconds, `patat` will automatically
+advance to the next slide.
+
+    ---
+    title: Auto-advance, yes please
+    author: John Doe
+    patat:
+        autoAdvanceDelay: 2
+    ...
+
+    Hello World!
+
+    ---
+
+    This slide will be shown two seconds after the presentation starts.
 
 ### Fragmented slides
 

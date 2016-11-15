@@ -15,7 +15,6 @@ module Patat.Presentation
     ) where
 
 import           Patat.Presentation.Display
-import           Patat.Presentation.Fragment
 import           Patat.Presentation.Interactive
 import           Patat.Presentation.Internal
 import           Patat.Presentation.Read
