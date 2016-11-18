@@ -16,7 +16,7 @@ Features:
 - There is a [live reload](#running) mode.
 - [Theming](#theming) support.
 - [Auto advancing](#auto-advancing) with configurable delay.
-- Optionally [re-wrapping](#configuration) text to terminal width with proper
+- Optionally [re-wrapping](#line-wrapping) text to terminal width with proper
   indentation.
 - Syntax highlighting for nearly one hundred languages generated from [Kate]
   syntax files.
@@ -31,14 +31,16 @@ Features:
 Table of Contents
 -----------------
 
+-   [Table of Contents](#table-of-contents)
 -   [Installation](#installation)
-    -   [Pre-built packages](#pre-built-packages)
+    -   [Pre-built-packages](#pre-built-packages)
     -   [From source](#from-source)
-        -   [Using stack](#using-stack)
-        -   [Using cabal](#using-cabal)
 -   [Running](#running)
+-   [Options](#options)
+-   [Controls](#controls)
 -   [Input format](#input-format)
 -   [Configuration](#configuration)
+    -   [Line wrapping](#line-wrapping)
     -   [Auto advancing](#auto-advancing)
     -   [Fragmented slides](#fragmented-slides)
     -   [Theming](#theming)
@@ -85,9 +87,32 @@ of the following:
 Running
 -------
 
-    patat [--watch] presentation.md
+`patat [*options*] file`
 
-Controls:
+Options
+-------
+
+`-w`, `--watch`
+
+:   If you provide the `--watch` flag, `patat` will watch the presentation file
+    for changes and reload automatically.  This is very useful when you are
+    writing the presentation.
+
+`-f`, `--force`
+
+:   Run the presentation even if the terminal claims it does not support ANSI
+    features.
+
+`-d`, `--dump`
+
+:   Just dump all the slides to stdout.  This is useful for debugging.
+
+`--version`
+
+:   Display version information.
+
+Controls
+--------
 
 - **Next slide**: `space`, `enter`, `l`, `→`
 - **Previous slide**: `backspace`, `h`, `←`
@@ -101,10 +126,6 @@ Controls:
 The `r` key is very useful since it allows you to preview your slides while you
 are writing them.  You can also use this to fix artifacts when the terminal is
 resized.
-
-If you provide the `--watch` flag, `patat` will watch the presentation file for
-changes and reload automatically.  This is very useful when you are writing the
-presentation.
 
 Input format
 ------------
@@ -168,22 +189,25 @@ are two places where you can put your configuration:
 [YAML]: http://yaml.org/
 [Pandoc metadata header]: http://pandoc.org/MANUAL.html#extension-yaml_metadata_block
 
-For example, we can turn on line wrapping by using the following file:
+For example, we set an option `key` to `val` by using the following file:
 
     ---
-    title: Presentation with wrapping
+    title: Presentation with options
     author: John Doe
     patat:
-        wrap: true
+        key: val
     ...
 
-    This is a split
-    line which should
-    be re-wrapped.
+    Hello world.
 
 Or we can use a normal presentation and have the following `$HOME/.patat.yaml`:
 
-    wrap: true
+    key: val
+
+### Line wrapping
+
+Line wrapping can be enabled by setting `wrap: true` in the configuration.  This
+will re-wrap all lines to fit the terminal width better.
 
 ### Auto advancing
 
