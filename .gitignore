@@ -1,2 +1,7 @@
-dist
+*.o
+*.hi
+extra/make-man
+extra/patat.1
 .stack-work
+dist
+tags
