@@ -309,63 +309,20 @@ example, we can have:
 
 The properties that can be given a list of styles are:
 
-- `blockQuote`
-- `borders`
-- `bulletList`
-- `codeBlock`
-- `code`
-- `definitionList`
-- `definitionTerm`
-- `emph`
-- `header`
-- `imageTarget`
-- `imageText`
-- `linkTarget`
-- `linkText`
-- `math`
-- `orderedList`
-- `quoted`
-- `strikeout`
-- `strong`
-- `tableHeader`
-- `tableSeparator`
+`blockQuote`, `borders`, `bulletList`, `codeBlock`, `code`, `definitionList`,
+`definitionTerm`, `emph`, `header`, `imageTarget`, `imageText`, `linkTarget`,
+`linkText`, `math`, `orderedList`, `quoted`, `strikeout`, `strong`,
+`tableHeader`, `tableSeparator`
 
 The accepted styles are:
 
-- `bold`
-- `dullBlack`
-- `dullBlue`
-- `dullCyan`
-- `dullGreen`
-- `dullMagenta`
-- `dullRed`
-- `dullWhite`
-- `dullYellow`
-- `onDullBlack`
-- `onDullBlue`
-- `onDullCyan`
-- `onDullGreen`
-- `onDullMagenta`
-- `onDullRed`
-- `onDullWhite`
-- `onDullYellow`
-- `onVividBlack`
-- `onVividBlue`
-- `onVividCyan`
-- `onVividGreen`
-- `onVividMagenta`
-- `onVividRed`
-- `onVividWhite`
-- `onVividYellow`
-- `underline`
-- `vividBlack`
-- `vividBlue`
-- `vividCyan`
-- `vividGreen`
-- `vividMagenta`
-- `vividRed`
-- `vividWhite`
-- `vividYellow`
+`bold`, `dullBlack`, `dullBlue`, `dullCyan`, `dullGreen`, `dullMagenta`,
+`dullRed`, `dullWhite`, `dullYellow`, `onDullBlack`, `onDullBlue`, `onDullCyan`,
+`onDullGreen`, `onDullMagenta`, `onDullRed`, `onDullWhite`, `onDullYellow`,
+`onVividBlack`, `onVividBlue`, `onVividCyan`, `onVividGreen`, `onVividMagenta`,
+`onVividRed`, `onVividWhite`, `onVividYellow`, `underline`, `vividBlack`,
+`vividBlue`, `vividCyan`, `vividGreen`, `vividMagenta`, `vividRed`,
+`vividWhite`, `vividYellow`
 
 ### Syntax Highlighting
 
