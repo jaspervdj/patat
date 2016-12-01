@@ -1,13 +1,15 @@
 -- | This script generates a man page for patat.
 {-# LANGUAGE CPP #-}
-import           Control.Monad    (guard)
-import           Data.Char        (isSpace, toLower)
-import           Data.List        (isPrefixOf)
-import           Data.Maybe       (isJust)
-import qualified System.IO        as IO
-import qualified System.Process   as Process
-import qualified Text.Pandoc      as Pandoc
-import qualified Text.Pandoc.Walk as Pandoc
+import           Control.Applicative ((<$>))
+import           Control.Monad       (guard)
+import           Data.Char           (isSpace, toLower)
+import           Data.List           (isPrefixOf)
+import           Data.Maybe          (isJust)
+import qualified System.IO           as IO
+import qualified System.Process      as Process
+import qualified Text.Pandoc         as Pandoc
+import qualified Text.Pandoc.Walk    as Pandoc
+import           Prelude
 
 getVersion :: IO String
 getVersion =
@@ -19,11 +21,6 @@ removeLinks :: Pandoc.Pandoc -> Pandoc.Pandoc
 removeLinks = Pandoc.walk $ \inline -> case inline of
     Pandoc.Link _ inlines _ -> Pandoc.Emph inlines
     _                       -> inline
-
-promoteHeaders :: Pandoc.Pandoc -> Pandoc.Pandoc
-promoteHeaders = Pandoc.walk $ \block -> case block of
-    Pandoc.Header n attr inlines -> Pandoc.Header (max 1 $ n - 1) attr inlines
-    _                            -> block
 
 type Sections = [(Int, String, [Pandoc.Block])]
 
@@ -80,10 +77,6 @@ reorganizeSections (Pandoc.Pandoc meta0 blocks0) =
 
     lookupSection name sections =
         [section | section@(_, n, _) <- sections, name == n]
-
-withBlocks
-    :: Pandoc.Pandoc -> ([Pandoc.Block] -> [Pandoc.Block]) -> Pandoc.Pandoc
-withBlocks (Pandoc.Pandoc meta bs) f = Pandoc.Pandoc meta (f bs)
 
 main :: IO ()
 main = do

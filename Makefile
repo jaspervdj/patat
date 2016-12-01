@@ -4,7 +4,7 @@ extra/patat.1: README.md extra/make-man
 	./extra/make-man >$@
 
 extra/make-man: extra/make-man.hs
-	ghc -DPANDOC_MINOR_VERSION=${PANDOC_MINOR_VERSION} -o $@ $<
+	ghc -DPANDOC_MINOR_VERSION=${PANDOC_MINOR_VERSION} -Wall -o $@ $<
 
 man: extra/patat.1
 
