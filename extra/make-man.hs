@@ -4,9 +4,8 @@ import           Control.Monad    (guard)
 import           Data.Char        (isSpace, toLower)
 import           Data.List        (isPrefixOf)
 import           Data.Maybe       (isJust)
-import           Data.Time        (defaultTimeLocale, formatTime,
-                                   getCurrentTime)
 import qualified System.IO        as IO
+import qualified System.Process   as Process
 import qualified Text.Pandoc      as Pandoc
 import qualified Text.Pandoc.Walk as Pandoc
 
@@ -91,14 +90,16 @@ main = do
     Right pandoc0  <- Pandoc.readMarkdown Pandoc.def <$> readFile "README.md"
     Right template <- Pandoc.getDefaultTemplate Nothing "man"
 
-    date    <- formatTime defaultTimeLocale "%B %d, %Y" <$> getCurrentTime
+    -- It's important for reproducible builds that we get the date from git.
     version <- getVersion
+    date    <- Process.readProcess "git"
+        ["log", "-1", "--format=%cd", "--date", "format:%B %d, %Y", "."] ""
 
-    let writerOptions = Pandoc.def
+    let writerOptions = Pandoc.def {
 #if PANDOC_MINOR_VERSION >= 19
-            { Pandoc.writerTemplate   = Just template
+              Pandoc.writerTemplate   = Just template
 #else
-            { Pandoc.writerStandalone = True
+              Pandoc.writerStandalone = True
             , Pandoc.writerTemplate   = template
 #endif
             , Pandoc.writerVariables  =
