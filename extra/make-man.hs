@@ -5,8 +5,8 @@ import           Control.Monad       (guard)
 import           Data.Char           (isSpace, toLower)
 import           Data.List           (isPrefixOf)
 import           Data.Maybe          (isJust)
+import           System.Environment  (getEnv)
 import qualified System.IO           as IO
-import qualified System.Process      as Process
 import qualified Text.Pandoc         as Pandoc
 import qualified Text.Pandoc.Walk    as Pandoc
 import           Prelude
@@ -85,8 +85,7 @@ main = do
 
     -- It's important for reproducible builds that we get the date from git.
     version <- getVersion
-    date    <- Process.readProcess "git"
-        ["log", "-1", "--format=%cd", "--date", "format:%B %d, %Y", "."] ""
+    date    <- getEnv "PATAT_BUILD_DATE"
 
     let writerOptions = Pandoc.def {
 #if PANDOC_MINOR_VERSION >= 19
