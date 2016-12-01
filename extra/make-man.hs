@@ -1,4 +1,5 @@
 -- | This script generates a man page for patat.
+{-# LANGUAGE CPP #-}
 import           Control.Monad    (guard)
 import           Data.Char        (isSpace, toLower)
 import           Data.List        (isPrefixOf)
@@ -94,8 +95,12 @@ main = do
     version <- getVersion
 
     let writerOptions = Pandoc.def
+#if PANDOC_MINOR_VERSION >= 19
+            { Pandoc.writerTemplate   = Just template
+#else
             { Pandoc.writerStandalone = True
             , Pandoc.writerTemplate   = template
+#endif
             , Pandoc.writerVariables  =
                 [ ("author",  "Jasper Van der Jeugt")
                 , ("title",   "patat manual")

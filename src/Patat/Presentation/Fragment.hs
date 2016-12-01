@@ -1,5 +1,6 @@
 -- | For background info on the spec, see the "Incremental lists" section of the
 -- the pandoc manual.
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE DeriveFoldable    #-}
 {-# LANGUAGE DeriveFunctor     #-}
 {-# LANGUAGE DeriveTraversable #-}
@@ -13,8 +14,8 @@ import           Data.Foldable    (Foldable)
 import           Data.List        (foldl', intersperse)
 import           Data.Maybe       (fromMaybe)
 import           Data.Traversable (Traversable)
-import qualified Text.Pandoc      as Pandoc
 import           Prelude
+import qualified Text.Pandoc      as Pandoc
 
 data FragmentSettings = FragmentSettings
     { fsIncrementalLists :: !Bool
@@ -80,6 +81,10 @@ fragmentBlock _ block@(Pandoc.Table _ _ _ _ _)  = Unfragmented block
 fragmentBlock _ block@(Pandoc.Div _ _)          = Unfragmented block
 fragmentBlock _ block@Pandoc.HorizontalRule     = Unfragmented block
 fragmentBlock _ block@Pandoc.Null               = Unfragmented block
+
+#if MIN_VERSION_pandoc(1,18,0)
+fragmentBlock _ block@(Pandoc.LineBlock _)      = Unfragmented block
+#endif
 
 joinFragmentedBlocks :: [Fragmented block] -> Fragmented [block]
 joinFragmentedBlocks =

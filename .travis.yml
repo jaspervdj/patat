@@ -8,4 +8,4 @@ cache:
 install:
   - cabal install
 script:
-  - bash test.sh
+  - make test
