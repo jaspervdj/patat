@@ -1,5 +1,8 @@
 # Changelog
 
+- 0.4.2.0 (2016-12-01)
+    * Fix issues with man page generation on Travis.
+
 - 0.4.1.0 (2016-12-01)
     * Fix compatibility with `pandoc-1.18` and `pandoc-1.19`.
     * Add a man page.
