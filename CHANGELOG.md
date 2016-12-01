@@ -1,5 +1,9 @@
 # Changelog
 
+- 0.4.1.0 (2016-12-01)
+    * Fix compatibility with `pandoc-1.18` and `pandoc-1.19`.
+    * Add a man page.
+
 - 0.4.0.0 (2016-11-15)
     * Add configurable auto advancing.
     * Support fragmented slides.
