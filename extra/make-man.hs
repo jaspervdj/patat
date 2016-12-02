@@ -5,6 +5,7 @@ import           Control.Monad       (guard)
 import           Data.Char           (isSpace, toLower)
 import           Data.List           (isPrefixOf)
 import           Data.Maybe          (isJust)
+import qualified GHC.IO.Encoding     as Encoding
 import           System.Environment  (getEnv)
 import qualified System.IO           as IO
 import qualified Text.Pandoc         as Pandoc
@@ -80,6 +81,7 @@ reorganizeSections (Pandoc.Pandoc meta0 blocks0) =
 
 main :: IO ()
 main = do
+    Encoding.setLocaleEncoding Encoding.utf8
     Right pandoc0  <- Pandoc.readMarkdown Pandoc.def <$> readFile "README.md"
     Right template <- Pandoc.getDefaultTemplate Nothing "man"
 
