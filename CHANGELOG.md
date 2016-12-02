@@ -1,5 +1,8 @@
 # Changelog
 
+- 0.4.4.0 (2016-12-03)
+    * Force the use of UTF-8 when generating the man page.
+
 - 0.4.3.0 (2016-12-02)
     * Use `SOURCE_DATE_EPOCH` if it is present instead of getting the date from
       `git log`.
