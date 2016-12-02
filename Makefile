@@ -1,5 +1,14 @@
+# The minor version is passed to the build.  This is used to do some CPP to
+# solve incompatibilities.
 PANDOC_MINOR_VERSION=$(shell ghc-pkg latest pandoc | sed 's/.*-//' | cut -d. -f2)
-SOURCE_DATE_EPOCH?=$(shell git log -1 --format=%cd --date=unix)
+
+# We use `?=` to set SOURCE_DATE_EPOCH only if it is not present.  Unfortunately
+# we can't use `git --date=unix` since only very recent git versions support
+# that, so we need to make a round trip through `date`.
+SOURCE_DATE_EPOCH?=$(shell date '+%s' \
+					   --date="$(shell git log -1 --format=%cd --date=rfc)")
+
+# Prettify the date.
 SOURCE_DATE=$(shell date '+%B %d, %Y' -d "@${SOURCE_DATE_EPOCH}")
 
 extra/patat.1: README.md extra/make-man
