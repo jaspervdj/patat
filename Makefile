@@ -1,8 +1,9 @@
 PANDOC_MINOR_VERSION=$(shell ghc-pkg latest pandoc | sed 's/.*-//' | cut -d. -f2)
-PATAT_BUILD_DATE=$(shell date '+%B %d, %Y' -d "$(shell git log -1 --format=%cd --date=short)")
+SOURCE_DATE_EPOCH?=$(shell git log -1 --format=%cd --date=unix)
+SOURCE_DATE=$(shell date '+%B %d, %Y' -d "@${SOURCE_DATE_EPOCH}")
 
 extra/patat.1: README.md extra/make-man
-	PATAT_BUILD_DATE="$(PATAT_BUILD_DATE)" ./extra/make-man >$@
+	SOURCE_DATE="$(SOURCE_DATE)" ./extra/make-man >$@
 
 extra/make-man: extra/make-man.hs
 	ghc -DPANDOC_MINOR_VERSION=${PANDOC_MINOR_VERSION} -Wall -o $@ $<

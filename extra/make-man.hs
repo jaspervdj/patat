@@ -83,9 +83,8 @@ main = do
     Right pandoc0  <- Pandoc.readMarkdown Pandoc.def <$> readFile "README.md"
     Right template <- Pandoc.getDefaultTemplate Nothing "man"
 
-    -- It's important for reproducible builds that we get the date from git.
     version <- getVersion
-    date    <- getEnv "PATAT_BUILD_DATE"
+    date    <- getEnv "SOURCE_DATE"
 
     let writerOptions = Pandoc.def {
 #if PANDOC_MINOR_VERSION >= 19
