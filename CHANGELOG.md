@@ -1,5 +1,9 @@
 # Changelog
 
+- 0.4.3.0 (2016-12-02)
+    * Use `SOURCE_DATE_EPOCH` if it is present instead of getting the date from
+      `git log`.
+
 - 0.4.2.0 (2016-12-01)
     * Fix issues with man page generation on Travis.
 
