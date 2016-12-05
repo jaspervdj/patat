@@ -1,5 +1,9 @@
 # Changelog
 
+- 0.4.5.0 (2016-12-05)
+    * Render the date in a locale-independent manner (patch by Daniel
+      Shahaf).
+
 - 0.4.4.0 (2016-12-03)
     * Force the use of UTF-8 when generating the man page.
 
