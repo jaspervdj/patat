@@ -9,6 +9,7 @@ module Main where
 import           Control.Applicative          ((<$>), (<*>))
 import           Control.Concurrent           (forkIO, threadDelay)
 import qualified Control.Concurrent.Chan      as Chan
+import           Control.Exception            (finally)
 import           Control.Monad                (forever, unless, when)
 import qualified Data.Aeson.Extended          as A
 import           Data.Monoid                  (mempty, (<>))
@@ -131,8 +132,10 @@ main = do
         else interactiveLoop options pres
   where
     interactiveLoop :: Options -> Presentation -> IO ()
-    interactiveLoop options pres0 = do
+    interactiveLoop options pres0 = (`finally` Ansi.showCursor) $ do
         IO.hSetBuffering IO.stdin IO.NoBuffering
+        Ansi.hideCursor
+
         -- Spawn the initial channel that gives us commands based on user input.
         commandChan0 <- Chan.newChan
         _            <- forkIO $ forever $
