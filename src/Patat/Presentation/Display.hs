@@ -26,10 +26,11 @@ import           Patat.PrettyPrint                    ((<$$>), (<+>))
 import qualified Patat.PrettyPrint                    as PP
 import           Patat.Theme                          (Theme (..))
 import qualified Patat.Theme                          as Theme
+import           Prelude
 import qualified System.Console.ANSI                  as Ansi
 import qualified System.Console.Terminal.Size         as Terminal
+import qualified System.IO                            as IO
 import qualified Text.Pandoc.Extended                 as Pandoc
-import           Prelude
 
 
 --------------------------------------------------------------------------------
@@ -69,11 +70,11 @@ displayWithBorders Presentation {..} f = do
         active      = show (sidx + 1) ++ " / " ++ show (length pSlides)
         activeWidth = length active
 
-    Ansi.setCursorPosition (rows - 2) 0
+    Ansi.setCursorPosition (rows - 1) 0
     PP.putDoc $ " " <> borders (prettyInlines theme pAuthor)
     Ansi.setCursorColumn (columns - activeWidth - 1)
     PP.putDoc $ borders $ PP.string active
-    putStrLn ""
+    IO.hFlush IO.stdout
 
 
 --------------------------------------------------------------------------------
