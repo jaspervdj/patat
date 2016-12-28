@@ -1,5 +1,11 @@
 # Changelog
 
+- 0.4.6.0 (2016-12-28)
+    * Redraw the screen on unknown commands to prevent accidental typing from
+      showing up.
+    * Make the cursor invisible during the presentation.
+    * Move the footer down one more line to gain some screen real estate.
+
 - 0.4.5.0 (2016-12-05)
     * Render the date in a locale-independent manner (patch by Daniel
       Shahaf).
