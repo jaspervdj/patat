@@ -27,6 +27,7 @@ data PresentationCommand
     | First
     | Last
     | Reload
+    | UnknownCommand String
 
 
 --------------------------------------------------------------------------------
@@ -48,7 +49,7 @@ readPresentationCommand = do
         "0"      -> return First
         "G"      -> return Last
         "r"      -> return Reload
-        _        -> readPresentationCommand
+        _        -> return (UnknownCommand k)
   where
     readKey :: IO String
     readKey = do
@@ -77,14 +78,15 @@ updatePresentation
     :: PresentationCommand -> Presentation -> IO UpdatedPresentation
 
 updatePresentation cmd presentation = case cmd of
-    Exit         -> return ExitedPresentation
-    Forward      -> return $ goToSlide $ \(s, f) -> (s, f + 1)
-    Backward     -> return $ goToSlide $ \(s, f) -> (s, f - 1)
-    SkipForward  -> return $ goToSlide $ \(s, _) -> (s + 10, 0)
-    SkipBackward -> return $ goToSlide $ \(s, _) -> (s - 10, 0)
-    First        -> return $ goToSlide $ \_ -> (0, 0)
-    Last         -> return $ goToSlide $ \_ -> (numSlides presentation, 0)
-    Reload       -> reloadPresentation
+    Exit             -> return ExitedPresentation
+    Forward          -> return $ goToSlide $ \(s, f) -> (s, f + 1)
+    Backward         -> return $ goToSlide $ \(s, f) -> (s, f - 1)
+    SkipForward      -> return $ goToSlide $ \(s, _) -> (s + 10, 0)
+    SkipBackward     -> return $ goToSlide $ \(s, _) -> (s - 10, 0)
+    First            -> return $ goToSlide $ \_ -> (0, 0)
+    Last             -> return $ goToSlide $ \_ -> (numSlides presentation, 0)
+    Reload           -> reloadPresentation
+    UnknownCommand _ -> return (UpdatedPresentation presentation)
   where
     numSlides :: Presentation -> Int
     numSlides pres = length (pSlides pres)
