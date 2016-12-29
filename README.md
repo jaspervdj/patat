@@ -227,6 +227,9 @@ advance to the next slide.
 
     This slide will be shown two seconds after the presentation starts.
 
+Note that changes to `autoAdvanceDelay` are not picked up automatically if you
+are running `patat --watch`.  This requires restarting `patat`.
+
 ### Fragmented slides
 
 By default, slides are always displayed "all at once".  If you want to display
