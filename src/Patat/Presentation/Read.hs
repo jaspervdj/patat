@@ -1,6 +1,7 @@
 -- | Read a presentation from disk.
-{-# LANGUAGE BangPatterns    #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE BangPatterns      #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 module Patat.Presentation.Read
     ( readPresentation
     ) where
@@ -12,17 +13,20 @@ import           Control.Monad.Except        (ExceptT (..), runExceptT,
 import           Control.Monad.Trans         (liftIO)
 import qualified Data.Aeson                  as A
 import qualified Data.ByteString             as B
+import qualified Data.HashMap.Strict         as HMS
 import           Data.Maybe                  (fromMaybe)
 import           Data.Monoid                 (mempty, (<>))
 import qualified Data.Set                    as Set
+import qualified Data.Text                   as T
+import qualified Data.Text.Encoding          as T
 import qualified Data.Yaml                   as Yaml
 import           Patat.Presentation.Fragment
 import           Patat.Presentation.Internal
+import           Prelude
 import           System.Directory            (doesFileExist, getHomeDirectory)
 import           System.FilePath             (takeExtension, (</>))
 import qualified Text.Pandoc.Error           as Pandoc
 import qualified Text.Pandoc.Extended        as Pandoc
-import           Prelude
 
 
 --------------------------------------------------------------------------------
@@ -32,12 +36,12 @@ readPresentation filePath = runExceptT $ do
     reader <- case readExtension ext of
         Nothing -> throwError $ "Unknown file extension: " ++ show ext
         Just x  -> return x
-    doc@(Pandoc.Pandoc meta _) <- case reader src of
+    doc    <- case reader src of
         Left  e -> throwError $ "Could not parse document: " ++ show e
         Right x -> return x
 
     homeSettings <- ExceptT readHomeSettings
-    metaSettings <- ExceptT $ return $ readMetaSettings meta
+    metaSettings <- ExceptT $ return $ readMetaSettings src
     let settings = metaSettings <> homeSettings <> defaultPresentationSettings
 
     ExceptT $ return $ pandocToPresentation filePath settings doc
@@ -75,11 +79,29 @@ pandocToPresentation pFilePath pSettings pandoc@(Pandoc.Pandoc meta _) = do
 
 
 --------------------------------------------------------------------------------
+-- | This re-parses the pandoc metadata block using the YAML library.  This
+-- avoids the problems caused by pandoc involving rendering Markdown.  This
+-- should only be used for settings though, not things like title / authors
+-- since those /can/ contain markdown.
+parseMetadataBlock :: String -> Maybe A.Value
+parseMetadataBlock src = do
+    block <- mbBlock
+    Yaml.decode $! T.encodeUtf8 $! T.pack block
+  where
+    mbBlock = case lines src of
+        ("---" : ls) -> case break (`elem` ["---", "..."]) ls of
+            (_,     [])      -> Nothing
+            (block, (_ : _)) -> Just (unlines block)
+        _            -> Nothing
+
+
+--------------------------------------------------------------------------------
 -- | Read settings from the metadata block in the Pandoc document.
-readMetaSettings :: Pandoc.Meta -> Either String PresentationSettings
-readMetaSettings meta = case Pandoc.lookupMeta "patat" meta of
-    Nothing  -> return mempty
-    Just val -> resultToEither $! A.fromJSON $! Pandoc.metaToJson val
+readMetaSettings :: String -> Either String PresentationSettings
+readMetaSettings src = fromMaybe (Right mempty) $ do
+    A.Object obj <- parseMetadataBlock src
+    val          <- HMS.lookup "patat" obj
+    return $! resultToEither $! A.fromJSON val
   where
     resultToEither :: A.Result a -> Either String a
     resultToEither (A.Success x) = Right x
