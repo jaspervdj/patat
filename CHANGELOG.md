@@ -1,5 +1,10 @@
 # Changelog
 
+- 0.4.7.0 (2017-01-20)
+    * Bump `aeson-1.1` dependency
+    * Parse YAML for settings using `yaml` instead of pandoc
+    * Clarify watch & autoAdvance combination in documentation.
+
 - 0.4.6.0 (2016-12-28)
     * Redraw the screen on unknown commands to prevent accidental typing from
       showing up.
