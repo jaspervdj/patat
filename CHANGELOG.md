@@ -1,5 +1,9 @@
 # Changelog
 
+- 0.4.7.1 (2017-01-22)
+    * Bump `directory-1.3` dependency
+    * Bump `time-1.7` dependency
+
 - 0.4.7.0 (2017-01-20)
     * Bump `aeson-1.1` dependency
     * Parse YAML for settings using `yaml` instead of pandoc
