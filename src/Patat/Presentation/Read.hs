@@ -126,8 +126,18 @@ readHomeSettings = do
 --------------------------------------------------------------------------------
 pandocToSlides :: PresentationSettings -> Pandoc.Pandoc -> [Slide]
 pandocToSlides settings pandoc =
-    let blockss = splitSlides pandoc in
-    map (Slide . map Fragment . (fragmentBlocks fragmentSettings)) blockss
+    let slideLevel   = fromMaybe (detectSlideLevel pandoc) (psSlideLevel settings)
+        unfragmented = splitSlides slideLevel pandoc
+        fragmented   =
+            [ case slide of
+                TitleSlide   _          -> slide
+                ContentSlide fragments0 ->
+                    let blocks  = concatMap unFragment fragments0
+                        blockss = fragmentBlocks fragmentSettings blocks in
+                    ContentSlide (map Fragment blockss)
+            | slide <- unfragmented
+            ] in
+    fragmented
   where
     fragmentSettings = FragmentSettings
         { fsIncrementalLists = fromMaybe False (psIncrementalLists settings)
@@ -135,22 +145,47 @@ pandocToSlides settings pandoc =
 
 
 --------------------------------------------------------------------------------
+-- | Find level of header that starts slides.  This is defined as the least
+-- header that occurs before a non-header in the blocks.
+detectSlideLevel :: Pandoc.Pandoc -> Int
+detectSlideLevel (Pandoc.Pandoc _meta blocks0) =
+    go 6 blocks0
+  where
+    go level (Pandoc.Header n _ _ : x : xs)
+        | n < level && nonHeader x = go n xs
+        | otherwise                = go level (x:xs)
+    go level (_ : xs)              = go level xs
+    go level []                    = level
+
+    nonHeader (Pandoc.Header _ _ _) = False
+    nonHeader _                     = True
+
+
+--------------------------------------------------------------------------------
 -- | Split a pandoc document into slides.  If the document contains horizonal
 -- rules, we use those as slide delimiters.  If there are no horizontal rules,
--- we split using h1 headers.
-splitSlides :: Pandoc.Pandoc -> [[Pandoc.Block]]
-splitSlides (Pandoc.Pandoc _meta blocks0)
-    | any (== Pandoc.HorizontalRule) blocks0 = splitAtRules blocks0
-    | otherwise                              = splitAtH1s   blocks0
+-- we split using headers, determined by the slide level (see
+-- 'detectSlideLevel').
+splitSlides :: Int -> Pandoc.Pandoc -> [Slide]
+splitSlides slideLevel (Pandoc.Pandoc _meta blocks0)
+    | any (== Pandoc.HorizontalRule) blocks0 = splitAtRules   blocks0
+    | otherwise                              = splitAtHeaders [] blocks0
   where
+    mkContentSlide :: [Pandoc.Block] -> [Slide]
+    mkContentSlide [] = []  -- Never create empty slides
+    mkContentSlide bs = [ContentSlide [Fragment bs]]
+
     splitAtRules blocks = case break (== Pandoc.HorizontalRule) blocks of
-        (xs, [])           -> [xs]
-        (xs, (_rule : ys)) -> xs : splitAtRules ys
+        (xs, [])           -> mkContentSlide xs
+        (xs, (_rule : ys)) -> mkContentSlide xs ++ splitAtRules ys
 
-    splitAtH1s []       = []
-    splitAtH1s (b : bs) = case break isH1 bs of
-        (xs, [])       -> [(b : xs)]
-        (xs, (y : ys)) -> (b : xs) : splitAtH1s (y : ys)
-
-    isH1 (Pandoc.Header i _ _) = i == 1
-    isH1 _                     = False
+    splitAtHeaders acc [] =
+        mkContentSlide (reverse acc)
+    splitAtHeaders acc (b@(Pandoc.Header i _ _) : bs)
+        | i > slideLevel  = splitAtHeaders (b : acc) bs
+        | i == slideLevel =
+            mkContentSlide (reverse acc) ++ splitAtHeaders [b] bs
+        | otherwise       =
+            mkContentSlide (reverse acc) ++ [TitleSlide b] ++ splitAtHeaders [] bs
+    splitAtHeaders acc (b : bs) =
+        splitAtHeaders (b : acc) bs

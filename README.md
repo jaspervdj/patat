@@ -42,6 +42,7 @@ Table of Contents
 -   [Configuration](#configuration)
     -   [Line wrapping](#line-wrapping)
     -   [Auto advancing](#auto-advancing)
+    -   [Advanced slide splitting](#advanced-slide-splitting)
     -   [Fragmented slides](#fragmented-slides)
     -   [Theming](#theming)
     -   [Syntax Highlighting](#syntax-highlighting)
@@ -155,10 +156,15 @@ usually the most simple solution:
 Horizontal rulers (`---`) are used to split slides.
 
 However, if you prefer not use these since they are a bit intrusive in the
-markdown, you can also start every slide with an `h1` header.  In that case, the
-file should not contain a single horizontal ruler.
+markdown, you can also start every slide with a header.  In that case, the file
+should not contain a single horizontal ruler.
 
-This means the following document is equivalent:
+`patat` will pick the most deeply nested header (e.g. `h2`) as the marker for a
+new slide.  Headers _above_ the most deeply nested header (e.g. `h1`) will turn
+into title slides, which are displayed as as a slide containing only the
+centered title.
+
+This means the following document is equivalent to the one we saw before:
 
     ---
     title: This is my presentation
@@ -176,6 +182,30 @@ This means the following document is equivalent:
     - Markdown
     - Haskell
     - Pandoc
+
+And that following document contains three slides: a title slide, followed by
+two content slides.
+
+    ---
+    title: This is my presentation
+    author: Jane Doe
+    ...
+
+    # Chapter 1
+
+    ## This is a slide
+
+    Slide contents.  Yay.
+
+    ## Another slide
+
+    Things I like:
+
+    - Markdown
+    - Haskell
+    - Pandoc
+
+For more information, see [Advanced slide splitting](#advanced-slide-splitting).
 
 Configuration
 -------------
@@ -229,6 +259,36 @@ advance to the next slide.
 
 Note that changes to `autoAdvanceDelay` are not picked up automatically if you
 are running `patat --watch`.  This requires restarting `patat`.
+
+### Advanced slide splitting
+
+You can control the way slide splitting works by setting the `slideLevel`
+variable.  This variable defaults to the least header that occurs before a
+non-header, but it can also be explicitly defined.  For example, in the
+following document, the `slideLevel` defaults to **2**:
+
+    # This is a slide
+
+    ## This is a nested header
+
+    This is some content
+
+With `slideLevel` 2, the `h1` will turn into a "title slide", and the `h2` will
+be displayed at the top of the second slide.  We can customize this by setting
+`slideLevel` manually:
+
+    ---
+    patat:
+      slideLevel: 1
+    ...
+
+    # This is a slide
+
+    ## This is a nested header
+
+    This is some content
+
+Now, we will only see one slide, which contains a nested header.
 
 ### Fragmented slides
 

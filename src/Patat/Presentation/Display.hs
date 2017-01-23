@@ -34,9 +34,13 @@ import qualified Text.Pandoc.Extended                 as Pandoc
 
 
 --------------------------------------------------------------------------------
+data CanvasSize = CanvasSize {csRows :: Int, csCols :: Int} deriving (Show)
+
+
+--------------------------------------------------------------------------------
 -- | Display something within the presentation borders that draw the title and
 -- the active slide number and so on.
-displayWithBorders :: Presentation -> (Theme -> PP.Doc) -> IO ()
+displayWithBorders :: Presentation -> (CanvasSize -> Theme -> PP.Doc) -> IO ()
 displayWithBorders Presentation {..} f = do
     Ansi.clearScreen
     Ansi.setCursorPosition 0 0
@@ -63,7 +67,8 @@ displayWithBorders Presentation {..} f = do
         putStrLn ""
         putStrLn ""
 
-    PP.putDoc $ withWrapSettings settings $ f theme
+    let canvasSize = CanvasSize (rows - 2) columns
+    PP.putDoc $ withWrapSettings settings $ f canvasSize theme
     putStrLn ""
 
     let (sidx, _)   = pActiveFragment
@@ -79,16 +84,25 @@ displayWithBorders Presentation {..} f = do
 
 --------------------------------------------------------------------------------
 displayPresentation :: Presentation -> IO ()
-displayPresentation pres@Presentation {..} = displayWithBorders pres $ \theme ->
-    let fragment = fromMaybe mempty (getActiveFragment pres) in
-    prettyFragment theme fragment
+displayPresentation pres@Presentation {..} = displayWithBorders pres $
+    \canvasSize theme -> case getActiveFragment pres of
+        Nothing                       -> mempty
+        Just (ActiveContent fragment) -> prettyFragment theme fragment
+        Just (ActiveTitle   block)    ->
+            let pblock         = prettyBlock theme block
+                (prows, pcols) = PP.dimensions pblock
+                offsetRow      = (csRows canvasSize `div` 2) - (prows `div` 2)
+                offsetCol      = (csCols canvasSize `div` 2) - (pcols `div` 2)
+                spaces         = mconcat (replicate offsetCol PP.space) in
+            mconcat (replicate (offsetRow - 1) PP.hardline) <$$>
+            PP.indent (PP.NotTrimmable spaces) (PP.NotTrimmable spaces) pblock
 
 
 --------------------------------------------------------------------------------
 -- | Displays an error in the place of the presentation.  This is useful if we
 -- want to display an error but keep the presentation running.
 displayPresentationError :: Presentation -> String -> IO ()
-displayPresentationError pres err = displayWithBorders pres $ \Theme {..} ->
+displayPresentationError pres err = displayWithBorders pres $ \_ Theme {..} ->
     themed themeStrong "Error occurred in the presentation:" <$$>
     "" <$$>
     (PP.string err)
@@ -100,10 +114,12 @@ dumpPresentation pres =
     let theme = fromMaybe Theme.defaultTheme (psTheme $ pSettings pres) in
     PP.putDoc $ withWrapSettings (pSettings pres) $
         PP.vcat $ intersperse "----------" $ do
-            Slide fragments <- pSlides pres
-            return $ PP.vcat $ intersperse "~~~~~~~~~~" $ do
-                fragment <- fragments
-                return $ prettyFragment theme fragment
+            slide <- pSlides pres
+            return $ case slide of
+                TitleSlide   block     -> "~~~title" <$$> prettyBlock theme block
+                ContentSlide fragments -> PP.vcat $ intersperse "~~~frag" $ do
+                    fragment <- fragments
+                    return $ prettyFragment theme fragment
 
 
 --------------------------------------------------------------------------------

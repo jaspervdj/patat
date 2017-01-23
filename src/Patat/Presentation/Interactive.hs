@@ -95,18 +95,18 @@ updatePresentation cmd presentation = case cmd of
     clip (slide, fragment) pres
         | slide    >= numSlides pres = (numSlides pres - 1, lastFragments - 1)
         | slide    <  0              = (0, 0)
-        | fragment >= numFragments slide =
+        | fragment >= numFragments' slide =
             if slide + 1 >= numSlides pres
                 then (slide, lastFragments - 1)
                 else (slide + 1, 0)
         | fragment < 0 =
             if slide - 1 >= 0
-                then (slide - 1, numFragments (slide - 1) - 1)
+                then (slide - 1, numFragments' (slide - 1) - 1)
                 else (slide, 0)
         | otherwise                  = (slide, fragment)
       where
-        numFragments s = maybe 1 (length . unSlide) (getSlide s pres)
-        lastFragments  = numFragments (numSlides pres - 1)
+        numFragments' s = maybe 1 numFragments (getSlide s pres)
+        lastFragments   = numFragments' (numSlides pres - 1)
 
     goToSlide :: (Index -> Index) -> UpdatedPresentation
     goToSlide f = UpdatedPresentation $ presentation

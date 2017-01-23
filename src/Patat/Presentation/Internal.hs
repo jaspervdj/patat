@@ -10,6 +10,9 @@ module Patat.Presentation.Internal
     , Index
 
     , getSlide
+    , numFragments
+
+    , ActiveFragment (..)
     , getActiveFragment
     ) where
 
@@ -46,13 +49,14 @@ data PresentationSettings = PresentationSettings
     , psTheme            :: !(Maybe Theme.Theme)
     , psIncrementalLists :: !(Maybe Bool)
     , psAutoAdvanceDelay :: !(Maybe (A.FlexibleNum Int))
+    , psSlideLevel       :: !(Maybe Int)
     } deriving (Show)
 
 
 --------------------------------------------------------------------------------
 instance Monoid PresentationSettings where
     mempty      = PresentationSettings
-                    Nothing Nothing Nothing Nothing Nothing Nothing
+                    Nothing Nothing Nothing Nothing Nothing Nothing Nothing
     mappend l r = PresentationSettings
         { psRows             = psRows             l `mplus` psRows             r
         , psColumns          = psColumns          l `mplus` psColumns          r
@@ -60,6 +64,7 @@ instance Monoid PresentationSettings where
         , psTheme            = psTheme            l <>      psTheme            r
         , psIncrementalLists = psIncrementalLists l `mplus` psIncrementalLists r
         , psAutoAdvanceDelay = psAutoAdvanceDelay l `mplus` psAutoAdvanceDelay r
+        , psSlideLevel       = psSlideLevel       l `mplus` psSlideLevel       r
         }
 
 
@@ -72,12 +77,15 @@ defaultPresentationSettings = PresentationSettings
     , psTheme            = Just Theme.defaultTheme
     , psIncrementalLists = Nothing
     , psAutoAdvanceDelay = Nothing
+    , psSlideLevel       = Nothing
     }
 
 
 --------------------------------------------------------------------------------
-newtype Slide = Slide {unSlide :: [Fragment]}
-    deriving (Monoid, Show)
+data Slide
+    = ContentSlide [Fragment]
+    | TitleSlide   Pandoc.Block
+    deriving (Show)
 
 
 --------------------------------------------------------------------------------
@@ -96,11 +104,25 @@ getSlide sidx = listToMaybe . drop sidx . pSlides
 
 
 --------------------------------------------------------------------------------
-getActiveFragment :: Presentation -> Maybe Fragment
+numFragments :: Slide -> Int
+numFragments (ContentSlide fragments) = length fragments
+numFragments (TitleSlide _)           = 1
+
+
+--------------------------------------------------------------------------------
+data ActiveFragment = ActiveContent Fragment | ActiveTitle Pandoc.Block
+    deriving (Show)
+
+
+--------------------------------------------------------------------------------
+getActiveFragment :: Presentation -> Maybe ActiveFragment
 getActiveFragment presentation = do
     let (sidx, fidx) = pActiveFragment presentation
-    Slide fragments <- getSlide sidx presentation
-    listToMaybe $ drop fidx fragments
+    slide <- getSlide sidx presentation
+    case slide of
+        TitleSlide   block     -> return (ActiveTitle block)
+        ContentSlide fragments ->
+            fmap ActiveContent . listToMaybe $ drop fidx fragments
 
 
 --------------------------------------------------------------------------------
