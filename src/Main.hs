@@ -132,7 +132,7 @@ main = do
         else interactiveLoop options pres
   where
     interactiveLoop :: Options -> Presentation -> IO ()
-    interactiveLoop options pres0 = (`finally` Ansi.showCursor) $ do
+    interactiveLoop options pres0 = (`finally` cleanup) $ do
         IO.hSetBuffering IO.stdin IO.NoBuffering
         Ansi.hideCursor
 
@@ -166,6 +166,11 @@ main = do
                     ErroredPresentation err   -> loop pres (Just err)
 
         loop pres0 Nothing
+
+    cleanup :: IO ()
+    cleanup = do
+        Ansi.showCursor
+        Ansi.clearScreen
 
 
 --------------------------------------------------------------------------------
