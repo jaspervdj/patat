@@ -171,6 +171,7 @@ main = do
     cleanup = do
         Ansi.showCursor
         Ansi.clearScreen
+        Ansi.setCursorPosition 0 0
 
 
 --------------------------------------------------------------------------------
