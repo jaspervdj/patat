@@ -1,5 +1,19 @@
 # Changelog
 
+- 0.5.0.0 (2017-02-06)
+    * Add a `slideLevel` option & autodetect it.  This changes the way `patat`
+      splits slides.  For more information, see the `README` or the `man` page.
+      If you just want to get the old behavior back, just add:
+
+            ---
+            patat:
+              slideLevel: 1
+            ...
+
+        To the top of your presentation.
+
+    * Clear the screen when finished with the presentation.
+
 - 0.4.7.1 (2017-01-22)
     * Bump `directory-1.3` dependency
     * Bump `time-1.7` dependency
