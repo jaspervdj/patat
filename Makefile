@@ -17,6 +17,11 @@ extra/patat.1: README.md extra/make-man
 extra/make-man: extra/make-man.hs
 	ghc -DPANDOC_MINOR_VERSION=${PANDOC_MINOR_VERSION} -Wall -o $@ $<
 
+extra/patat.bash-completion:
+	patat --bash-completion-script patat >$@
+
+completion: extra/patat.bash-completion
+
 man: extra/patat.1
 
 # Also check if we can generate the manual.
@@ -26,5 +31,6 @@ test: man
 clean:
 	rm -f extra/patat.1
 	rm -f extra/make-man
+	rm -f extra/patat.bash-completion
 
-.PHONY: man test clean
+.PHONY: man completion test clean
