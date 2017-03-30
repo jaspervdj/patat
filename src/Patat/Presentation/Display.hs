@@ -258,7 +258,7 @@ prettyInline theme@Theme {..} (Pandoc.Strong inlines) =
 
 prettyInline Theme {..} (Pandoc.Code _ txt) =
     themed themeCode $
-    " " <> PP.string txt <> " "
+    PP.string (" " <> txt <> " ")
 
 prettyInline theme@Theme {..} link@(Pandoc.Link _attrs text (target, _title))
     | isReferenceLink link =
