@@ -1,5 +1,11 @@
 # Changelog
 
+- 0.5.1.0 (2017-04-23)
+    * Bump `aeson-1.2` dependency
+    * Fix vertical alignment of title slides
+    * Fix wrapping issue with inline code at end of line
+    * Add bash-completion script generation to Makefile
+
 - 0.5.0.0 (2017-02-06)
     * Add a `slideLevel` option & autodetect it.  This changes the way `patat`
       splits slides.  For more information, see the `README` or the `man` page.
