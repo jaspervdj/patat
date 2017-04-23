@@ -24,10 +24,10 @@ import qualified Data.Map               as M
 import           Data.Maybe             (mapMaybe, maybeToList)
 import           Data.Monoid            (Monoid (..), (<>))
 import qualified Data.Text              as T
-import qualified System.Console.ANSI    as Ansi
-import qualified Text.Highlighting.Kate as Kate
-import           Text.Read              (readMaybe)
 import           Prelude
+import qualified Skylighting            as Skylighting
+import qualified System.Console.ANSI    as Ansi
+import           Text.Read              (readMaybe)
 
 
 --------------------------------------------------------------------------------
@@ -218,30 +218,30 @@ instance A.FromJSON SyntaxHighlighting where
 --------------------------------------------------------------------------------
 defaultSyntaxHighlighting :: SyntaxHighlighting
 defaultSyntaxHighlighting = mkSyntaxHighlighting
-    [ (Kate.KeywordTok,        dull Ansi.Yellow)
-    , (Kate.ControlFlowTok,    dull Ansi.Yellow)
+    [ (Skylighting.KeywordTok,        dull Ansi.Yellow)
+    , (Skylighting.ControlFlowTok,    dull Ansi.Yellow)
 
-    , (Kate.DataTypeTok,       dull Ansi.Green)
+    , (Skylighting.DataTypeTok,       dull Ansi.Green)
 
-    , (Kate.DecValTok,         dull Ansi.Red)
-    , (Kate.BaseNTok,          dull Ansi.Red)
-    , (Kate.FloatTok,          dull Ansi.Red)
-    , (Kate.ConstantTok,       dull Ansi.Red)
-    , (Kate.CharTok,           dull Ansi.Red)
-    , (Kate.SpecialCharTok,    dull Ansi.Red)
-    , (Kate.StringTok,         dull Ansi.Red)
-    , (Kate.VerbatimStringTok, dull Ansi.Red)
-    , (Kate.SpecialStringTok,  dull Ansi.Red)
+    , (Skylighting.DecValTok,         dull Ansi.Red)
+    , (Skylighting.BaseNTok,          dull Ansi.Red)
+    , (Skylighting.FloatTok,          dull Ansi.Red)
+    , (Skylighting.ConstantTok,       dull Ansi.Red)
+    , (Skylighting.CharTok,           dull Ansi.Red)
+    , (Skylighting.SpecialCharTok,    dull Ansi.Red)
+    , (Skylighting.StringTok,         dull Ansi.Red)
+    , (Skylighting.VerbatimStringTok, dull Ansi.Red)
+    , (Skylighting.SpecialStringTok,  dull Ansi.Red)
 
-    , (Kate.CommentTok,        dull Ansi.Blue)
-    , (Kate.DocumentationTok,  dull Ansi.Blue)
-    , (Kate.AnnotationTok,     dull Ansi.Blue)
-    , (Kate.CommentVarTok,     dull Ansi.Blue)
+    , (Skylighting.CommentTok,        dull Ansi.Blue)
+    , (Skylighting.DocumentationTok,  dull Ansi.Blue)
+    , (Skylighting.AnnotationTok,     dull Ansi.Blue)
+    , (Skylighting.CommentVarTok,     dull Ansi.Blue)
 
-    , (Kate.ImportTok,         dull Ansi.Cyan)
-    , (Kate.OperatorTok,       dull Ansi.Cyan)
-    , (Kate.FunctionTok,       dull Ansi.Cyan)
-    , (Kate.PreprocessorTok,   dull Ansi.Cyan)
+    , (Skylighting.ImportTok,         dull Ansi.Cyan)
+    , (Skylighting.OperatorTok,       dull Ansi.Cyan)
+    , (Skylighting.FunctionTok,       dull Ansi.Cyan)
+    , (Skylighting.PreprocessorTok,   dull Ansi.Cyan)
     ]
   where
     dull c = Style [Ansi.SetColor Ansi.Foreground Ansi.Dull c]
@@ -251,7 +251,7 @@ defaultSyntaxHighlighting = mkSyntaxHighlighting
 
 
 --------------------------------------------------------------------------------
-nameForTokenType :: Kate.TokenType -> String
+nameForTokenType :: Skylighting.TokenType -> String
 nameForTokenType =
     unCapitalize . dropTok . show
   where
@@ -265,7 +265,7 @@ nameForTokenType =
 
 
 --------------------------------------------------------------------------------
-nameToTokenType :: String -> Maybe Kate.TokenType
+nameToTokenType :: String -> Maybe Skylighting.TokenType
 nameToTokenType = readMaybe . capitalize . (++ "Tok")
 
 
@@ -276,7 +276,7 @@ capitalize (x : xs) = toUpper x : xs
 
 
 --------------------------------------------------------------------------------
-syntaxHighlight :: Theme -> Kate.TokenType -> Maybe Style
+syntaxHighlight :: Theme -> Skylighting.TokenType -> Maybe Style
 syntaxHighlight theme tokenType = do
     sh <- themeSyntaxHighlighting theme
     M.lookup (nameForTokenType tokenType) (unSyntaxHighlighting sh)
