@@ -24,7 +24,7 @@ Executable patat
   Default-language:  Haskell2010
 
   Build-depends:
-    aeson                >= 0.9  && < 1.2,
+    aeson                >= 0.9  && < 1.3,
     ansi-terminal        >= 0.6  && < 0.7,
     ansi-wl-pprint       >= 0.6  && < 0.7,
     base                 >= 4.6  && < 4.10,
