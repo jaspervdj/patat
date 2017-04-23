@@ -94,7 +94,7 @@ displayPresentation pres@Presentation {..} = displayWithBorders pres $
                 offsetRow      = (csRows canvasSize `div` 2) - (prows `div` 2)
                 offsetCol      = (csCols canvasSize `div` 2) - (pcols `div` 2)
                 spaces         = mconcat (replicate offsetCol PP.space) in
-            mconcat (replicate (offsetRow - 1) PP.hardline) <$$>
+            mconcat (replicate (offsetRow - 3) PP.hardline) <$$>
             PP.indent (PP.NotTrimmable spaces) (PP.NotTrimmable spaces) pblock
 
 
