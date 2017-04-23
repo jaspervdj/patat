@@ -10,8 +10,11 @@ Homepage:            http://github.com/jaspervdj/patat
 Copyright:           2016 Jasper Van der Jeugt
 Category:            Text
 Build-type:          Simple
-Extra-source-files:  CHANGELOG.md
 Cabal-version:       >=1.10
+
+Extra-source-files:
+  CHANGELOG.md
+  README.md
 
 Source-repository head
   Type:     git
