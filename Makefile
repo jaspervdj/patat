@@ -9,7 +9,7 @@ SOURCE_DATE_EPOCH?=$(shell date '+%s' \
 					   --date="$(shell git log -1 --format=%cd --date=rfc)")
 
 # Prettify the date.
-SOURCE_DATE=$(shell env LC_ALL=C TZ=UTC date '+%B %d, %Y' -d "@${SOURCE_DATE_EPOCH}")
+SOURCE_DATE=$(shell env LC_ALL=C date --utc '+%B %d, %Y' -d "@${SOURCE_DATE_EPOCH}")
 
 extra/patat.1: README.md extra/make-man
 	SOURCE_DATE="$(SOURCE_DATE)" ./extra/make-man >$@
