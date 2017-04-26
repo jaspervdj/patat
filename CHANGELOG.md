@@ -1,5 +1,11 @@
 # Changelog
 
+- 0.5.1.2 (2017-04-26)
+    * Make build reproducible even if timezone changes (patch by Félix Sipma)
+
+- 0.5.1.1 (2017-04-23)
+    * Include `README` in `Extra-source-files` so it gets displayed on Hackage
+
 - 0.5.1.0 (2017-04-23)
     * Bump `aeson-1.2` dependency
     * Fix vertical alignment of title slides
