@@ -42,10 +42,14 @@ readPresentationCommand = do
         "j"      -> return SkipForward
         "k"      -> return SkipBackward
         "l"      -> return Forward
+        -- Arrow keys
         "\ESC[C" -> return Forward
         "\ESC[D" -> return Backward
         "\ESC[B" -> return SkipForward
         "\ESC[A" -> return SkipBackward
+        -- PageUp and PageDown
+        "\ESC[6" -> return Forward
+        "\ESC[5" -> return Backward
         "0"      -> return First
         "G"      -> return Last
         "r"      -> return Reload
