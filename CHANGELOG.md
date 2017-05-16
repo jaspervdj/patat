@@ -1,5 +1,10 @@
 # Changelog
 
+- 0.5.2.0 (2017-05-16)
+    * Add navigation using `PageUp` and `PageDown`.
+    * Use `skylighting` instead of deprecated `highlighting-kate` for syntax
+      highlighting.
+
 - 0.5.1.2 (2017-04-26)
     * Make build reproducible even if timezone changes (patch by Félix Sipma)
 
