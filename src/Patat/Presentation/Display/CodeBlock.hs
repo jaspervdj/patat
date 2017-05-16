@@ -8,41 +8,45 @@ module Patat.Presentation.Display.CodeBlock
 
 
 --------------------------------------------------------------------------------
-import           Data.Char                        (toLower)
-import           Data.List                        (find)
+import           Data.Maybe                       (mapMaybe)
 import           Data.Monoid                      (mconcat, (<>))
-import qualified Data.Set                         as S
+import qualified Data.Text                        as T
 import           Patat.Presentation.Display.Table (themed)
 import qualified Patat.PrettyPrint                as PP
 import           Patat.Theme
-import qualified Text.Highlighting.Kate           as Kate
 import           Prelude
+import qualified Skylighting                      as Skylighting
 
 
 --------------------------------------------------------------------------------
-lower :: String -> String
-lower = map toLower
+highlight :: [String] -> String -> [Skylighting.SourceLine]
+highlight classes rawCodeBlock = case mapMaybe getSyntax classes of
+    []        -> zeroHighlight rawCodeBlock
+    (syn : _) ->
+        case Skylighting.tokenize config syn (T.pack rawCodeBlock) of
+            Left  _  -> zeroHighlight rawCodeBlock
+            Right sl -> sl
+  where
+    getSyntax :: String -> Maybe Skylighting.Syntax
+    getSyntax c = Skylighting.lookupSyntax (T.pack c) syntaxMap
 
+    config :: Skylighting.TokenizerConfig
+    config = Skylighting.TokenizerConfig
+        { Skylighting.syntaxMap  = syntaxMap
+        , Skylighting.traceOutput = False
+        }
 
---------------------------------------------------------------------------------
-supportedLanguages :: S.Set String
-supportedLanguages = S.fromList (map lower Kate.languages)
-
-
---------------------------------------------------------------------------------
-highlight :: [String] -> String -> [Kate.SourceLine]
-highlight classes rawCodeBlock =
-    case find (\c -> lower c `S.member` supportedLanguages) classes of
-        Nothing   -> zeroHighlight rawCodeBlock
-        Just lang -> Kate.highlightAs lang rawCodeBlock
+    syntaxMap :: Skylighting.SyntaxMap
+    syntaxMap = Skylighting.defaultSyntaxMap
 
 
 --------------------------------------------------------------------------------
 -- | This does fake highlighting, everything becomes a normal token.  That makes
 -- things a bit easier, since we only need to deal with one cases in the
 -- renderer.
-zeroHighlight :: String -> [Kate.SourceLine]
-zeroHighlight str = [[(Kate.NormalTok, line)] | line <- lines str]
+zeroHighlight :: String -> [Skylighting.SourceLine]
+zeroHighlight str =
+    [[(Skylighting.NormalTok, T.pack line)] | line <- lines str]
 
 
 --------------------------------------------------------------------------------
@@ -51,24 +55,24 @@ prettyCodeBlock theme@Theme {..} classes rawCodeBlock =
     PP.vcat (map blockified sourceLines) <>
     PP.hardline
   where
-    sourceLines :: [Kate.SourceLine]
+    sourceLines :: [Skylighting.SourceLine]
     sourceLines =
         [[]] ++ highlight classes rawCodeBlock ++ [[]]
 
-    prettySourceLine :: Kate.SourceLine -> PP.Doc
+    prettySourceLine :: Skylighting.SourceLine -> PP.Doc
     prettySourceLine = mconcat . map prettyToken
 
-    prettyToken :: Kate.Token -> PP.Doc
+    prettyToken :: Skylighting.Token -> PP.Doc
     prettyToken (tokenType, str) =
-        themed (syntaxHighlight theme tokenType) (PP.string str)
+        themed (syntaxHighlight theme tokenType) (PP.string $ T.unpack str)
 
-    sourceLineLength :: Kate.SourceLine -> Int
-    sourceLineLength line = sum [length str | (_, str) <- line]
+    sourceLineLength :: Skylighting.SourceLine -> Int
+    sourceLineLength line = sum [T.length str | (_, str) <- line]
 
     blockWidth :: Int
     blockWidth = foldr max 0 (map sourceLineLength sourceLines)
 
-    blockified :: Kate.SourceLine -> PP.Doc
+    blockified :: Skylighting.SourceLine -> PP.Doc
     blockified line =
         let len    = sourceLineLength line
             indent = PP.NotTrimmable "   " in
