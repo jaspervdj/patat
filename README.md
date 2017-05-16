@@ -115,8 +115,8 @@ Options
 Controls
 --------
 
-- **Next slide**: `space`, `enter`, `l`, `→`
-- **Previous slide**: `backspace`, `h`, `←`
+- **Next slide**: `space`, `enter`, `l`, `→`, `PageDown`
+- **Previous slide**: `backspace`, `h`, `←`, `PageUp`
 - **Go forward 10 slides**: `j`, `↓`
 - **Go backward 10 slides**: `k`, `↑`
 - **First slide**: `0`
