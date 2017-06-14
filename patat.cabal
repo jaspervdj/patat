@@ -36,7 +36,7 @@ Executable patat
     directory            >= 1.2  && < 1.4,
     filepath             >= 1.4  && < 1.5,
     mtl                  >= 2.2  && < 2.3,
-    optparse-applicative >= 0.12 && < 0.14,
+    optparse-applicative >= 0.12 && < 0.15,
     pandoc               >= 1.16 && < 1.20,
     skylighting          >= 0.1  && < 0.4,
     terminal-size        >= 0.3  && < 0.4,
