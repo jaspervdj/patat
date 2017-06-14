@@ -1,5 +1,8 @@
 # Changelog
 
+- 0.5.2.1 (2017-06-14)
+    * Bump `optparse-applicative-0.14` dependency
+
 - 0.5.2.0 (2017-05-16)
     * Add navigation using `PageUp` and `PageDown`.
     * Use `skylighting` instead of deprecated `highlighting-kate` for syntax
