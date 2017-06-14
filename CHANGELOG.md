@@ -1,5 +1,8 @@
 # Changelog
 
+- 0.5.2.2 (2017-06-14)
+    * Add `network-uri` dependency to fix travis build
+
 - 0.5.2.1 (2017-06-14)
     * Bump `optparse-applicative-0.14` dependency
 
