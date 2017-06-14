@@ -43,7 +43,11 @@ Executable patat
     text                 >= 1.2  && < 1.3,
     time                 >= 1.4  && < 1.8,
     unordered-containers >= 0.2  && < 0.3,
-    yaml                 >= 0.7  && < 0.9
+    yaml                 >= 0.7  && < 0.9,
+    -- We don't even depend on these packages but they can break cabal install
+    -- because of the conflicting 'Network.URI' module.
+    network-uri >= 2.6,
+    network     >= 2.6
 
   Other-modules:
     Data.Aeson.Extended
