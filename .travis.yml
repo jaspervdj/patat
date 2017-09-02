@@ -1,6 +1,10 @@
 language: haskell
 ghc: '8.0.2'
 sudo: false
+env:
+  global:
+    # Travis seems to fail at setting this correctly.
+    - PATH: "$HOME/.cabal/bin:$PATH"
 cache:
   directories:
     - '$HOME/.cabal'
