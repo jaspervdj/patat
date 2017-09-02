@@ -178,7 +178,7 @@ main = do
 watcher :: Chan.Chan PresentationCommand -> FilePath -> UTCTime -> IO a
 watcher chan filePath mtime0 = do
     -- The extra exists check helps because some editors temporarily make the
-    -- file dissapear while writing.
+    -- file disappear while writing.
     exists <- doesFileExist filePath
     mtime1 <- if exists then getModificationTime filePath else return mtime0
 
