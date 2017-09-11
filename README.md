@@ -53,9 +53,9 @@ Installation
 
 ### Pre-built-packages
 
-There is a pre-built package available for Debian:
-
-- <https://packages.debian.org/unstable/patat>
+- Debian: <https://packages.debian.org/unstable/patat>
+- Ubuntu: <https://packages.ubuntu.com/artful/patat>
+- openSUSE: <https://build.opensuse.org/package/show/openSUSE:Factory:ARM/patat>
 
 ### From source
 
