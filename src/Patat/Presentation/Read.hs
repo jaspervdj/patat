@@ -53,17 +53,45 @@ readPresentation filePath = runExceptT $ do
 readExtension
     :: String -> Maybe (T.Text -> Either Pandoc.PandocError Pandoc.Pandoc)
 readExtension fileExt = case fileExt of
-    ".md"  -> Just $ Pandoc.runPure . Pandoc.readMarkdown Pandoc.def
+    ".md"  -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
     ".lhs" -> Just $ Pandoc.runPure . Pandoc.readMarkdown lhsOpts
-    ""     -> Just $ Pandoc.runPure . Pandoc.readMarkdown Pandoc.def
-    ".org" -> Just $ Pandoc.runPure . Pandoc.readOrg Pandoc.def
+    ""     -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
+    ".org" -> Just $ Pandoc.runPure . Pandoc.readOrg      readerOpts
     _      -> Nothing
 
   where
-    lhsOpts = Pandoc.def
+    readerOpts = addExtensions Pandoc.def
+        [ Pandoc.Ext_yaml_metadata_block
+        , Pandoc.Ext_table_captions
+        , Pandoc.Ext_simple_tables
+        , Pandoc.Ext_multiline_tables
+        , Pandoc.Ext_grid_tables
+        , Pandoc.Ext_pipe_tables
+        , Pandoc.Ext_raw_html
+        , Pandoc.Ext_tex_math_dollars
+        , Pandoc.Ext_fenced_code_blocks
+        , Pandoc.Ext_fenced_code_attributes
+        , Pandoc.Ext_backtick_code_blocks
+        , Pandoc.Ext_inline_code_attributes
+        , Pandoc.Ext_fancy_lists
+        , Pandoc.Ext_four_space_rule
+        , Pandoc.Ext_definition_lists
+        , Pandoc.Ext_compact_definition_lists
+        , Pandoc.Ext_example_lists
+        , Pandoc.Ext_strikeout
+        , Pandoc.Ext_superscript
+        , Pandoc.Ext_subscript
+        ]
+
+    lhsOpts = addExtensions readerOpts
+        [ Pandoc.Ext_literate_haskell
+        ]
+
+    addExtensions
+        :: Pandoc.ReaderOptions -> [Pandoc.Extension] -> Pandoc.ReaderOptions
+    addExtensions opts exts = opts
         { Pandoc.readerExtensions =
-            Pandoc.readerExtensions Pandoc.def <>
-            Pandoc.extensionsFromList [Pandoc.Ext_literate_haskell]
+            Pandoc.extensionsFromList exts <> Pandoc.readerExtensions opts
         }
 
 

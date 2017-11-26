@@ -64,4 +64,5 @@ Executable patat
     Patat.Presentation.Read
     Patat.PrettyPrint
     Patat.Theme
+    Paths_patat
     Text.Pandoc.Extended
