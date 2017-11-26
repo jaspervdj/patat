@@ -1,9 +1,9 @@
-resolver: nightly-2017-06-14
+resolver: nightly-2017-11-20
 install-ghc: true
 packages:
 - '.'
 flags: {}
 extra-package-dbs: []
-extra-deps:
-- 'aeson-1.2.0.0'
-- 'optparse-applicative-0.14.0.0'
+extra-deps: []
+# - 'aeson-1.2.0.0'
+# - 'optparse-applicative-0.14.0.0'
