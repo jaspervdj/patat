@@ -10,6 +10,6 @@ cache:
     - '$HOME/.cabal'
     - '$HOME/.ghc'
 install:
-  - cabal install
+  - travis_wait cabal install
 script:
   - make test
