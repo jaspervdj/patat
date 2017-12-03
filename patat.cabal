@@ -78,6 +78,11 @@ Executable patat-make-man
   Hs-source-dirs:   extra
   Default-language: Haskell2010
 
+  If flag(patat-make-man)
+    Buildable: True
+  Else
+    Buildable: False
+
   Build-depends:
     base   >= 4.6  && < 4.11,
     mtl    >= 2.2  && < 2.3,
