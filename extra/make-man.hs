@@ -13,6 +13,7 @@ import qualified GHC.IO.Encoding     as Encoding
 import           Prelude
 import           System.Environment  (getEnv)
 import qualified System.IO           as IO
+import qualified Data.Time as Time
 import qualified Text.Pandoc         as Pandoc
 
 getVersion :: IO String
@@ -20,6 +21,14 @@ getVersion =
     dropWhile isSpace . drop 1 . dropWhile (/= ':') . head .
     filter (\l -> "version:" `isPrefixOf` map toLower l) .
     map (dropWhile isSpace) . lines <$> readFile "patat.cabal"
+
+getPrettySourceDate :: IO String
+getPrettySourceDate = do
+    epoch <- getEnv "SOURCE_DATE_EPOCH"
+    utc   <- Time.parseTimeM True locale "%s" epoch :: IO Time.UTCTime
+    return $ Time.formatTime locale "%B %d, %Y" utc
+  where
+    locale = Time.defaultTimeLocale
 
 removeLinks :: Pandoc.Pandoc -> Pandoc.Pandoc
 removeLinks = Pandoc.bottomUp $ \inline -> case inline of
@@ -97,8 +106,8 @@ main = Pandoc.runIOorExplode $ do
     pandoc0  <- Pandoc.readMarkdown readerOptions source
     template <- Pandoc.getDefaultTemplate "man"
 
-    version <- liftIO $ getVersion
-    date    <- liftIO $ getEnv "SOURCE_DATE"
+    version <- liftIO getVersion
+    date    <- liftIO getPrettySourceDate
 
     let writerOptions = Pandoc.def
             { Pandoc.writerTemplate   = Just template
