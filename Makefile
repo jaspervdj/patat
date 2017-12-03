@@ -11,11 +11,8 @@ SOURCE_DATE_EPOCH?=$(shell date '+%s' \
 # Prettify the date.
 SOURCE_DATE=$(shell env LC_ALL=C date --utc '+%B %d, %Y' -d "@${SOURCE_DATE_EPOCH}")
 
-extra/patat.1: README.md extra/make-man
-	SOURCE_DATE="$(SOURCE_DATE)" ./extra/make-man >$@
-
-extra/make-man: extra/make-man.hs
-	ghc -DPANDOC_MINOR_VERSION=${PANDOC_MINOR_VERSION} -Wall -o $@ $<
+extra/patat.1: README.md
+	SOURCE_DATE="$(SOURCE_DATE)" patat-make-man >$@
 
 extra/patat.bash-completion:
 	patat --bash-completion-script patat >$@

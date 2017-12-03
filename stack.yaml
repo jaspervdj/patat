@@ -2,7 +2,9 @@ resolver: nightly-2017-11-20
 install-ghc: true
 packages:
 - '.'
-flags: {}
+flags:
+  patat:
+    patat-make-man: true
 extra-package-dbs: []
 extra-deps: []
 # - 'aeson-1.2.0.0'

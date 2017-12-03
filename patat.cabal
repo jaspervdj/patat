@@ -20,6 +20,11 @@ Source-repository head
   Type:     git
   Location: git://github.com/jaspervdj/patat.git
 
+Flag patat-make-man
+  Description: Build the executable to generate the man page
+  Default:     False
+  Manual:      True
+
 Executable patat
   Main-is:           Main.hs
   Ghc-options:       -Wall -threaded -rtsopts "-with-rtsopts=-N"
@@ -66,3 +71,15 @@ Executable patat
     Patat.Theme
     Paths_patat
     Text.Pandoc.Extended
+
+Executable patat-make-man
+  Main-is:          make-man.hs
+  Ghc-options:      -Wall
+  Hs-source-dirs:   extra
+  Default-language: Haskell2010
+
+  Build-depends:
+    base   >= 4.6  && < 4.11,
+    mtl    >= 2.2  && < 2.3,
+    pandoc >= 2.0  && < 2.1,
+    text   >= 1.2  && < 1.3
