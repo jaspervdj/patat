@@ -10,6 +10,6 @@ cache:
     - '$HOME/.cabal'
     - '$HOME/.ghc'
 install:
-  - travis_wait cabal install --flags="make-man-page"
+  - cabal install --flags="make-man-page"
 script:
   - make test
