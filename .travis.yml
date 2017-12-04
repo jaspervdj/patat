@@ -10,6 +10,6 @@ cache:
     - '$HOME/.cabal'
     - '$HOME/.ghc'
 install:
-  - cabal install --flags="make-man-page"
+  - cabal install --flags="patat-make-man"
 script:
   - make test
