@@ -32,17 +32,19 @@ import qualified Text.Pandoc.Extended        as Pandoc
 --------------------------------------------------------------------------------
 readPresentation :: FilePath -> IO (Either String Presentation)
 readPresentation filePath = runExceptT $ do
-    src    <- liftIO $ T.readFile filePath
-    reader <- case readExtension ext of
+    -- We need to read the settings first.
+    src          <- liftIO $ T.readFile filePath
+    homeSettings <- ExceptT readHomeSettings
+    metaSettings <- ExceptT $ return $ readMetaSettings src
+    let settings = metaSettings <> homeSettings <> defaultPresentationSettings
+
+    let pexts = fromMaybe defaultExtensionList (psPandocExtensions settings)
+    reader <- case readExtension pexts ext of
         Nothing -> throwError $ "Unknown file extension: " ++ show ext
         Just x  -> return x
     doc    <- case reader src of
         Left  e -> throwError $ "Could not parse document: " ++ show e
         Right x -> return x
-
-    homeSettings <- ExceptT readHomeSettings
-    metaSettings <- ExceptT $ return $ readMetaSettings src
-    let settings = metaSettings <> homeSettings <> defaultPresentationSettings
 
     ExceptT $ return $ pandocToPresentation filePath settings doc
   where
@@ -51,8 +53,9 @@ readPresentation filePath = runExceptT $ do
 
 --------------------------------------------------------------------------------
 readExtension
-    :: String -> Maybe (T.Text -> Either Pandoc.PandocError Pandoc.Pandoc)
-readExtension fileExt = case fileExt of
+    :: ExtensionList -> String
+    -> Maybe (T.Text -> Either Pandoc.PandocError Pandoc.Pandoc)
+readExtension (ExtensionList extensions) fileExt = case fileExt of
     ".md"  -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
     ".lhs" -> Just $ Pandoc.runPure . Pandoc.readMarkdown lhsOpts
     ""     -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
@@ -60,39 +63,19 @@ readExtension fileExt = case fileExt of
     _      -> Nothing
 
   where
-    readerOpts = addExtensions Pandoc.def
-        [ Pandoc.Ext_yaml_metadata_block
-        , Pandoc.Ext_table_captions
-        , Pandoc.Ext_simple_tables
-        , Pandoc.Ext_multiline_tables
-        , Pandoc.Ext_grid_tables
-        , Pandoc.Ext_pipe_tables
-        , Pandoc.Ext_raw_html
-        , Pandoc.Ext_tex_math_dollars
-        , Pandoc.Ext_fenced_code_blocks
-        , Pandoc.Ext_fenced_code_attributes
-        , Pandoc.Ext_backtick_code_blocks
-        , Pandoc.Ext_inline_code_attributes
-        , Pandoc.Ext_fancy_lists
-        , Pandoc.Ext_four_space_rule
-        , Pandoc.Ext_definition_lists
-        , Pandoc.Ext_compact_definition_lists
-        , Pandoc.Ext_example_lists
-        , Pandoc.Ext_strikeout
-        , Pandoc.Ext_superscript
-        , Pandoc.Ext_subscript
-        ]
-
-    lhsOpts = addExtensions readerOpts
-        [ Pandoc.Ext_literate_haskell
-        ]
-
-    addExtensions
-        :: Pandoc.ReaderOptions -> [Pandoc.Extension] -> Pandoc.ReaderOptions
-    addExtensions opts exts = opts
+    readerOpts = Pandoc.def
         { Pandoc.readerExtensions =
-            Pandoc.extensionsFromList exts <> Pandoc.readerExtensions opts
+            extensions <> absolutelyRequiredExtensions
         }
+
+    lhsOpts = readerOpts
+        { Pandoc.readerExtensions =
+            Pandoc.readerExtensions readerOpts <>
+            Pandoc.extensionsFromList [Pandoc.Ext_literate_haskell]
+        }
+
+    absolutelyRequiredExtensions =
+        Pandoc.extensionsFromList [Pandoc.Ext_yaml_metadata_block]
 
 
 --------------------------------------------------------------------------------
