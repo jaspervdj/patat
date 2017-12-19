@@ -1,16 +1,20 @@
 -- | This script generates a man page for patat.
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE OverloadedStrings #-}
 import           Control.Applicative ((<$>))
+import           Control.Exception   (throw)
 import           Control.Monad       (guard)
+import           Control.Monad.Trans (liftIO)
 import           Data.Char           (isSpace, toLower)
 import           Data.List           (isPrefixOf)
 import           Data.Maybe          (isJust)
+import qualified Data.Text           as T
+import qualified Data.Text.IO        as T
 import qualified GHC.IO.Encoding     as Encoding
+import           Prelude
 import           System.Environment  (getEnv)
 import qualified System.IO           as IO
+import qualified Data.Time as Time
 import qualified Text.Pandoc         as Pandoc
-import qualified Text.Pandoc.Walk    as Pandoc
-import           Prelude
 
 getVersion :: IO String
 getVersion =
@@ -18,12 +22,20 @@ getVersion =
     filter (\l -> "version:" `isPrefixOf` map toLower l) .
     map (dropWhile isSpace) . lines <$> readFile "patat.cabal"
 
+getPrettySourceDate :: IO String
+getPrettySourceDate = do
+    epoch <- getEnv "SOURCE_DATE_EPOCH"
+    utc   <- Time.parseTimeM True locale "%s" epoch :: IO Time.UTCTime
+    return $ Time.formatTime locale "%B %d, %Y" utc
+  where
+    locale = Time.defaultTimeLocale
+
 removeLinks :: Pandoc.Pandoc -> Pandoc.Pandoc
-removeLinks = Pandoc.walk $ \inline -> case inline of
+removeLinks = Pandoc.bottomUp $ \inline -> case inline of
     Pandoc.Link _ inlines _ -> Pandoc.Emph inlines
     _                       -> inline
 
-type Sections = [(Int, String, [Pandoc.Block])]
+type Sections = [(Int, T.Text, [Pandoc.Block])]
 
 toSections :: Int -> [Pandoc.Block] -> Sections
 toSections level = go
@@ -35,16 +47,19 @@ toSections level = go
             let (section, cont) = break (isJust . toSectionHeader) xs in
             (l, title, section) : go cont
 
-    toSectionHeader :: Pandoc.Block -> Maybe (Int, String)
+    toSectionHeader :: Pandoc.Block -> Maybe (Int, T.Text)
     toSectionHeader (Pandoc.Header l _ inlines) = do
         guard (l <= level)
         let doc = Pandoc.Pandoc Pandoc.nullMeta [Pandoc.Plain inlines]
-        return (l, Pandoc.writeMarkdown Pandoc.def doc)
+            txt = case Pandoc.runPure (Pandoc.writeMarkdown Pandoc.def doc) of
+                    Left err -> throw err  -- Bad!
+                    Right x  -> x
+        return (l, txt)
     toSectionHeader _ = Nothing
 
 fromSections :: Sections -> [Pandoc.Block]
 fromSections = concatMap $ \(level, title, blocks) ->
-    Pandoc.Header level ("", [], []) [Pandoc.Str title] : blocks
+    Pandoc.Header level ("", [], []) [Pandoc.Str $ T.unpack title] : blocks
 
 reorganizeSections :: Pandoc.Pandoc -> Pandoc.Pandoc
 reorganizeSections (Pandoc.Pandoc meta0 blocks0) =
@@ -80,21 +95,22 @@ reorganizeSections (Pandoc.Pandoc meta0 blocks0) =
         [section | section@(_, n, _) <- sections, name == n]
 
 main :: IO ()
-main = do
-    Encoding.setLocaleEncoding Encoding.utf8
-    Right pandoc0  <- Pandoc.readMarkdown Pandoc.def <$> readFile "README.md"
-    Right template <- Pandoc.getDefaultTemplate Nothing "man"
+main = Pandoc.runIOorExplode $ do
+    liftIO $ Encoding.setLocaleEncoding Encoding.utf8
 
-    version <- getVersion
-    date    <- getEnv "SOURCE_DATE"
+    let readerOptions = Pandoc.def
+            { Pandoc.readerExtensions = Pandoc.pandocExtensions
+            }
 
-    let writerOptions = Pandoc.def {
-#if PANDOC_MINOR_VERSION >= 19
-              Pandoc.writerTemplate   = Just template
-#else
-              Pandoc.writerStandalone = True
-            , Pandoc.writerTemplate   = template
-#endif
+    source   <- liftIO $ T.readFile "README.md"
+    pandoc0  <- Pandoc.readMarkdown readerOptions source
+    template <- Pandoc.getDefaultTemplate "man"
+
+    version <- liftIO getVersion
+    date    <- liftIO getPrettySourceDate
+
+    let writerOptions = Pandoc.def
+            { Pandoc.writerTemplate   = Just template
             , Pandoc.writerVariables  =
                 [ ("author",  "Jasper Van der Jeugt")
                 , ("title",   "patat manual")
@@ -105,6 +121,7 @@ main = do
             }
 
     let pandoc1 = reorganizeSections $ removeLinks pandoc0
-
-    putStr $ Pandoc.writeMan writerOptions pandoc1
-    IO.hPutStrLn IO.stderr "Wrote man page."
+    txt <- Pandoc.writeMan writerOptions pandoc1
+    liftIO $ do
+        T.putStr txt
+        IO.hPutStrLn IO.stderr "Wrote man page."

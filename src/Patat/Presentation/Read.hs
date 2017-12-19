@@ -16,9 +16,9 @@ import qualified Data.ByteString             as B
 import qualified Data.HashMap.Strict         as HMS
 import           Data.Maybe                  (fromMaybe)
 import           Data.Monoid                 (mempty, (<>))
-import qualified Data.Set                    as Set
 import qualified Data.Text                   as T
 import qualified Data.Text.Encoding          as T
+import qualified Data.Text.IO                as T
 import qualified Data.Yaml                   as Yaml
 import           Patat.Presentation.Fragment
 import           Patat.Presentation.Internal
@@ -32,7 +32,7 @@ import qualified Text.Pandoc.Extended        as Pandoc
 --------------------------------------------------------------------------------
 readPresentation :: FilePath -> IO (Either String Presentation)
 readPresentation filePath = runExceptT $ do
-    src    <- liftIO $ readFile filePath
+    src    <- liftIO $ T.readFile filePath
     reader <- case readExtension ext of
         Nothing -> throwError $ "Unknown file extension: " ++ show ext
         Just x  -> return x
@@ -51,18 +51,47 @@ readPresentation filePath = runExceptT $ do
 
 --------------------------------------------------------------------------------
 readExtension
-    :: String -> Maybe (String -> Either Pandoc.PandocError Pandoc.Pandoc)
+    :: String -> Maybe (T.Text -> Either Pandoc.PandocError Pandoc.Pandoc)
 readExtension fileExt = case fileExt of
-    ".md"  -> Just $ Pandoc.readMarkdown Pandoc.def
-    ".lhs" -> Just $ Pandoc.readMarkdown lhsOpts
-    ""     -> Just $ Pandoc.readMarkdown Pandoc.def
-    ".org" -> Just $ Pandoc.readOrg Pandoc.def
+    ".md"  -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
+    ".lhs" -> Just $ Pandoc.runPure . Pandoc.readMarkdown lhsOpts
+    ""     -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
+    ".org" -> Just $ Pandoc.runPure . Pandoc.readOrg      readerOpts
     _      -> Nothing
 
   where
-    lhsOpts = Pandoc.def
-        { Pandoc.readerExtensions = Set.insert Pandoc.Ext_literate_haskell
-            (Pandoc.readerExtensions Pandoc.def)
+    readerOpts = addExtensions Pandoc.def
+        [ Pandoc.Ext_yaml_metadata_block
+        , Pandoc.Ext_table_captions
+        , Pandoc.Ext_simple_tables
+        , Pandoc.Ext_multiline_tables
+        , Pandoc.Ext_grid_tables
+        , Pandoc.Ext_pipe_tables
+        , Pandoc.Ext_raw_html
+        , Pandoc.Ext_tex_math_dollars
+        , Pandoc.Ext_fenced_code_blocks
+        , Pandoc.Ext_fenced_code_attributes
+        , Pandoc.Ext_backtick_code_blocks
+        , Pandoc.Ext_inline_code_attributes
+        , Pandoc.Ext_fancy_lists
+        , Pandoc.Ext_four_space_rule
+        , Pandoc.Ext_definition_lists
+        , Pandoc.Ext_compact_definition_lists
+        , Pandoc.Ext_example_lists
+        , Pandoc.Ext_strikeout
+        , Pandoc.Ext_superscript
+        , Pandoc.Ext_subscript
+        ]
+
+    lhsOpts = addExtensions readerOpts
+        [ Pandoc.Ext_literate_haskell
+        ]
+
+    addExtensions
+        :: Pandoc.ReaderOptions -> [Pandoc.Extension] -> Pandoc.ReaderOptions
+    addExtensions opts exts = opts
+        { Pandoc.readerExtensions =
+            Pandoc.extensionsFromList exts <> Pandoc.readerExtensions opts
         }
 
 
@@ -83,21 +112,22 @@ pandocToPresentation pFilePath pSettings pandoc@(Pandoc.Pandoc meta _) = do
 -- avoids the problems caused by pandoc involving rendering Markdown.  This
 -- should only be used for settings though, not things like title / authors
 -- since those /can/ contain markdown.
-parseMetadataBlock :: String -> Maybe A.Value
+parseMetadataBlock :: T.Text -> Maybe A.Value
 parseMetadataBlock src = do
     block <- mbBlock
-    Yaml.decode $! T.encodeUtf8 $! T.pack block
+    Yaml.decode $! T.encodeUtf8 block
   where
-    mbBlock = case lines src of
+    mbBlock :: Maybe T.Text
+    mbBlock = case T.lines src of
         ("---" : ls) -> case break (`elem` ["---", "..."]) ls of
             (_,     [])      -> Nothing
-            (block, (_ : _)) -> Just (unlines block)
+            (block, (_ : _)) -> Just (T.unlines block)
         _            -> Nothing
 
 
 --------------------------------------------------------------------------------
 -- | Read settings from the metadata block in the Pandoc document.
-readMetaSettings :: String -> Either String PresentationSettings
+readMetaSettings :: T.Text -> Either String PresentationSettings
 readMetaSettings src = fromMaybe (Right mempty) $ do
     A.Object obj <- parseMetadataBlock src
     val          <- HMS.lookup "patat" obj
