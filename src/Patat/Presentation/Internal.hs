@@ -1,10 +1,15 @@
 --------------------------------------------------------------------------------
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE TemplateHaskell            #-}
 module Patat.Presentation.Internal
     ( Presentation (..)
     , PresentationSettings (..)
     , defaultPresentationSettings
+
+    , ExtensionList (..)
+    , defaultExtensionList
+
     , Slide (..)
     , Fragment (..)
     , Index
@@ -21,11 +26,15 @@ module Patat.Presentation.Internal
 import           Control.Monad          (mplus)
 import qualified Data.Aeson.Extended    as A
 import qualified Data.Aeson.TH.Extended as A
+import qualified Data.Foldable          as Foldable
+import           Data.List              (intercalate)
 import           Data.Maybe             (listToMaybe)
 import           Data.Monoid            (Monoid (..), (<>))
+import qualified Data.Text              as T
 import qualified Patat.Theme            as Theme
-import qualified Text.Pandoc            as Pandoc
 import           Prelude
+import qualified Text.Pandoc            as Pandoc
+import           Text.Read              (readMaybe)
 
 
 --------------------------------------------------------------------------------
@@ -50,6 +59,7 @@ data PresentationSettings = PresentationSettings
     , psIncrementalLists :: !(Maybe Bool)
     , psAutoAdvanceDelay :: !(Maybe (A.FlexibleNum Int))
     , psSlideLevel       :: !(Maybe Int)
+    , psPandocExtensions :: !(Maybe ExtensionList)
     } deriving (Show)
 
 
@@ -57,6 +67,7 @@ data PresentationSettings = PresentationSettings
 instance Monoid PresentationSettings where
     mempty      = PresentationSettings
                     Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+                    Nothing
     mappend l r = PresentationSettings
         { psRows             = psRows             l `mplus` psRows             r
         , psColumns          = psColumns          l `mplus` psColumns          r
@@ -65,6 +76,7 @@ instance Monoid PresentationSettings where
         , psIncrementalLists = psIncrementalLists l `mplus` psIncrementalLists r
         , psAutoAdvanceDelay = psAutoAdvanceDelay l `mplus` psAutoAdvanceDelay r
         , psSlideLevel       = psSlideLevel       l `mplus` psSlideLevel       r
+        , psPandocExtensions = psPandocExtensions l `mplus` psPandocExtensions r
         }
 
 
@@ -78,7 +90,61 @@ defaultPresentationSettings = PresentationSettings
     , psIncrementalLists = Nothing
     , psAutoAdvanceDelay = Nothing
     , psSlideLevel       = Nothing
+    , psPandocExtensions = Nothing
     }
+
+
+--------------------------------------------------------------------------------
+newtype ExtensionList = ExtensionList {unExtensionList :: Pandoc.Extensions}
+    deriving (Show)
+
+
+--------------------------------------------------------------------------------
+instance A.FromJSON ExtensionList where
+    parseJSON = A.withArray "FromJSON ExtensionList" $
+        fmap (ExtensionList . mconcat) . mapM parseExt . Foldable.toList
+      where
+        parseExt = A.withText "FromJSON ExtensionList" $ \txt -> case txt of
+            -- Our default extensions
+            "patat_extensions" -> return (unExtensionList defaultExtensionList)
+
+            -- Individuals
+            _ -> case readMaybe ("Ext_" ++ T.unpack txt) of
+                Just e  -> return $ Pandoc.extensionsFromList [e]
+                Nothing -> fail $
+                    "Unknown extension: " ++ show txt ++
+                    ", known extensions are: " ++
+                    intercalate ", "
+                        [ show (drop 4 (show e))
+                        | e <- [minBound .. maxBound] :: [Pandoc.Extension]
+                        ]
+
+
+--------------------------------------------------------------------------------
+defaultExtensionList :: ExtensionList
+defaultExtensionList = ExtensionList $
+    Pandoc.readerExtensions Pandoc.def <> Pandoc.extensionsFromList
+    [ Pandoc.Ext_yaml_metadata_block
+    , Pandoc.Ext_table_captions
+    , Pandoc.Ext_simple_tables
+    , Pandoc.Ext_multiline_tables
+    , Pandoc.Ext_grid_tables
+    , Pandoc.Ext_pipe_tables
+    , Pandoc.Ext_raw_html
+    , Pandoc.Ext_tex_math_dollars
+    , Pandoc.Ext_fenced_code_blocks
+    , Pandoc.Ext_fenced_code_attributes
+    , Pandoc.Ext_backtick_code_blocks
+    , Pandoc.Ext_inline_code_attributes
+    , Pandoc.Ext_fancy_lists
+    , Pandoc.Ext_four_space_rule
+    , Pandoc.Ext_definition_lists
+    , Pandoc.Ext_compact_definition_lists
+    , Pandoc.Ext_example_lists
+    , Pandoc.Ext_strikeout
+    , Pandoc.Ext_superscript
+    , Pandoc.Ext_subscript
+    ]
 
 
 --------------------------------------------------------------------------------
@@ -126,4 +192,4 @@ getActiveFragment presentation = do
 
 
 --------------------------------------------------------------------------------
-$(A.deriveJSON A.dropPrefixOptions ''PresentationSettings)
+$(A.deriveFromJSON A.dropPrefixOptions ''PresentationSettings)

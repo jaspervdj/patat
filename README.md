@@ -46,6 +46,7 @@ Table of Contents
     -   [Fragmented slides](#fragmented-slides)
     -   [Theming](#theming)
     -   [Syntax Highlighting](#syntax-highlighting)
+    -   [Pandoc Extensions](#pandoc-extensions)
 -   [Trivia](#trivia)
 
 Installation
@@ -406,6 +407,44 @@ full list of token types, see [this list] -- the names are derived from there in
 an obvious way.
 
 [this list]: https://hackage.haskell.org/package/highlighting-kate-0.6.3/docs/Text-Highlighting-Kate-Types.html#t:TokenType
+
+### Pandoc Extensions
+
+Pandoc comes with a fair number of extensions on top of markdown:
+
+    <https://hackage.haskell.org/package/pandoc-2.0.5/docs/Text-Pandoc-Extensions.html>
+
+`patat` enables a number of them by default, but this is also customizable.
+
+In order to enable an additional extensions, e.g. `autolink_bare_uris`, add it
+to the `pandocExtensions` field in the YAML metadata:
+
+    ---
+    patat:
+      pandocExtensions:
+        - patat_extensions
+        - autolink_bare_uris
+    ...
+
+    Document content...
+
+The `patat_extensions` in the above snippet refers to the default set of
+extensions enabled by `patat`.  If you want to disable those and only use a
+select few extensions, simply leave it out and choose your own:
+
+    ---
+    patat:
+      pandocExtensions:
+        - autolink_bare_uris
+        - emoji
+    ...
+
+    ...
+
+    Document content...
+
+If you don't want to enable any extensions, simply set `pandocExtensions` to the
+empty list `[]`.
 
 Trivia
 ------

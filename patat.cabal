@@ -43,7 +43,7 @@ Executable patat
     mtl                  >= 2.2   && < 2.3,
     optparse-applicative >= 0.12  && < 0.15,
     pandoc               >= 2.0.4 && < 2.1,
-    skylighting          >= 0.1   && < 0.5,
+    skylighting          >= 0.1   && < 0.6,
     terminal-size        >= 0.3   && < 0.4,
     text                 >= 1.2   && < 1.3,
     time                 >= 1.4   && < 1.9,
