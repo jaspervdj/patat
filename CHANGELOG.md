@@ -1,5 +1,9 @@
 # Changelog
 
+- 0.6.0.0 (2017-12-19)
+    * Make pandoc extensions customizable in the configuration
+    * Bump `pandoc` to 2.0
+
 - 0.5.2.2 (2017-06-14)
     * Add `network-uri` dependency to fix travis build
 
