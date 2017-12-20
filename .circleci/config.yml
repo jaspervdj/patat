@@ -1,6 +1,8 @@
 version: 2
 jobs:
   build:
+    tags:
+      only: /t[0-9].*/
     docker:
       - image: 'fpco/stack-build:latest'
     steps:
