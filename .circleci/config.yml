@@ -1,8 +1,15 @@
 version: 2
 jobs:
   build:
+    # By default, CircleCI doesn't build tags.  This fixes that.
+    filters:
+      tags:
+        only: /.*/
+
+    # This image has most Haskell stuff preinstalled.
     docker:
       - image: 'fpco/stack-build:latest'
+
     steps:
       - checkout
       - restore_cache:
@@ -26,3 +33,6 @@ jobs:
           paths:
             - '~/.cabal'
             - '~/.ghc'
+      - run:
+          name: 'Upload release'
+          command: '.circleci/release.sh "$CIRCLE_TAG"'
