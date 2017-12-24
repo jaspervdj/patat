@@ -4,8 +4,9 @@ jobs:
     # By default, CircleCI doesn't build tags.  This fixes that.
     filters:
       tags:
-        only: /t[0-9].*/
+        only: /.*/
 
+    # This image has most Haskell stuff preinstalled.
     docker:
       - image: 'fpco/stack-build:latest'
 
