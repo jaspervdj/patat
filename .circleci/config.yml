@@ -1,10 +1,14 @@
 version: 2
 jobs:
   build:
-    tags:
-      only: /t[0-9].*/
+    # By default, CircleCI doesn't build tags.  This fixes that.
+    filters:
+      tags:
+        only: /t[0-9].*/
+
     docker:
       - image: 'fpco/stack-build:latest'
+
     steps:
       - checkout
       - restore_cache:
@@ -30,4 +34,4 @@ jobs:
             - '~/.ghc'
       - run:
           name: 'Upload release'
-          command: './circleci/release.sh "$CIRCLE_TAG" "{{ arch }}"'
+          command: '.circleci/release.sh "$CIRCLE_TAG" "{{ arch }}"'
