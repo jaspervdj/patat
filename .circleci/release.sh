@@ -2,27 +2,30 @@
 set -o nounset -o errexit -o pipefail
 
 TAG="$1"
-SUFFIX="$2"
+SUFFIX="linux-$(uname -m)"
 
 echo "Tag: $TAG"
 echo "Suffix: $SUFFIX"
 
 if [[ -z "$TAG" ]]; then
-    echo "Setting test tag..."
-    TAG="v0.0.666"
+    echo "Not a tagged build, skipping release..."
+    exit 0
 fi
 
 GHR_VERSION="v0.5.4"
 
 # Install ghr
-wget "https://github.com/tcnksm/ghr/releases/download/${GHR_VERSION}/ghr_${GHR_VERSION}_linux_386.zip"
+wget --quiet \
+    "https://github.com/tcnksm/ghr/releases/download/${GHR_VERSION}/ghr_${GHR_VERSION}_linux_386.zip"
 unzip ghr_${GHR_VERSION}_linux_386.zip
 
-# Create binary tarball
-mkdir -p "patat-$TAG-$SUFFIX"
-cp "$(which patat)" "patat-$TAG-$SUFFIX"
-cp "README.md" "patat-$TAG-$SUFFIX"
-tar -czf "patat-$TAG-$SUFFIX.tar.gz" "patat-$TAG-$SUFFIX"
-rm -r "patat-$TAG-$SUFFIX"
+# Create tarball
+PACKAGE="patat-$TAG-$SUFFIX"
+mkdir -p "$PACKAGE"
+cp "$(which patat)" "$PACKAGE"
+cp "README.md" "$PACKAGE"
+tar -czf "$PACKAGE.tar.gz" "$PACKAGE"
+rm -r "$PACKAGE"
 
-# TODO: Actually upload
+# Actually upload
+./ghr "$TAG" "$PACKAGE.tar.gz"
