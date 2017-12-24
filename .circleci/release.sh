@@ -3,6 +3,8 @@ set -o nounset -o errexit -o pipefail
 
 TAG="$1"
 SUFFIX="linux-$(uname -m)"
+USER="jaspervdj"
+REPOSITORY="patat"
 
 echo "Tag: $TAG"
 echo "Suffix: $SUFFIX"
@@ -28,4 +30,4 @@ tar -czf "$PACKAGE.tar.gz" "$PACKAGE"
 rm -r "$PACKAGE"
 
 # Actually upload
-./ghr "$TAG" "$PACKAGE.tar.gz"
+./ghr -u "$USER" -r "$REPOSITORY" "$TAG" "$PACKAGE.tar.gz"

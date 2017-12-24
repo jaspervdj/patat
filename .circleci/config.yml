@@ -1,11 +1,16 @@
 version: 2
+
+workflows:
+  version: 2
+  build-workflow:
+    jobs:
+      - build:
+          filters:
+            tags:
+              only: /.*/
+
 jobs:
   build:
-    # By default, CircleCI doesn't build tags.  This fixes that.
-    filters:
-      tags:
-        only: /.*/
-
     # This image has most Haskell stuff preinstalled.
     docker:
       - image: 'fpco/stack-build:latest'
