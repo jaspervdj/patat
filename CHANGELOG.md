@@ -1,5 +1,8 @@
 # Changelog
 
+- 0.6.0.1 (2017-12-24)
+    * Automatically upload linux binary to GitHub
+
 - 0.6.0.0 (2017-12-19)
     * Make pandoc extensions customizable in the configuration
     * Bump `pandoc` to 2.0
