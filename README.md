@@ -58,6 +58,9 @@ Installation
 - Ubuntu: <https://packages.ubuntu.com/artful/patat>
 - openSUSE: <https://build.opensuse.org/package/show/openSUSE:Factory:ARM/patat>
 
+You can also find generic binaries here:
+<https://github.com/jaspervdj/patat/releases>.
+
 ### From source
 
 Installation from source is very easy.  You can build from source using `stack
