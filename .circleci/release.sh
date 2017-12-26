@@ -4,7 +4,8 @@ set -o nounset -o errexit -o pipefail
 TAG="$1"
 SUFFIX="linux-$(uname -m)"
 USER="jaspervdj"
-REPOSITORY="patat"
+REPOSITORY="$(basename "$(pwd)")"
+BINARY="$REPOSITORY"
 
 echo "Tag: $TAG"
 echo "Suffix: $SUFFIX"
@@ -22,10 +23,10 @@ wget --quiet \
 unzip ghr_${GHR_VERSION}_linux_386.zip
 
 # Create tarball
-PACKAGE="patat-$TAG-$SUFFIX"
+PACKAGE="$REPOSITORY-$TAG-$SUFFIX"
 mkdir -p "$PACKAGE"
-cp "$(which patat)" "$PACKAGE"
-cp "README.md" "$PACKAGE"
+cp "$(which "$BINARY")" "$PACKAGE"
+cp "README.*" "$PACKAGE"
 tar -czf "$PACKAGE.tar.gz" "$PACKAGE"
 rm -r "$PACKAGE"
 
