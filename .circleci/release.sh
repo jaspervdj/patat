@@ -4,7 +4,7 @@ set -o nounset -o errexit -o pipefail
 TAG="$1"
 SUFFIX="linux-$(uname -m)"
 USER="jaspervdj"
-REPOSITORY="$(basename *.cabal ".cabal")"
+REPOSITORY="$(basename -- *.cabal ".cabal")"
 BINARY="$REPOSITORY"
 
 echo "Tag: $TAG"
