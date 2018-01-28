@@ -1,4 +1,4 @@
-resolver: nightly-2017-12-14
+resolver: nightly-2018-01-27
 install-ghc: true
 packages:
 - '.'
@@ -7,5 +7,5 @@ flags:
     patat-make-man: true
 extra-package-dbs: []
 extra-deps:
-- 'ansi-terminal-0.6.3.1'
-- 'skylighting-0.5'
+- 'skylighting-0.6'
+- 'pandoc-2.1.1'
