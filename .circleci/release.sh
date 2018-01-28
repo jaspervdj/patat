@@ -37,6 +37,8 @@ mkdir -p "$PACKAGE"
 cp "$(which "$BINARY")" "$PACKAGE"
 ./upx "$PACKAGE/$BINARY"
 cp README.* "$PACKAGE"
+cp CHANGELOG.* "$PACKAGE"
+cp extra/patat.1 "$PACKAGE"
 tar -czf "$PACKAGE.tar.gz" "$PACKAGE"
 rm -r "$PACKAGE"
 

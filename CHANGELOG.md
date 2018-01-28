@@ -1,5 +1,10 @@
 # Changelog
 
+- 0.6.1.0 (2018-01-28)
+    * Bump `skylighting` to 0.6
+    * Bump `pandoc` to 2.1
+    * Bump `ansi-terminal` to 0.7
+
 - 0.6.0.1 (2017-12-24)
     * Automatically upload linux binary to GitHub
 
