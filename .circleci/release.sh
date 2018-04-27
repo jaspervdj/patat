@@ -35,7 +35,7 @@ mv upx-${UPX_VERSION}-amd64_linux/upx .
 PACKAGE="$REPOSITORY-$TAG-$SUFFIX"
 mkdir -p "$PACKAGE"
 cp "$(which "$BINARY")" "$PACKAGE"
-./upx "$PACKAGE/$BINARY"
+./upx -q "$PACKAGE/$BINARY"
 cp README.* "$PACKAGE"
 cp CHANGELOG.* "$PACKAGE"
 cp extra/patat.1 "$PACKAGE"
