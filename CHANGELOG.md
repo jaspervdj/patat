@@ -1,5 +1,11 @@
 # Changelog
 
+- 0.6.1.1 (2018-04-27)
+    * Bump `aeson` to 1.3
+    * Bump `skylighting` to 0.7
+    * Bump `time` to 1.9
+    * Bump `ansi-terminal` to 0.8
+
 - 0.6.1.0 (2018-01-28)
     * Bump `skylighting` to 0.6
     * Bump `pandoc` to 2.1
