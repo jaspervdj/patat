@@ -4,10 +4,6 @@ packages:
 flags:
   patat:
     patat-make-man: true
-allow-newer: true
 extra-deps:
-- 'aeson-1.3.1.0'
-- 'ansi-terminal-0.8.0.2'
-- 'skylighting-0.7.1'
-- 'time-1.9.1'
-- 'skylighting-core-0.7.1'
+- 'pandoc-2.2'
+- 'pandoc-types-1.17.4.2'
