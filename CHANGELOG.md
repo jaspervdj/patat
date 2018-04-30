@@ -1,5 +1,8 @@
 # Changelog
 
+- 0.6.1.2 (2018-04-30)
+    * Bump `pandoc` to 2.2
+
 - 0.6.1.1 (2018-04-27)
     * Bump `aeson` to 1.3
     * Bump `skylighting` to 0.7
