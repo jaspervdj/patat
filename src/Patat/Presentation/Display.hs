@@ -15,7 +15,7 @@ import           Control.Applicative                  ((<$>))
 import           Control.Monad                        (mplus, unless)
 import qualified Data.Aeson.Extended                  as A
 import           Data.Data.Extended                   (grecQ)
-import           Data.List                            (intersperse)
+import qualified Data.List                            as L
 import           Data.Maybe                           (fromMaybe)
 import           Data.Monoid                          (mconcat, mempty, (<>))
 import qualified Data.Text                            as T
@@ -113,11 +113,11 @@ dumpPresentation :: Presentation -> IO ()
 dumpPresentation pres =
     let theme = fromMaybe Theme.defaultTheme (psTheme $ pSettings pres) in
     PP.putDoc $ withWrapSettings (pSettings pres) $
-        PP.vcat $ intersperse "----------" $ do
+        PP.vcat $ L.intersperse "----------" $ do
             slide <- pSlides pres
             return $ case slide of
                 TitleSlide   block     -> "~~~title" <$$> prettyBlock theme block
-                ContentSlide fragments -> PP.vcat $ intersperse "~~~frag" $ do
+                ContentSlide fragments -> PP.vcat $ L.intersperse "~~~frag" $ do
                     fragment <- fragments
                     return $ prettyFragment theme fragment
 
@@ -238,7 +238,7 @@ prettyBlock theme@Theme {..} (Pandoc.LineBlock inliness) =
 
 --------------------------------------------------------------------------------
 prettyBlocks :: Theme -> [Pandoc.Block] -> PP.Doc
-prettyBlocks theme = PP.vcat . map (prettyBlock theme)
+prettyBlocks theme = PP.vcat . map (prettyBlock theme) . filter isVisibleBlock
 
 
 --------------------------------------------------------------------------------
@@ -327,3 +327,11 @@ isReferenceLink :: Pandoc.Inline -> Bool
 isReferenceLink (Pandoc.Link _attrs text (target, _)) =
     [Pandoc.Str target] /= text
 isReferenceLink _ = False
+
+
+--------------------------------------------------------------------------------
+isVisibleBlock :: Pandoc.Block -> Bool
+isVisibleBlock Pandoc.Null = False
+isVisibleBlock (Pandoc.RawBlock (Pandoc.Format "html") t) =
+    not ("<!--" `L.isPrefixOf` t && "-->" `L.isSuffixOf` t)
+isVisibleBlock _ = True

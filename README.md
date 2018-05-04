@@ -211,6 +211,25 @@ two content slides.
 
 For more information, see [Advanced slide splitting](#advanced-slide-splitting).
 
+Patat supports comments which can be used as speaker notes.
+
+    ---
+    title: This is my presentation
+    author: Jane Doe
+    ...
+
+    # Chapter 1
+
+    <!--
+    Note: I should not bore the audience with my thoughts on powerpoint but
+    just get straight to the point.
+    -->
+
+    Slide contents.  Yay.
+
+    <!-- TODO: Finish the rest of the presentation. -->
+
+
 Configuration
 -------------
 
