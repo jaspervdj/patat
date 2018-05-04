@@ -1,5 +1,8 @@
 # Changelog
 
+- 0.7.0.0 (2018-05-04)
+    * Support HTML-style comments
+
 - 0.6.1.2 (2018-04-30)
     * Bump `pandoc` to 2.2
 
