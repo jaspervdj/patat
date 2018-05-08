@@ -88,7 +88,7 @@ Executable patat-make-man
     Buildable: False
 
   Build-depends:
-    base   >= 4.6  && < 4.11,
+    base   >= 4.6  && < 5,
     mtl    >= 2.2  && < 2.3,
     pandoc >= 2.0  && < 2.3,
     text   >= 1.2  && < 1.3,
