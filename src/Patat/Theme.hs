@@ -22,7 +22,8 @@ import           Data.Char              (toLower, toUpper)
 import           Data.List              (intercalate, isSuffixOf)
 import qualified Data.Map               as M
 import           Data.Maybe             (mapMaybe, maybeToList)
-import           Data.Monoid            (Monoid (..), (<>))
+import           Data.Monoid            (Monoid (..))
+import           Data.Semigroup         (Semigroup (..))
 import qualified Data.Text              as T
 import           Prelude
 import qualified Skylighting            as Skylighting
@@ -59,13 +60,8 @@ data Theme = Theme
 
 
 --------------------------------------------------------------------------------
-instance Monoid Theme where
-    mempty = Theme
-        Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-        Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-        Nothing Nothing Nothing Nothing Nothing
-
-    mappend l r = Theme
+instance Semigroup Theme where
+    l <> r = Theme
         { themeBorders            = mplusOn   themeBorders
         , themeHeader             = mplusOn   themeHeader
         , themeCodeBlock          = mplusOn   themeCodeBlock
@@ -96,11 +92,19 @@ instance Monoid Theme where
 
 
 --------------------------------------------------------------------------------
+instance Monoid Theme where
+    mappend = (<>)
+    mempty  = Theme
+        Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+        Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+        Nothing Nothing Nothing Nothing Nothing
+
+--------------------------------------------------------------------------------
 defaultTheme :: Theme
 defaultTheme = Theme
     { themeBorders            = dull Ansi.Yellow
     , themeHeader             = dull Ansi.Blue
-    , themeCodeBlock          = dull Ansi.White <> ondull Ansi.Black
+    , themeCodeBlock          = dull Ansi.White `mappend` ondull Ansi.Black
     , themeBulletList         = dull Ansi.Magenta
     , themeBulletListMarkers  = Just "-*"
     , themeOrderedList        = dull Ansi.Magenta
@@ -111,15 +115,15 @@ defaultTheme = Theme
     , themeTableSeparator     = dull Ansi.Magenta
     , themeLineBlock          = dull Ansi.Magenta
     , themeEmph               = dull Ansi.Green
-    , themeStrong             = dull Ansi.Red <> bold
-    , themeCode               = dull Ansi.White <> ondull Ansi.Black
+    , themeStrong             = dull Ansi.Red `mappend` bold
+    , themeCode               = dull Ansi.White `mappend` ondull Ansi.Black
     , themeLinkText           = dull Ansi.Green
-    , themeLinkTarget         = dull Ansi.Cyan <> underline
+    , themeLinkTarget         = dull Ansi.Cyan `mappend` underline
     , themeStrikeout          = ondull Ansi.Red
     , themeQuoted             = dull Ansi.Green
     , themeMath               = dull Ansi.Green
     , themeImageText          = dull Ansi.Green
-    , themeImageTarget        = dull Ansi.Cyan <> underline
+    , themeImageTarget        = dull Ansi.Cyan `mappend` underline
     , themeSyntaxHighlighting = Just defaultSyntaxHighlighting
     }
   where

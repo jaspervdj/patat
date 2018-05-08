@@ -54,6 +54,10 @@ Executable patat
     network-uri >= 2.6,
     network     >= 2.6
 
+  If impl(ghc < 8.0)
+    Build-depends:
+      semigroups >= 0.16 && < 0.19
+
   Other-modules:
     Data.Aeson.Extended
     Data.Aeson.TH.Extended

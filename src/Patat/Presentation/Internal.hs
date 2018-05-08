@@ -29,7 +29,8 @@ import qualified Data.Aeson.TH.Extended as A
 import qualified Data.Foldable          as Foldable
 import           Data.List              (intercalate)
 import           Data.Maybe             (listToMaybe)
-import           Data.Monoid            (Monoid (..), (<>))
+import           Data.Monoid            (Monoid (..))
+import           Data.Semigroup         (Semigroup (..))
 import qualified Data.Text              as T
 import qualified Patat.Theme            as Theme
 import           Prelude
@@ -64,11 +65,8 @@ data PresentationSettings = PresentationSettings
 
 
 --------------------------------------------------------------------------------
-instance Monoid PresentationSettings where
-    mempty      = PresentationSettings
-                    Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-                    Nothing
-    mappend l r = PresentationSettings
+instance Semigroup PresentationSettings where
+    l <> r = PresentationSettings
         { psRows             = psRows             l `mplus` psRows             r
         , psColumns          = psColumns          l `mplus` psColumns          r
         , psWrap             = psWrap             l `mplus` psWrap             r
@@ -78,6 +76,13 @@ instance Monoid PresentationSettings where
         , psSlideLevel       = psSlideLevel       l `mplus` psSlideLevel       r
         , psPandocExtensions = psPandocExtensions l `mplus` psPandocExtensions r
         }
+
+--------------------------------------------------------------------------------
+instance Monoid PresentationSettings where
+    mappend = (<>)
+    mempty  = PresentationSettings
+                    Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+                    Nothing
 
 
 --------------------------------------------------------------------------------
