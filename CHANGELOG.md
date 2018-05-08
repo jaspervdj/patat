@@ -1,5 +1,8 @@
 # Changelog
 
+- 0.7.2.0 (2018-05-08)
+    * GHC 8.4 compatibility
+
 - 0.7.1.0 (2018-05-08)
     * GHC 8.4 compatibility
 
