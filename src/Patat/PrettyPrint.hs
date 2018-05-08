@@ -45,13 +45,14 @@ import           Control.Monad.State  (get, gets, modify)
 import           Control.Monad.Writer (tell)
 import           Data.Foldable        (Foldable)
 import qualified Data.List            as L
-import           Data.Monoid          (Monoid, mconcat, mempty, (<>))
+import           Data.Monoid          (Monoid, mconcat, mempty)
+import           Data.Semigroup       (Semigroup (..))
 import           Data.String          (IsString (..))
 import qualified Data.Text            as T
 import           Data.Traversable     (Traversable, traverse)
+import           Prelude              hiding (null)
 import qualified System.Console.ANSI  as Ansi
 import qualified System.IO            as IO
-import           Prelude              hiding (null)
 
 
 --------------------------------------------------------------------------------
@@ -130,7 +131,7 @@ chunkToDocE (StringChunk codes str) = Ansi (\_ -> codes) (Doc [String str])
 
 --------------------------------------------------------------------------------
 newtype Doc = Doc {unDoc :: [DocE]}
-    deriving (Monoid)
+    deriving (Monoid, Semigroup)
 
 
 --------------------------------------------------------------------------------

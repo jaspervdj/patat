@@ -128,7 +128,7 @@ instance A.FromJSON ExtensionList where
 --------------------------------------------------------------------------------
 defaultExtensionList :: ExtensionList
 defaultExtensionList = ExtensionList $
-    Pandoc.readerExtensions Pandoc.def <> Pandoc.extensionsFromList
+    Pandoc.readerExtensions Pandoc.def `mappend` Pandoc.extensionsFromList
     [ Pandoc.Ext_yaml_metadata_block
     , Pandoc.Ext_table_captions
     , Pandoc.Ext_simple_tables
@@ -161,7 +161,7 @@ data Slide
 
 --------------------------------------------------------------------------------
 newtype Fragment = Fragment {unFragment :: [Pandoc.Block]}
-    deriving (Monoid, Show)
+    deriving (Monoid, Semigroup, Show)
 
 
 --------------------------------------------------------------------------------

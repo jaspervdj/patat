@@ -135,7 +135,7 @@ defaultTheme = Theme
 
 --------------------------------------------------------------------------------
 newtype Style = Style {unStyle :: [Ansi.SGR]}
-    deriving (Monoid, Show)
+    deriving (Monoid, Semigroup, Show)
 
 
 --------------------------------------------------------------------------------
@@ -206,7 +206,7 @@ sgrsByName = M.fromList
 --------------------------------------------------------------------------------
 newtype SyntaxHighlighting = SyntaxHighlighting
     { unSyntaxHighlighting :: M.Map String Style
-    } deriving (Monoid, Show, A.ToJSON)
+    } deriving (Monoid, Semigroup, Show, A.ToJSON)
 
 
 --------------------------------------------------------------------------------
