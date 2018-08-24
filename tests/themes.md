@@ -2,7 +2,7 @@
 patat:
   theme:
     bulletListMarkers: '-+'
-    emph: [onVividRed, underline]
+    emph: [onRgb#f80, underline]
 ...
 
 - This is a simple list.
