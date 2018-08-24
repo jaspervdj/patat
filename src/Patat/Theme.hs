@@ -15,20 +15,22 @@ module Patat.Theme
 
 
 --------------------------------------------------------------------------------
-import           Control.Monad          (forM_, mplus)
-import qualified Data.Aeson             as A
-import qualified Data.Aeson.TH.Extended as A
-import           Data.Char              (toLower, toUpper)
-import           Data.List              (intercalate, isSuffixOf)
-import qualified Data.Map               as M
-import           Data.Maybe             (mapMaybe, maybeToList)
-import           Data.Monoid            (Monoid (..))
-import           Data.Semigroup         (Semigroup (..))
-import qualified Data.Text              as T
+import           Control.Monad           (forM_, mplus)
+import qualified Data.Aeson              as A
+import qualified Data.Aeson.TH.Extended  as A
+import           Data.Char               (toLower, toUpper)
+import           Data.Colour.SRGB        (RGB(..), sRGB, toSRGB24)
+import           Data.List               (intercalate, isPrefixOf, isSuffixOf)
+import qualified Data.Map                as M
+import           Data.Maybe              (mapMaybe, maybeToList)
+import           Data.Monoid             (Monoid (..))
+import           Data.Semigroup          (Semigroup (..))
+import qualified Data.Text               as T
+import           Numeric                 (showHex)
 import           Prelude
-import qualified Skylighting            as Skylighting
-import qualified System.Console.ANSI    as Ansi
-import           Text.Read              (readMaybe)
+import qualified Skylighting             as Skylighting
+import qualified System.Console.ANSI     as Ansi
+import           Text.Read               (readMaybe)
 
 
 --------------------------------------------------------------------------------
@@ -154,7 +156,13 @@ instance A.FromJSON Style where
             Just sgr -> return sgr
             Nothing  -> fail $!
                 "Unknown style: " ++ show name ++ ". Known styles are: " ++
-                intercalate ", " (map show $ M.keys sgrsByName)
+                intercalate ", " (map show listWithoutRgbs) ++
+                ", or \"rgb#RGB\" and \"onRgb#RGB\" where 'R', " ++
+                "'G' and 'B' are hexadecimal numbers (e.g. \"rgb#f80\")."
+              where
+                listWithoutRgbs = filterNot isRgb $ M.keys sgrsByName
+                filterNot predicate = filter $ not . predicate
+                isRgb n = "rgb" `isPrefixOf` n || "onRgb" `isPrefixOf` n
 
 
 --------------------------------------------------------------------------------
@@ -180,6 +188,17 @@ nameForSGR (Ansi.SetUnderlining Ansi.SingleUnderline) = Just "underline"
 
 nameForSGR (Ansi.SetConsoleIntensity Ansi.BoldIntensity) = Just "bold"
 
+nameForSGR (Ansi.SetRGBColor layer color) = Just $
+    (\str -> case layer of
+        Ansi.Foreground -> str
+        Ansi.Background -> "on" ++ capitalize str) $
+    "rgb#" ++ (toRGBHex $ toSRGB24 color)
+  where
+    toRGBHex (RGB r g b) = concat $ map toTruncatedHex [r, g, b]
+    toTruncatedHex x = take 1 $ showHex2 x ""
+    showHex2 x | x <= 0xf = ("0" ++) . showHex x
+               | otherwise = showHex x
+
 nameForSGR _ = Nothing
 
 
@@ -200,7 +219,17 @@ sgrsByName = M.fromList
         , c <- [minBound .. maxBound]
         ] ++
         [Ansi.SetUnderlining      u | u <- [minBound .. maxBound]] ++
-        [Ansi.SetConsoleIntensity c | c <- [minBound .. maxBound]]
+        [Ansi.SetConsoleIntensity c | c <- [minBound .. maxBound]] ++
+        [ Ansi.SetRGBColor l (sRGB r g b)
+        | l <- [minBound .. maxBound]
+        , let values = map normalize [0x00, 0x11 .. 0xff]
+        , r <- values
+        , g <- values
+        , b <- values
+        ]
+      where
+        normalize :: Integer -> Float
+        normalize n = (fromIntegral n) / 255.0
 
 
 --------------------------------------------------------------------------------
