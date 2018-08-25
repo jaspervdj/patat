@@ -19,7 +19,7 @@ import           Control.Monad           (forM_, mplus)
 import qualified Data.Aeson              as A
 import qualified Data.Aeson.TH.Extended  as A
 import           Data.Char               (toLower, toUpper)
-import           Data.Colour.SRGB        (RGB(..), sRGB, toSRGB24)
+import           Data.Colour.SRGB        (RGB(..), sRGB24reads, toSRGB24)
 import           Data.List               (intercalate, isPrefixOf, isSuffixOf)
 import qualified Data.Map                as M
 import           Data.Maybe              (mapMaybe, maybeToList)
@@ -142,7 +142,7 @@ newtype Style = Style {unStyle :: [Ansi.SGR]}
 
 --------------------------------------------------------------------------------
 instance A.ToJSON Style where
-    toJSON = A.toJSON . mapMaybe nameForSGR . unStyle
+    toJSON = A.toJSON . mapMaybe sgrToString . unStyle
 
 
 --------------------------------------------------------------------------------
@@ -152,22 +152,34 @@ instance A.FromJSON Style where
         sgrs  <- mapM toSgr names
         return $! Style sgrs
       where
-        toSgr name = case M.lookup name sgrsByName of
+        toSgr name = case stringToSgr name of
             Just sgr -> return sgr
             Nothing  -> fail $!
                 "Unknown style: " ++ show name ++ ". Known styles are: " ++
-                intercalate ", " (map show listWithoutRgbs) ++
-                ", or \"rgb#RGB\" and \"onRgb#RGB\" where 'R', " ++
-                "'G' and 'B' are hexadecimal numbers (e.g. \"rgb#f80\")."
-              where
-                listWithoutRgbs = filterNot isRgb $ M.keys sgrsByName
-                filterNot predicate = filter $ not . predicate
-                isRgb n = "rgb" `isPrefixOf` n || "onRgb" `isPrefixOf` n
+                intercalate ", " (map show $ M.keys namedSgrs) ++
+                ", or \"rgb#RrGgBb\" and \"onRgb#RrGgBb\" where 'Rr', " ++
+                "'Gg' and 'Bb' are hexadecimal bytes (e.g. \"rgb#f08000\")."
 
 
 --------------------------------------------------------------------------------
-nameForSGR :: Ansi.SGR -> Maybe String
-nameForSGR (Ansi.SetColor layer intensity color) = Just $
+stringToSgr :: String -> Maybe Ansi.SGR
+stringToSgr s
+    | "rgb#"   `isPrefixOf` s = rgbToSgr Ansi.Foreground $ drop 4 s
+    | "onRgb#" `isPrefixOf` s = rgbToSgr Ansi.Background $ drop 6 s
+    | otherwise               = M.lookup s namedSgrs
+
+
+--------------------------------------------------------------------------------
+rgbToSgr :: Ansi.ConsoleLayer -> String -> Maybe Ansi.SGR
+rgbToSgr layer rgbHex =
+    case sRGB24reads rgbHex of
+        [(color, "")] -> Just $ Ansi.SetRGBColor layer color
+        _             -> Nothing
+
+
+--------------------------------------------------------------------------------
+sgrToString :: Ansi.SGR -> Maybe String
+sgrToString (Ansi.SetColor layer intensity color) = Just $
     (\str -> case layer of
         Ansi.Foreground -> str
         Ansi.Background -> "on" ++ capitalize str) $
@@ -184,34 +196,34 @@ nameForSGR (Ansi.SetColor layer intensity color) = Just $
         Ansi.Cyan    -> "Cyan"
         Ansi.White   -> "White")
 
-nameForSGR (Ansi.SetUnderlining Ansi.SingleUnderline) = Just "underline"
+sgrToString (Ansi.SetUnderlining Ansi.SingleUnderline) = Just "underline"
 
-nameForSGR (Ansi.SetConsoleIntensity Ansi.BoldIntensity) = Just "bold"
+sgrToString (Ansi.SetConsoleIntensity Ansi.BoldIntensity) = Just "bold"
 
-nameForSGR (Ansi.SetRGBColor layer color) = Just $
+sgrToString (Ansi.SetRGBColor layer color) = Just $
     (\str -> case layer of
         Ansi.Foreground -> str
         Ansi.Background -> "on" ++ capitalize str) $
     "rgb#" ++ (toRGBHex $ toSRGB24 color)
   where
-    toRGBHex (RGB r g b) = concat $ map toTruncatedHex [r, g, b]
-    toTruncatedHex x = take 1 $ showHex2 x ""
+    toRGBHex (RGB r g b) = concat $ map toHexByte [r, g, b]
+    toHexByte x = showHex2 x ""
     showHex2 x | x <= 0xf = ("0" ++) . showHex x
                | otherwise = showHex x
 
-nameForSGR _ = Nothing
+sgrToString _ = Nothing
 
 
 --------------------------------------------------------------------------------
-sgrsByName :: M.Map String Ansi.SGR
-sgrsByName = M.fromList
+namedSgrs :: M.Map String Ansi.SGR
+namedSgrs = M.fromList
     [ (name, sgr)
     | sgr  <- knownSgrs
-    , name <- maybeToList (nameForSGR sgr)
+    , name <- maybeToList (sgrToString sgr)
     ]
   where
     -- | It doesn't really matter if we generate "too much" SGRs here since
-    -- 'nameForSGR' will only pick the ones we support.
+    -- 'sgrToString' will only pick the ones we support.
     knownSgrs =
         [ Ansi.SetColor l i c
         | l <- [minBound .. maxBound]
@@ -219,17 +231,7 @@ sgrsByName = M.fromList
         , c <- [minBound .. maxBound]
         ] ++
         [Ansi.SetUnderlining      u | u <- [minBound .. maxBound]] ++
-        [Ansi.SetConsoleIntensity c | c <- [minBound .. maxBound]] ++
-        [ Ansi.SetRGBColor l (sRGB r g b)
-        | l <- [minBound .. maxBound]
-        , let values = map normalize [0x00, 0x11 .. 0xff]
-        , r <- values
-        , g <- values
-        , b <- values
-        ]
-      where
-        normalize :: Integer -> Float
-        normalize n = (fromIntegral n) / 255.0
+        [Ansi.SetConsoleIntensity c | c <- [minBound .. maxBound]]
 
 
 --------------------------------------------------------------------------------

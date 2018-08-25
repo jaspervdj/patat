@@ -412,7 +412,7 @@ The accepted styles are:
 
 Also accepted are:
 
-`rgb#RGB`, `onRgb#RGB`, where `R` `G` and `B` are hexadecimal numbers (e.g. `rgb#f80` for orange).
+`rgb#RrGgBb`, `onRgb#RrGgBb`, where `Rr` `Gg` and `Bb` are hexadecimal bytes (e.g. `rgb#f08000` for orange).
 
 ### Syntax Highlighting
 
