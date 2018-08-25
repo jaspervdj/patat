@@ -410,6 +410,10 @@ The accepted styles are:
 `vividBlue`, `vividCyan`, `vividGreen`, `vividMagenta`, `vividRed`,
 `vividWhite`, `vividYellow`
 
+Also accepted are:
+
+`rgb#RrGgBb`, `onRgb#RrGgBb`, where `Rr` `Gg` and `Bb` are hexadecimal bytes (e.g. `rgb#f08000` for orange).
+
 ### Syntax Highlighting
 
 As part of theming, syntax highlighting is also configurable.  This can be

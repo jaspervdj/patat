@@ -15,20 +15,22 @@ module Patat.Theme
 
 
 --------------------------------------------------------------------------------
-import           Control.Monad          (forM_, mplus)
-import qualified Data.Aeson             as A
-import qualified Data.Aeson.TH.Extended as A
-import           Data.Char              (toLower, toUpper)
-import           Data.List              (intercalate, isSuffixOf)
-import qualified Data.Map               as M
-import           Data.Maybe             (mapMaybe, maybeToList)
-import           Data.Monoid            (Monoid (..))
-import           Data.Semigroup         (Semigroup (..))
-import qualified Data.Text              as T
+import           Control.Monad           (forM_, mplus)
+import qualified Data.Aeson              as A
+import qualified Data.Aeson.TH.Extended  as A
+import           Data.Char               (toLower, toUpper)
+import           Data.Colour.SRGB        (RGB(..), sRGB24reads, toSRGB24)
+import           Data.List               (intercalate, isPrefixOf, isSuffixOf)
+import qualified Data.Map                as M
+import           Data.Maybe              (mapMaybe, maybeToList)
+import           Data.Monoid             (Monoid (..))
+import           Data.Semigroup          (Semigroup (..))
+import qualified Data.Text               as T
+import           Numeric                 (showHex)
 import           Prelude
-import qualified Skylighting            as Skylighting
-import qualified System.Console.ANSI    as Ansi
-import           Text.Read              (readMaybe)
+import qualified Skylighting             as Skylighting
+import qualified System.Console.ANSI     as Ansi
+import           Text.Read               (readMaybe)
 
 
 --------------------------------------------------------------------------------
@@ -140,7 +142,7 @@ newtype Style = Style {unStyle :: [Ansi.SGR]}
 
 --------------------------------------------------------------------------------
 instance A.ToJSON Style where
-    toJSON = A.toJSON . mapMaybe nameForSGR . unStyle
+    toJSON = A.toJSON . mapMaybe sgrToString . unStyle
 
 
 --------------------------------------------------------------------------------
@@ -150,16 +152,34 @@ instance A.FromJSON Style where
         sgrs  <- mapM toSgr names
         return $! Style sgrs
       where
-        toSgr name = case M.lookup name sgrsByName of
+        toSgr name = case stringToSgr name of
             Just sgr -> return sgr
             Nothing  -> fail $!
                 "Unknown style: " ++ show name ++ ". Known styles are: " ++
-                intercalate ", " (map show $ M.keys sgrsByName)
+                intercalate ", " (map show $ M.keys namedSgrs) ++
+                ", or \"rgb#RrGgBb\" and \"onRgb#RrGgBb\" where 'Rr', " ++
+                "'Gg' and 'Bb' are hexadecimal bytes (e.g. \"rgb#f08000\")."
 
 
 --------------------------------------------------------------------------------
-nameForSGR :: Ansi.SGR -> Maybe String
-nameForSGR (Ansi.SetColor layer intensity color) = Just $
+stringToSgr :: String -> Maybe Ansi.SGR
+stringToSgr s
+    | "rgb#"   `isPrefixOf` s = rgbToSgr Ansi.Foreground $ drop 4 s
+    | "onRgb#" `isPrefixOf` s = rgbToSgr Ansi.Background $ drop 6 s
+    | otherwise               = M.lookup s namedSgrs
+
+
+--------------------------------------------------------------------------------
+rgbToSgr :: Ansi.ConsoleLayer -> String -> Maybe Ansi.SGR
+rgbToSgr layer rgbHex =
+    case sRGB24reads rgbHex of
+        [(color, "")] -> Just $ Ansi.SetRGBColor layer color
+        _             -> Nothing
+
+
+--------------------------------------------------------------------------------
+sgrToString :: Ansi.SGR -> Maybe String
+sgrToString (Ansi.SetColor layer intensity color) = Just $
     (\str -> case layer of
         Ansi.Foreground -> str
         Ansi.Background -> "on" ++ capitalize str) $
@@ -176,23 +196,34 @@ nameForSGR (Ansi.SetColor layer intensity color) = Just $
         Ansi.Cyan    -> "Cyan"
         Ansi.White   -> "White")
 
-nameForSGR (Ansi.SetUnderlining Ansi.SingleUnderline) = Just "underline"
+sgrToString (Ansi.SetUnderlining Ansi.SingleUnderline) = Just "underline"
 
-nameForSGR (Ansi.SetConsoleIntensity Ansi.BoldIntensity) = Just "bold"
+sgrToString (Ansi.SetConsoleIntensity Ansi.BoldIntensity) = Just "bold"
 
-nameForSGR _ = Nothing
+sgrToString (Ansi.SetRGBColor layer color) = Just $
+    (\str -> case layer of
+        Ansi.Foreground -> str
+        Ansi.Background -> "on" ++ capitalize str) $
+    "rgb#" ++ (toRGBHex $ toSRGB24 color)
+  where
+    toRGBHex (RGB r g b) = concat $ map toHexByte [r, g, b]
+    toHexByte x = showHex2 x ""
+    showHex2 x | x <= 0xf = ("0" ++) . showHex x
+               | otherwise = showHex x
+
+sgrToString _ = Nothing
 
 
 --------------------------------------------------------------------------------
-sgrsByName :: M.Map String Ansi.SGR
-sgrsByName = M.fromList
+namedSgrs :: M.Map String Ansi.SGR
+namedSgrs = M.fromList
     [ (name, sgr)
     | sgr  <- knownSgrs
-    , name <- maybeToList (nameForSGR sgr)
+    , name <- maybeToList (sgrToString sgr)
     ]
   where
     -- | It doesn't really matter if we generate "too much" SGRs here since
-    -- 'nameForSGR' will only pick the ones we support.
+    -- 'sgrToString' will only pick the ones we support.
     knownSgrs =
         [ Ansi.SetColor l i c
         | l <- [minBound .. maxBound]
