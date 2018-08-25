@@ -40,7 +40,7 @@ data CanvasSize = CanvasSize {csRows :: Int, csCols :: Int} deriving (Show)
 --------------------------------------------------------------------------------
 -- | Display something within the presentation borders that draw the title and
 -- the active slide number and so on.
-displayWithBorders :: Presentation -> (CanvasSize -> Theme -> PP.Doc) -> IO ()
+displayWithBorders :: Presentation -> (CanvasSize -> Theme -> Int -> PP.Doc) -> IO ()
 displayWithBorders Presentation {..} f = do
     Ansi.clearScreen
     Ansi.setCursorPosition 0 0
@@ -53,6 +53,7 @@ displayWithBorders Presentation {..} f = do
         rows    = fromMaybe 24 $
             (A.unFlexibleNum <$> psRows pSettings) `mplus`
             (Terminal.height <$> mbWindow)
+        margin = fromMaybe 0 (A.unFlexibleNum <$> psMargin pSettings)
 
     let settings    = pSettings {psColumns = Just $ A.FlexibleNum columns}
         theme       = fromMaybe Theme.defaultTheme (psTheme settings)
@@ -68,7 +69,7 @@ displayWithBorders Presentation {..} f = do
         putStrLn ""
 
     let canvasSize = CanvasSize (rows - 2) columns
-    PP.putDoc $ withWrapSettings settings $ f canvasSize theme
+    PP.putDoc $ withWrapSettings settings $ f canvasSize theme margin
     putStrLn ""
 
     let (sidx, _)   = pActiveFragment
@@ -85,9 +86,9 @@ displayWithBorders Presentation {..} f = do
 --------------------------------------------------------------------------------
 displayPresentation :: Presentation -> IO ()
 displayPresentation pres@Presentation {..} = displayWithBorders pres $
-    \canvasSize theme -> case getActiveFragment pres of
+    \canvasSize theme margin -> case getActiveFragment pres of
         Nothing                       -> mempty
-        Just (ActiveContent fragment) -> prettyFragment theme fragment
+        Just (ActiveContent fragment) -> prettyFragment theme margin fragment
         Just (ActiveTitle   block)    ->
             let pblock         = prettyBlock theme block
                 (prows, pcols) = PP.dimensions pblock
@@ -102,7 +103,7 @@ displayPresentation pres@Presentation {..} = displayWithBorders pres $
 -- | Displays an error in the place of the presentation.  This is useful if we
 -- want to display an error but keep the presentation running.
 displayPresentationError :: Presentation -> String -> IO ()
-displayPresentationError pres err = displayWithBorders pres $ \_ Theme {..} ->
+displayPresentationError pres err = displayWithBorders pres $ \_ Theme {..} _ ->
     themed themeStrong "Error occurred in the presentation:" <$$>
     "" <$$>
     (PP.string err)
@@ -119,20 +120,21 @@ dumpPresentation pres =
                 TitleSlide   block     -> "~~~title" <$$> prettyBlock theme block
                 ContentSlide fragments -> PP.vcat $ L.intersperse "~~~frag" $ do
                     fragment <- fragments
-                    return $ prettyFragment theme fragment
+                    return $ prettyFragment theme 0 fragment
 
 
 --------------------------------------------------------------------------------
 withWrapSettings :: PresentationSettings -> PP.Doc -> PP.Doc
-withWrapSettings ps = case (psWrap ps, psColumns ps) of
-    (Just True,  Just (A.FlexibleNum col)) -> PP.wrapAt (Just col)
-    _                                      -> id
+withWrapSettings ps = case (psWrap ps, psColumns ps, psMargin ps) of
+    (Just True,  Just (A.FlexibleNum col),  Just (A.FlexibleNum margin)) -> PP.wrapAt (Just $ col - margin)
+    (Just True,  Just (A.FlexibleNum col),  _)                           -> PP.wrapAt (Just col)
+    _                                                                    -> id
 
 
 --------------------------------------------------------------------------------
-prettyFragment :: Theme -> Fragment -> PP.Doc
-prettyFragment theme fragment@(Fragment blocks) =
-    prettyBlocks theme blocks <>
+prettyFragment :: Theme -> Int -> Fragment -> PP.Doc
+prettyFragment theme margin fragment@(Fragment blocks) =
+    prettyBlocks' theme margin blocks <>
     case prettyReferences theme fragment of
         []   -> mempty
         refs -> PP.hardline <> PP.vcat refs
@@ -239,6 +241,15 @@ prettyBlock theme@Theme {..} (Pandoc.LineBlock inliness) =
 --------------------------------------------------------------------------------
 prettyBlocks :: Theme -> [Pandoc.Block] -> PP.Doc
 prettyBlocks theme = PP.vcat . map (prettyBlock theme) . filter isVisibleBlock
+
+
+--------------------------------------------------------------------------------
+prettyBlocks' :: Theme -> Int -> [Pandoc.Block] -> PP.Doc
+prettyBlocks' theme margin =
+    let
+        spaces = mconcat (replicate margin PP.space)
+        indent = PP.indent (PP.NotTrimmable spaces) (PP.NotTrimmable spaces) in
+    PP.vcat . map indent . map (prettyBlock theme) . filter isVisibleBlock
 
 
 --------------------------------------------------------------------------------

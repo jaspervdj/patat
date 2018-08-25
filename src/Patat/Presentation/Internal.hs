@@ -55,6 +55,7 @@ data Presentation = Presentation
 data PresentationSettings = PresentationSettings
     { psRows             :: !(Maybe (A.FlexibleNum Int))
     , psColumns          :: !(Maybe (A.FlexibleNum Int))
+    , psMargin           :: !(Maybe (A.FlexibleNum Int))
     , psWrap             :: !(Maybe Bool)
     , psTheme            :: !(Maybe Theme.Theme)
     , psIncrementalLists :: !(Maybe Bool)
@@ -69,6 +70,7 @@ instance Semigroup PresentationSettings where
     l <> r = PresentationSettings
         { psRows             = psRows             l `mplus` psRows             r
         , psColumns          = psColumns          l `mplus` psColumns          r
+        , psMargin           = psMargin           l `mplus` psMargin           r
         , psWrap             = psWrap             l `mplus` psWrap             r
         , psTheme            = psTheme            l <>      psTheme            r
         , psIncrementalLists = psIncrementalLists l `mplus` psIncrementalLists r
@@ -82,7 +84,7 @@ instance Monoid PresentationSettings where
     mappend = (<>)
     mempty  = PresentationSettings
                     Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-                    Nothing
+                    Nothing Nothing
 
 
 --------------------------------------------------------------------------------
@@ -90,6 +92,7 @@ defaultPresentationSettings :: PresentationSettings
 defaultPresentationSettings = PresentationSettings
     { psRows             = Nothing
     , psColumns          = Nothing
+    , psMargin           = Nothing
     , psWrap             = Nothing
     , psTheme            = Just Theme.defaultTheme
     , psIncrementalLists = Nothing
