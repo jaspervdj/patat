@@ -17,6 +17,7 @@ module Patat.PrettyPrint
     , string
     , text
     , space
+    , spaces
     , softline
     , hardline
 
@@ -319,6 +320,11 @@ space = mkDoc Softspace
 
 
 --------------------------------------------------------------------------------
+spaces :: Int -> Doc
+spaces n = mconcat $ replicate n space
+
+
+--------------------------------------------------------------------------------
 softline :: Doc
 softline = mkDoc Softline
 
@@ -383,15 +389,15 @@ align width alignment doc0 =
 
     alignLine :: [Chunk] -> [Chunk]
     alignLine line =
-        let actual   = lineWidth line
-            spaces n = [StringChunk [] (replicate n ' ')] in
+        let actual        = lineWidth line
+            chunkSpaces n = [StringChunk [] (replicate n ' ')] in
         case alignment of
-            AlignLeft   -> line <> spaces (width - actual)
-            AlignRight  -> spaces (width - actual) <> line
+            AlignLeft   -> line <> chunkSpaces (width - actual)
+            AlignRight  -> chunkSpaces (width - actual) <> line
             AlignCenter ->
                 let r = (width - actual) `div` 2
                     l = (width - actual) - r in
-                spaces l <> line <> spaces r
+                chunkSpaces l <> line <> chunkSpaces r
 
 
 --------------------------------------------------------------------------------
