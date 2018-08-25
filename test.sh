@@ -1,6 +1,18 @@
 #!/bin/bash
 set -o nounset -o errexit -o pipefail
 
+PATAT_CONF=~/.patat.yaml
+PATAT_CONF_BACKUP=~/.patat.yaml.testing
+
+function restore() {
+    mv $PATAT_CONF_BACKUP $PATAT_CONF
+}
+
+if [[ -f "$PATAT_CONF" ]]; then
+    mv $PATAT_CONF $PATAT_CONF_BACKUP
+    trap restore EXIT
+fi
+
 srcs=$(find tests -type f ! -name '*.dump')
 stuff_went_wrong=false
 
