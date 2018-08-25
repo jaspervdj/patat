@@ -262,6 +262,13 @@ Or we can use a normal presentation and have the following `$HOME/.patat.yaml`:
 Line wrapping can be enabled by setting `wrap: true` in the configuration.  This
 will re-wrap all lines to fit the terminal width better.
 
+### Margins
+
+Margins can be enabled by setting a `margin` entry with the desired width in the configuration.
+For example, `margin: 12` will add a margin of 12 columns on the left, and 12 columns on the right.
+
+It is recommended to enable [line wrapping](#line-wrapping) along with this feature.
+
 ### Auto advancing
 
 By setting `autoAdvanceDelay` to a number of seconds, `patat` will automatically
