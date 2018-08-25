@@ -120,7 +120,8 @@ dumpPresentation pres =
                 TitleSlide   block     -> "~~~title" <$$> prettyBlock theme block
                 ContentSlide fragments -> PP.vcat $ L.intersperse "~~~frag" $ do
                     fragment <- fragments
-                    return $ prettyFragment theme 0 fragment
+                    let margin = fromMaybe 0 (A.unFlexibleNum <$> (psMargin $ pSettings pres))
+                    return $ prettyFragment theme margin fragment
 
 
 --------------------------------------------------------------------------------
