@@ -1,5 +1,8 @@
 # Changelog
 
+- master
+    * Add RGB colour support for themes (contribution by Hamza Haiken)
+
 - 0.7.2.0 (2018-05-08)
     * GHC 8.4 compatibility
 

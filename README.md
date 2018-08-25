@@ -14,7 +14,7 @@ Features:
 - Supports [smart slide splitting](#input-format).
 - Slides can be split up into [multiple fragments](#fragmented-slides)
 - There is a [live reload](#running) mode.
-- [Theming](#theming) support.
+- [Theming](#theming) support including 24-bit RGB.
 - [Auto advancing](#auto-advancing) with configurable delay.
 - Optionally [re-wrapping](#line-wrapping) text to terminal width with proper
   indentation.
@@ -410,9 +410,11 @@ The accepted styles are:
 `vividBlue`, `vividCyan`, `vividGreen`, `vividMagenta`, `vividRed`,
 `vividWhite`, `vividYellow`
 
-Also accepted are:
-
-`rgb#RrGgBb`, `onRgb#RrGgBb`, where `Rr` `Gg` and `Bb` are hexadecimal bytes (e.g. `rgb#f08000` for orange).
+Also accepted are styles of the form `rgb#RrGgBb` and `onRgb#RrGgBb`, where `Rr`
+`Gg` and `Bb` are hexadecimal bytes (e.g. `rgb#f08000` for an orange foreground,
+and `onRgb#101060` for a deep purple background).  Naturally, your terminal
+needs to support 24-bit RGB for this to work.  When creating portable
+presentations, it might be better to stick with the named colours listed above.
 
 ### Syntax Highlighting
 
