@@ -62,8 +62,9 @@ displayWithBorders Presentation {..} f = do
         borders     = themed (themeBorders theme)
 
     unless (null title) $ do
-        Ansi.setCursorColumn titleOffset
-        PP.putDoc $ borders $ PP.string title
+        let titleRemainder = columns - titleWidth - titleOffset
+            wrappedTitle = PP.spaces titleOffset <> PP.string title <> PP.spaces titleRemainder
+        PP.putDoc $ borders wrappedTitle
         putStrLn ""
         putStrLn ""
 
@@ -71,14 +72,15 @@ displayWithBorders Presentation {..} f = do
     PP.putDoc $ formatWith settings $ f canvasSize theme
     putStrLn ""
 
-    let (sidx, _)   = pActiveFragment
-        active      = show (sidx + 1) ++ " / " ++ show (length pSlides)
-        activeWidth = length active
+    let (sidx, _)    = pActiveFragment
+        active       = show (sidx + 1) ++ " / " ++ show (length pSlides)
+        activeWidth  = length active
+        author       = PP.toString (prettyInlines theme pAuthor)
+        authorWidth  = length author
+        middleSpaces = PP.spaces $ columns - activeWidth - authorWidth - 2
 
     Ansi.setCursorPosition (rows - 1) 0
-    PP.putDoc $ " " <> borders (prettyInlines theme pAuthor)
-    Ansi.setCursorColumn (columns - activeWidth - 1)
-    PP.putDoc $ borders $ PP.string active
+    PP.putDoc $ borders $ PP.space <> PP.string author <> middleSpaces <> PP.string active <> PP.space
     IO.hFlush IO.stdout
 
 
@@ -93,9 +95,9 @@ displayPresentation pres@Presentation {..} = displayWithBorders pres $
                 (prows, pcols) = PP.dimensions pblock
                 offsetRow      = (csRows canvasSize `div` 2) - (prows `div` 2)
                 offsetCol      = (csCols canvasSize `div` 2) - (pcols `div` 2)
-                spaces         = mconcat (replicate offsetCol PP.space) in
+                spaces         = PP.NotTrimmable $ PP.spaces offsetCol in
             mconcat (replicate (offsetRow - 3) PP.hardline) <$$>
-            PP.indent (PP.NotTrimmable spaces) (PP.NotTrimmable spaces) pblock
+            PP.indent spaces spaces pblock
 
 
 --------------------------------------------------------------------------------
@@ -131,7 +133,7 @@ formatWith ps = wrap . indent
     wrap = case (psWrap ps, psColumns ps) of
         (Just True,  Just (A.FlexibleNum col)) -> PP.wrapAt (Just $ col - marginRight)
         _                                      -> id
-    spaces = PP.NotTrimmable $ mconcat (replicate marginLeft PP.space)
+    spaces = PP.NotTrimmable $ PP.spaces marginLeft
     indent = PP.indent spaces spaces
 
 --------------------------------------------------------------------------------
