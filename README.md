@@ -264,8 +264,24 @@ will re-wrap all lines to fit the terminal width better.
 
 ### Margins
 
-Margins can be enabled by setting a `margin` entry with the desired width in the configuration.
-For example, `margin: 12` will add a margin of 12 columns on the left, and 12 columns on the right.
+Margins can be enabled by setting a `margins` entry in the configuration:
+
+```markdown
+---
+title: Presentation with margins
+author: John Doe
+patat:
+    wrap: true
+    margins:
+        left: 10
+        right: 10
+...
+
+Lorem ipsum dolor sit amet, ...
+```
+
+This example configuration will generate slides with a margin of 10 characters on the left,
+and break lines 10 characters before they reach the end of the terminal's width.
 
 It is recommended to enable [line wrapping](#line-wrapping) along with this feature.
 

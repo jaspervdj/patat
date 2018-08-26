@@ -53,7 +53,6 @@ displayWithBorders Presentation {..} f = do
         rows    = fromMaybe 24 $
             (A.unFlexibleNum <$> psRows pSettings) `mplus`
             (Terminal.height <$> mbWindow)
-        margin = fromMaybe 0 (A.unFlexibleNum <$> psMargin pSettings)
 
     let settings    = pSettings {psColumns = Just $ A.FlexibleNum columns}
         theme       = fromMaybe Theme.defaultTheme (psTheme settings)
@@ -62,6 +61,8 @@ displayWithBorders Presentation {..} f = do
         titleOffset = (columns - titleWidth) `div` 2
         borders     = themed (themeBorders theme)
 
+    let (marginLeft, _) = margins pSettings
+
     unless (null title) $ do
         Ansi.setCursorColumn titleOffset
         PP.putDoc $ borders $ PP.string title
@@ -69,7 +70,7 @@ displayWithBorders Presentation {..} f = do
         putStrLn ""
 
     let canvasSize = CanvasSize (rows - 2) columns
-    PP.putDoc $ withWrapSettings settings $ f canvasSize theme margin
+    PP.putDoc $ withWrapSettings settings $ f canvasSize theme marginLeft
     putStrLn ""
 
     let (sidx, _)   = pActiveFragment
@@ -112,30 +113,33 @@ displayPresentationError pres err = displayWithBorders pres $ \_ Theme {..} _ ->
 --------------------------------------------------------------------------------
 dumpPresentation :: Presentation -> IO ()
 dumpPresentation pres =
-    let theme = fromMaybe Theme.defaultTheme (psTheme $ pSettings pres) in
-    PP.putDoc $ withWrapSettings (pSettings pres) $
+    let settings = pSettings pres
+        theme    = fromMaybe Theme.defaultTheme (psTheme $ settings) in
+    PP.putDoc $ withWrapSettings settings $
         PP.vcat $ L.intersperse "----------" $ do
             slide <- pSlides pres
             return $ case slide of
                 TitleSlide   block     -> "~~~title" <$$> prettyBlock theme block
                 ContentSlide fragments -> PP.vcat $ L.intersperse "~~~frag" $ do
                     fragment <- fragments
-                    let margin = fromMaybe 0 (A.unFlexibleNum <$> (psMargin $ pSettings pres))
-                    return $ prettyFragment theme margin fragment
+                    let (marginLeft, _) = margins settings
+                    return $ prettyFragment theme marginLeft fragment
 
 
 --------------------------------------------------------------------------------
 withWrapSettings :: PresentationSettings -> PP.Doc -> PP.Doc
-withWrapSettings ps = case (psWrap ps, psColumns ps, psMargin ps) of
-    (Just True,  Just (A.FlexibleNum col),  Just (A.FlexibleNum margin)) -> PP.wrapAt (Just $ col - margin)
-    (Just True,  Just (A.FlexibleNum col),  _)                           -> PP.wrapAt (Just col)
-    _                                                                    -> id
+withWrapSettings ps =
+    case (psWrap ps, psColumns ps) of
+        (Just True,  Just (A.FlexibleNum col)) -> case (psMargins ps) of
+            (Just (Margins _ (Just (A.FlexibleNum marginRight)))) -> PP.wrapAt (Just $ col - marginRight)
+            _                                                     -> PP.wrapAt (Just col)
+        _ -> id
 
 
 --------------------------------------------------------------------------------
 prettyFragment :: Theme -> Int -> Fragment -> PP.Doc
-prettyFragment theme margin fragment@(Fragment blocks) =
-    prettyBlocks' theme margin blocks <>
+prettyFragment theme marginLeft fragment@(Fragment blocks) =
+    prettyBlocks' theme marginLeft blocks <>
     case prettyReferences theme fragment of
         []   -> mempty
         refs -> PP.hardline <> PP.vcat refs
@@ -246,9 +250,9 @@ prettyBlocks theme = PP.vcat . map (prettyBlock theme) . filter isVisibleBlock
 
 --------------------------------------------------------------------------------
 prettyBlocks' :: Theme -> Int -> [Pandoc.Block] -> PP.Doc
-prettyBlocks' theme margin =
+prettyBlocks' theme marginLeft =
     let
-        spaces = mconcat (replicate margin PP.space)
+        spaces = mconcat (replicate marginLeft PP.space)
         indent = PP.indent (PP.NotTrimmable spaces) (PP.NotTrimmable spaces) in
     PP.vcat . map indent . map (prettyBlock theme) . filter isVisibleBlock
 

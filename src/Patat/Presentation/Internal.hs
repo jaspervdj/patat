@@ -7,6 +7,9 @@ module Patat.Presentation.Internal
     , PresentationSettings (..)
     , defaultPresentationSettings
 
+    , Margins (..)
+    , margins
+
     , ExtensionList (..)
     , defaultExtensionList
 
@@ -28,7 +31,7 @@ import qualified Data.Aeson.Extended    as A
 import qualified Data.Aeson.TH.Extended as A
 import qualified Data.Foldable          as Foldable
 import           Data.List              (intercalate)
-import           Data.Maybe             (listToMaybe)
+import           Data.Maybe             (fromMaybe, listToMaybe)
 import           Data.Monoid            (Monoid (..))
 import           Data.Semigroup         (Semigroup (..))
 import qualified Data.Text              as T
@@ -55,7 +58,7 @@ data Presentation = Presentation
 data PresentationSettings = PresentationSettings
     { psRows             :: !(Maybe (A.FlexibleNum Int))
     , psColumns          :: !(Maybe (A.FlexibleNum Int))
-    , psMargin           :: !(Maybe (A.FlexibleNum Int))
+    , psMargins          :: !(Maybe Margins)
     , psWrap             :: !(Maybe Bool)
     , psTheme            :: !(Maybe Theme.Theme)
     , psIncrementalLists :: !(Maybe Bool)
@@ -70,7 +73,7 @@ instance Semigroup PresentationSettings where
     l <> r = PresentationSettings
         { psRows             = psRows             l `mplus` psRows             r
         , psColumns          = psColumns          l `mplus` psColumns          r
-        , psMargin           = psMargin           l `mplus` psMargin           r
+        , psMargins          = psMargins          l <>      psMargins          r
         , psWrap             = psWrap             l `mplus` psWrap             r
         , psTheme            = psTheme            l <>      psTheme            r
         , psIncrementalLists = psIncrementalLists l `mplus` psIncrementalLists r
@@ -78,6 +81,7 @@ instance Semigroup PresentationSettings where
         , psSlideLevel       = psSlideLevel       l `mplus` psSlideLevel       r
         , psPandocExtensions = psPandocExtensions l `mplus` psPandocExtensions r
         }
+
 
 --------------------------------------------------------------------------------
 instance Monoid PresentationSettings where
@@ -92,7 +96,7 @@ defaultPresentationSettings :: PresentationSettings
 defaultPresentationSettings = PresentationSettings
     { psRows             = Nothing
     , psColumns          = Nothing
-    , psMargin           = Nothing
+    , psMargins          = Just defaultMargins
     , psWrap             = Nothing
     , psTheme            = Just Theme.defaultTheme
     , psIncrementalLists = Nothing
@@ -100,6 +104,45 @@ defaultPresentationSettings = PresentationSettings
     , psSlideLevel       = Nothing
     , psPandocExtensions = Nothing
     }
+
+
+--------------------------------------------------------------------------------
+data Margins = Margins
+    { mLeft  :: !(Maybe (A.FlexibleNum Int))
+    , mRight :: !(Maybe (A.FlexibleNum Int))
+    } deriving (Show)
+
+
+--------------------------------------------------------------------------------
+instance Semigroup Margins where
+    l <> r = Margins
+        { mLeft  = mLeft  l `mplus` mLeft  r
+        , mRight = mRight l `mplus` mRight r
+        }
+
+
+--------------------------------------------------------------------------------
+instance Monoid Margins where
+    mappend = (<>)
+    mempty  = Margins Nothing Nothing
+
+
+--------------------------------------------------------------------------------
+defaultMargins :: Margins
+defaultMargins = Margins
+    { mLeft  = Nothing
+    , mRight = Nothing
+    }
+
+
+--------------------------------------------------------------------------------
+margins :: PresentationSettings -> (Int, Int)
+margins presentationSettings =
+    (marginLeft, marginRight)
+  where
+    margins'    = fromMaybe defaultMargins $ psMargins presentationSettings
+    marginLeft  = fromMaybe 0 (A.unFlexibleNum <$> mLeft margins')
+    marginRight = fromMaybe 0 (A.unFlexibleNum <$> mRight margins')
 
 
 --------------------------------------------------------------------------------
@@ -201,3 +244,7 @@ getActiveFragment presentation = do
 
 --------------------------------------------------------------------------------
 $(A.deriveFromJSON A.dropPrefixOptions ''PresentationSettings)
+
+
+--------------------------------------------------------------------------------
+$(A.deriveFromJSON A.dropPrefixOptions ''Margins)
