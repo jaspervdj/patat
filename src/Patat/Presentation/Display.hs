@@ -68,7 +68,7 @@ displayWithBorders Presentation {..} f = do
         putStrLn ""
 
     let canvasSize = CanvasSize (rows - 2) columns
-    PP.putDoc $ withWrapSettings settings $ f canvasSize theme
+    PP.putDoc $ formatWith settings $ f canvasSize theme
     putStrLn ""
 
     let (sidx, _)   = pActiveFragment
@@ -111,8 +111,9 @@ displayPresentationError pres err = displayWithBorders pres $ \_ Theme {..} ->
 --------------------------------------------------------------------------------
 dumpPresentation :: Presentation -> IO ()
 dumpPresentation pres =
-    let theme = fromMaybe Theme.defaultTheme (psTheme $ pSettings pres) in
-    PP.putDoc $ withWrapSettings (pSettings pres) $
+    let settings = pSettings pres
+        theme    = fromMaybe Theme.defaultTheme (psTheme $ settings) in
+    PP.putDoc $ formatWith settings $
         PP.vcat $ L.intersperse "----------" $ do
             slide <- pSlides pres
             return $ case slide of
@@ -123,11 +124,15 @@ dumpPresentation pres =
 
 
 --------------------------------------------------------------------------------
-withWrapSettings :: PresentationSettings -> PP.Doc -> PP.Doc
-withWrapSettings ps = case (psWrap ps, psColumns ps) of
-    (Just True,  Just (A.FlexibleNum col)) -> PP.wrapAt (Just col)
-    _                                      -> id
-
+formatWith :: PresentationSettings -> PP.Doc -> PP.Doc
+formatWith ps = wrap . indent
+  where
+    (marginLeft, marginRight) = marginsOf ps
+    wrap = case (psWrap ps, psColumns ps) of
+        (Just True,  Just (A.FlexibleNum col)) -> PP.wrapAt (Just $ col - marginRight)
+        _                                      -> id
+    spaces = PP.NotTrimmable $ mconcat (replicate marginLeft PP.space)
+    indent = PP.indent spaces spaces
 
 --------------------------------------------------------------------------------
 prettyFragment :: Theme -> Fragment -> PP.Doc

@@ -1,0 +1,10 @@
+[m          This text will have 10 spaces on the left.[0m
+[m          [0m
+[m          [0m[35m  - [0m[mSo[0m
+[m              [0m[35m  * [0m[mwill[0m
+[m              [0m[35m  * [0m[mthese[0m
+[m              [0m[35m  * [0m[mbullets[0m
+
+[m          [0m
+[m          This line will have 10 spaces on the left,[0m
+[m          but will also break after "left".[0m
