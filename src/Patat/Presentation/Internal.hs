@@ -8,7 +8,7 @@ module Patat.Presentation.Internal
     , defaultPresentationSettings
 
     , Margins (..)
-    , margins
+    , marginsOf
 
     , ExtensionList (..)
     , defaultExtensionList
@@ -136,13 +136,13 @@ defaultMargins = Margins
 
 
 --------------------------------------------------------------------------------
-margins :: PresentationSettings -> (Int, Int)
-margins presentationSettings =
+marginsOf :: PresentationSettings -> (Int, Int)
+marginsOf presentationSettings =
     (marginLeft, marginRight)
   where
-    margins'    = fromMaybe defaultMargins $ psMargins presentationSettings
-    marginLeft  = fromMaybe 0 (A.unFlexibleNum <$> mLeft margins')
-    marginRight = fromMaybe 0 (A.unFlexibleNum <$> mRight margins')
+    margins    = fromMaybe defaultMargins $ psMargins presentationSettings
+    marginLeft  = fromMaybe 0 (A.unFlexibleNum <$> mLeft margins)
+    marginRight = fromMaybe 0 (A.unFlexibleNum <$> mRight margins)
 
 
 --------------------------------------------------------------------------------
