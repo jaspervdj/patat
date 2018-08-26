@@ -138,24 +138,26 @@ Input format
 The input format can be anything that Pandoc supports.  Plain markdown is
 usually the most simple solution:
 
-    ---
-    title: This is my presentation
-    author: Jane Doe
-    ...
+```markdown
+---
+title: This is my presentation
+author: Jane Doe
+...
 
-    # This is a slide
+# This is a slide
 
-    Slide contents.  Yay.
+Slide contents.  Yay.
 
-    ---
+---
 
-    # Important title
+# Important title
 
-    Things I like:
+Things I like:
 
-    - Markdown
-    - Haskell
-    - Pandoc
+- Markdown
+- Haskell
+- Pandoc
+```
 
 Horizontal rulers (`---`) are used to split slides.
 
@@ -170,65 +172,70 @@ centered title.
 
 This means the following document is equivalent to the one we saw before:
 
-    ---
-    title: This is my presentation
-    author: Jane Doe
-    ...
+```markdown
+---
+title: This is my presentation
+author: Jane Doe
+...
 
-    # This is a slide
+# This is a slide
 
-    Slide contents.  Yay.
+Slide contents.  Yay.
 
-    # Important title
+# Important title
 
-    Things I like:
+Things I like:
 
-    - Markdown
-    - Haskell
-    - Pandoc
+- Markdown
+- Haskell
+- Pandoc
+```
 
 And that following document contains three slides: a title slide, followed by
 two content slides.
 
-    ---
-    title: This is my presentation
-    author: Jane Doe
-    ...
+```markdown
+---
+title: This is my presentation
+author: Jane Doe
+...
 
-    # Chapter 1
+# Chapter 1
 
-    ## This is a slide
+## This is a slide
 
-    Slide contents.  Yay.
+Slide contents.  Yay.
 
-    ## Another slide
+## Another slide
 
-    Things I like:
+Things I like:
 
-    - Markdown
-    - Haskell
-    - Pandoc
+- Markdown
+- Haskell
+- Pandoc
+```
 
 For more information, see [Advanced slide splitting](#advanced-slide-splitting).
 
 Patat supports comments which can be used as speaker notes.
 
-    ---
-    title: This is my presentation
-    author: Jane Doe
-    ...
+```markdown
+---
+title: This is my presentation
+author: Jane Doe
+...
 
-    # Chapter 1
+# Chapter 1
 
-    <!--
-    Note: I should not bore the audience with my thoughts on powerpoint but
-    just get straight to the point.
-    -->
+<!--
+Note: I should not bore the audience with my thoughts on powerpoint but
+just get straight to the point.
+-->
 
-    Slide contents.  Yay.
+Slide contents.  Yay.
 
-    <!-- TODO: Finish the rest of the presentation. -->
-
+<!-- TODO: Finish the rest of the presentation. -->
+```
 
 Configuration
 -------------
@@ -244,14 +251,16 @@ are two places where you can put your configuration:
 
 For example, we set an option `key` to `val` by using the following file:
 
-    ---
-    title: Presentation with options
-    author: John Doe
-    patat:
-        key: val
-    ...
+```markdown
+---
+title: Presentation with options
+author: John Doe
+patat:
+    key: val
+...
 
-    Hello world.
+Hello world.
+```
 
 Or we can use a normal presentation and have the following `$HOME/.patat.yaml`:
 
@@ -290,18 +299,20 @@ It is recommended to enable [line wrapping](#line-wrapping) along with this feat
 By setting `autoAdvanceDelay` to a number of seconds, `patat` will automatically
 advance to the next slide.
 
-    ---
-    title: Auto-advance, yes please
-    author: John Doe
-    patat:
-        autoAdvanceDelay: 2
-    ...
+```markdown
+---
+title: Auto-advance, yes please
+author: John Doe
+patat:
+    autoAdvanceDelay: 2
+...
 
-    Hello World!
+Hello World!
 
-    ---
+---
 
-    This slide will be shown two seconds after the presentation starts.
+This slide will be shown two seconds after the presentation starts.
+```
 
 Note that changes to `autoAdvanceDelay` are not picked up automatically if you
 are running `patat --watch`.  This requires restarting `patat`.
@@ -313,26 +324,30 @@ variable.  This variable defaults to the least header that occurs before a
 non-header, but it can also be explicitly defined.  For example, in the
 following document, the `slideLevel` defaults to **2**:
 
-    # This is a slide
+```markdown
+# This is a slide
 
-    ## This is a nested header
+## This is a nested header
 
-    This is some content
+This is some content
+```
 
 With `slideLevel` 2, the `h1` will turn into a "title slide", and the `h2` will
 be displayed at the top of the second slide.  We can customize this by setting
 `slideLevel` manually:
 
-    ---
-    patat:
-      slideLevel: 1
-    ...
+```markdown
+---
+patat:
+  slideLevel: 1
+...
 
-    # This is a slide
+# This is a slide
 
-    ## This is a nested header
+## This is a nested header
 
-    This is some content
+This is some content
+```
 
 Now, we will only see one slide, which contains a nested header.
 
@@ -345,16 +360,18 @@ case is that lists should be displayed incrementally.
 This can be configured by settings `incrementalLists` to `true` in the metadata
 block:
 
-    ---
-    title: Presentation with incremental lists
-    author: John Doe
-    patat:
-        incrementalLists: true
-    ...
+```markdown
+---
+title: Presentation with incremental lists
+author: John Doe
+patat:
+    incrementalLists: true
+...
 
-    - This list
-    - is displayed
-    - item by item
+- This list
+- is displayed
+- item by item
+```
 
 Setting `incrementalLists` works on _all_ lists in the presentation.  To flip
 the setting for a specific list, wrap it in a block quote.  This will make the
@@ -364,57 +381,63 @@ all at once if `incrementalLists` is set to `true`.
 This example contains a sublist which is also displayed incrementally, and then
 a sublist which is displayed all at once (by merit of the block quote).
 
-    ---
-    title: Presentation with incremental lists
-    author: John Doe
-    patat:
-        incrementalLists: true
-    ...
+```markdown
+---
+title: Presentation with incremental lists
+author: John Doe
+patat:
+    incrementalLists: true
+...
 
-    - This list
-    - is displayed
+- This list
+- is displayed
 
-        * item
-        * by item
+    * item
+    * by item
 
-    - Or sometimes
+- Or sometimes
 
-        > * all at
-        > * once
+    > * all at
+    > * once
+```
 
 Another way to break up slides is to use a pagraph only containing three dots
 separated by spaces.  For example, this slide has two pauses:
 
-    Legen
+```markdown
+Legen
 
-    . . .
+. . .
 
-    wait for it
+wait for it
 
-    . . .
+. . .
 
-    Dary!
+Dary!
+```
 
 ### Theming
 
 Colors and other properties can also be changed using this configuration.  For
 example, we can have:
 
-    ---
-    author: 'Jasper Van der Jeugt'
-    title: 'This is a test'
-    patat:
-        wrap: true
-        theme:
-            emph: [vividBlue, onVividBlack, bold]
-            imageTarget: [onDullWhite, vividRed]
-    ...
+```markdown
+---
+author: 'Jasper Van der Jeugt'
+title: 'This is a test'
+patat:
+    wrap: true
+    theme:
+        emph: [vividBlue, onVividBlack, bold]
+        imageTarget: [onDullWhite, vividRed]
+...
 
-    # This is a presentation
+# This is a presentation
 
-    This is _emph_ text.
+This is _emph_ text.
 
-    ![Hello](foo.png)
+![Hello](foo.png)
+```
 
 The properties that can be given a list of styles are:
 
@@ -442,14 +465,16 @@ Also accepted are:
 As part of theming, syntax highlighting is also configurable.  This can be
 configured like this:
 
-    ---
-    patat:
-      theme:
-        syntaxHighlighting:
-          decVal: [bold, onDullRed]
-    ...
+```
+---
+patat:
+  theme:
+    syntaxHighlighting:
+      decVal: [bold, onDullRed]
+...
 
-    ...
+...
+```
 
 `decVal` refers to "decimal values".  This is known as a "token type".  For a
 full list of token types, see [this list] -- the names are derived from there in
@@ -459,38 +484,40 @@ an obvious way.
 
 ### Pandoc Extensions
 
-Pandoc comes with a fair number of extensions on top of markdown:
-
-    <https://hackage.haskell.org/package/pandoc-2.0.5/docs/Text-Pandoc-Extensions.html>
+Pandoc comes with a fair number of extensions on top of markdown, listed [here](https://hackage.haskell.org/package/pandoc-2.0.5/docs/Text-Pandoc-Extensions.html).
 
 `patat` enables a number of them by default, but this is also customizable.
 
 In order to enable an additional extensions, e.g. `autolink_bare_uris`, add it
 to the `pandocExtensions` field in the YAML metadata:
 
-    ---
-    patat:
-      pandocExtensions:
-        - patat_extensions
-        - autolink_bare_uris
-    ...
+```markdown
+---
+patat:
+  pandocExtensions:
+    - patat_extensions
+    - autolink_bare_uris
+...
 
-    Document content...
+Document content...
+```
 
 The `patat_extensions` in the above snippet refers to the default set of
 extensions enabled by `patat`.  If you want to disable those and only use a
 select few extensions, simply leave it out and choose your own:
 
-    ---
-    patat:
-      pandocExtensions:
-        - autolink_bare_uris
-        - emoji
-    ...
+```markdown
+---
+patat:
+  pandocExtensions:
+    - autolink_bare_uris
+    - emoji
+...
 
-    ...
+...
 
-    Document content...
+Document content...
+```
 
 If you don't want to enable any extensions, simply set `pandocExtensions` to the
 empty list `[]`.
