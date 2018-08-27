@@ -19,6 +19,7 @@ import qualified Data.List                            as L
 import           Data.Maybe                           (fromMaybe)
 import           Data.Monoid                          (mconcat, mempty, (<>))
 import qualified Data.Text                            as T
+import qualified Patat.Images                         as Images
 import           Patat.Presentation.Display.CodeBlock
 import           Patat.Presentation.Display.Table
 import           Patat.Presentation.Internal
@@ -40,7 +41,8 @@ data CanvasSize = CanvasSize {csRows :: Int, csCols :: Int} deriving (Show)
 --------------------------------------------------------------------------------
 -- | Display something within the presentation borders that draw the title and
 -- the active slide number and so on.
-displayWithBorders :: Presentation -> (CanvasSize -> Theme -> PP.Doc) -> IO ()
+displayWithBorders
+    :: Presentation -> (CanvasSize -> Theme -> PP.Doc) -> IO ()
 displayWithBorders Presentation {..} f = do
     Ansi.clearScreen
     Ansi.setCursorPosition 0 0
@@ -85,12 +87,29 @@ displayWithBorders Presentation {..} f = do
 
 
 --------------------------------------------------------------------------------
-displayPresentation :: Presentation -> IO ()
-displayPresentation pres@Presentation {..} = displayWithBorders pres $
-    \canvasSize theme -> case getActiveFragment pres of
-        Nothing                       -> mempty
-        Just (ActiveContent fragment) -> prettyFragment theme fragment
+displayImage :: Images.Handle -> FilePath -> IO ()
+displayImage images path = do
+    Ansi.clearScreen
+    Ansi.setCursorPosition 0 0
+    putStrLn ""
+    IO.hFlush IO.stdout
+    Images.drawImage images path
+
+
+--------------------------------------------------------------------------------
+displayPresentation :: Maybe Images.Handle -> Presentation -> IO ()
+displayPresentation mbImages pres@Presentation {..} =
+     case getActiveFragment pres of
+        Nothing                       -> displayWithBorders pres mempty
+        Just (ActiveContent fragment)
+                | Just images <- mbImages
+                , Just image <- onlyImage fragment ->
+            displayImage images image
+        Just (ActiveContent fragment) ->
+            displayWithBorders pres $ \_canvasSize theme ->
+            prettyFragment theme fragment
         Just (ActiveTitle   block)    ->
+            displayWithBorders pres $ \canvasSize theme ->
             let pblock         = prettyBlock theme block
                 (prows, pcols) = PP.dimensions pblock
                 offsetRow      = (csRows canvasSize `div` 2) - (prows `div` 2)
@@ -98,6 +117,19 @@ displayPresentation pres@Presentation {..} = displayWithBorders pres $
                 spaces         = PP.NotTrimmable $ PP.spaces offsetCol in
             mconcat (replicate (offsetRow - 3) PP.hardline) <$$>
             PP.indent spaces spaces pblock
+
+  where
+    -- Check if the fragment consists of just a single image, or a header and
+    -- some image.
+    onlyImage (Fragment blocks)
+            | [Pandoc.Para para] <- filter isVisibleBlock blocks
+            , [Pandoc.Image _ _ (target, _)] <- para =
+        Just target
+    onlyImage (Fragment blocks)
+            | [Pandoc.Header _ _ _, Pandoc.Para para] <- filter isVisibleBlock blocks
+            , [Pandoc.Image _ _ (target, _)] <- para =
+        Just target
+    onlyImage _ = Nothing
 
 
 --------------------------------------------------------------------------------

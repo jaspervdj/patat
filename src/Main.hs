@@ -17,6 +17,7 @@ import           Data.Time                    (UTCTime)
 import           Data.Version                 (showVersion)
 import qualified Options.Applicative          as OA
 import           Patat.AutoAdvance
+import qualified Patat.Images                 as Images
 import           Patat.Presentation
 import qualified Paths_patat
 import           Prelude
@@ -127,12 +128,15 @@ main = do
 
     unless (oForce options) assertAnsiFeatures
 
+    -- (Maybe) initialize images backend.
+    images <- traverse Images.new (psImages $ pSettings pres)
+
     if oDump options
         then dumpPresentation pres
-        else interactiveLoop options pres
+        else interactiveLoop options images pres
   where
-    interactiveLoop :: Options -> Presentation -> IO ()
-    interactiveLoop options pres0 = (`finally` cleanup) $ do
+    interactiveLoop :: Options -> Maybe Images.Handle -> Presentation -> IO ()
+    interactiveLoop options images pres0 = (`finally` cleanup) $ do
         IO.hSetBuffering IO.stdin IO.NoBuffering
         Ansi.hideCursor
 
@@ -155,7 +159,7 @@ main = do
         let loop :: Presentation -> Maybe String -> IO ()
             loop pres mbError = do
                 case mbError of
-                    Nothing  -> displayPresentation pres
+                    Nothing  -> displayPresentation images pres
                     Just err -> displayPresentationError pres err
 
                 c      <- Chan.readChan commandChan
