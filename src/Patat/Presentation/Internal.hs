@@ -13,6 +13,8 @@ module Patat.Presentation.Internal
     , ExtensionList (..)
     , defaultExtensionList
 
+    , ImageSettings (..)
+
     , Slide (..)
     , Fragment (..)
     , Index
@@ -65,6 +67,7 @@ data PresentationSettings = PresentationSettings
     , psAutoAdvanceDelay :: !(Maybe (A.FlexibleNum Int))
     , psSlideLevel       :: !(Maybe Int)
     , psPandocExtensions :: !(Maybe ExtensionList)
+    , psImages           :: !(Maybe ImageSettings)
     } deriving (Show)
 
 
@@ -80,6 +83,7 @@ instance Semigroup PresentationSettings where
         , psAutoAdvanceDelay = psAutoAdvanceDelay l `mplus` psAutoAdvanceDelay r
         , psSlideLevel       = psSlideLevel       l `mplus` psSlideLevel       r
         , psPandocExtensions = psPandocExtensions l `mplus` psPandocExtensions r
+        , psImages           = psImages           l `mplus` psImages           r
         }
 
 
@@ -88,7 +92,7 @@ instance Monoid PresentationSettings where
     mappend = (<>)
     mempty  = PresentationSettings
                     Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-                    Nothing Nothing
+                    Nothing Nothing Nothing
 
 
 --------------------------------------------------------------------------------
@@ -103,6 +107,7 @@ defaultPresentationSettings = PresentationSettings
     , psAutoAdvanceDelay = Nothing
     , psSlideLevel       = Nothing
     , psPandocExtensions = Nothing
+    , psImages           = Nothing
     }
 
 
@@ -199,6 +204,20 @@ defaultExtensionList = ExtensionList $
 
 
 --------------------------------------------------------------------------------
+data ImageSettings = ImageSettings
+    { isType   :: !T.Text
+    , isParams :: !A.Object
+    } deriving (Show)
+
+
+--------------------------------------------------------------------------------
+instance A.FromJSON ImageSettings where
+    parseJSON = A.withObject "FromJSON ImageSettings" $ \o -> do
+        t <- o A..: "type"
+        return ImageSettings {isType = t, isParams = o}
+
+
+--------------------------------------------------------------------------------
 data Slide
     = ContentSlide [Fragment]
     | TitleSlide   Pandoc.Block
@@ -244,7 +263,4 @@ getActiveFragment presentation = do
 
 --------------------------------------------------------------------------------
 $(A.deriveFromJSON A.dropPrefixOptions ''PresentationSettings)
-
-
---------------------------------------------------------------------------------
 $(A.deriveFromJSON A.dropPrefixOptions ''Margins)

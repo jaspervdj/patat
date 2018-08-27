@@ -44,6 +44,7 @@ Executable patat
     mtl                  >= 2.2   && < 2.3,
     optparse-applicative >= 0.12  && < 0.15,
     pandoc               >= 2.0.4 && < 2.3,
+    process              >= 1.6   && < 1.7,
     skylighting          >= 0.1   && < 0.8,
     terminal-size        >= 0.3   && < 0.4,
     text                 >= 1.2   && < 1.3,
@@ -64,6 +65,9 @@ Executable patat
     Data.Aeson.TH.Extended
     Data.Data.Extended
     Patat.AutoAdvance
+    Patat.Images
+    Patat.Images.Internal
+    Patat.Images.W3m
     Patat.Presentation
     Patat.Presentation.Display
     Patat.Presentation.Display.CodeBlock
