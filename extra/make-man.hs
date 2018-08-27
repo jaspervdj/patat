@@ -30,11 +30,6 @@ getPrettySourceDate = do
   where
     locale = Time.defaultTimeLocale
 
-removeLinks :: Pandoc.Pandoc -> Pandoc.Pandoc
-removeLinks = Pandoc.bottomUp $ \inline -> case inline of
-    Pandoc.Link _ inlines _ -> Pandoc.Emph inlines
-    _                       -> inline
-
 type Sections = [(Int, T.Text, [Pandoc.Block])]
 
 toSections :: Int -> [Pandoc.Block] -> Sections
@@ -120,7 +115,7 @@ main = Pandoc.runIOorExplode $ do
                 ]
             }
 
-    let pandoc1 = reorganizeSections $ removeLinks pandoc0
+    let pandoc1 = reorganizeSections $ pandoc0
     txt <- Pandoc.writeMan writerOptions pandoc1
     liftIO $ do
         T.putStr txt
