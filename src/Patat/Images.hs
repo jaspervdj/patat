@@ -14,6 +14,7 @@ import qualified Data.Aeson                  as A
 import qualified Data.Text                   as T
 import           Patat.Images.Internal
 import           Patat.Images.W3m            as W3m
+import           Patat.Images.Iterm            as Iterm
 import           Patat.Presentation.Internal
 
 
@@ -48,7 +49,7 @@ auto = go [] backends
 -- | All supported backends.  We can use CPP to include or exclude some
 -- depending on platform availability.
 backends :: [(T.Text, Backend)]
-backends = [("w3m", W3m.backend)]
+backends = [("w3m", W3m.backend), ("iterm", Iterm.backend)]
 
 
 --------------------------------------------------------------------------------

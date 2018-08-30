@@ -51,6 +51,7 @@ Executable patat
     time                 >= 1.4   && < 1.10,
     unordered-containers >= 0.2   && < 0.3,
     yaml                 >= 0.7   && < 0.9,
+    base64-bytestring,
     -- We don't even depend on these packages but they can break cabal install
     -- because of the conflicting 'Network.URI' module.
     network-uri >= 2.6,
@@ -68,6 +69,7 @@ Executable patat
     Patat.Images
     Patat.Images.Internal
     Patat.Images.W3m
+    Patat.Images.Iterm
     Patat.Presentation
     Patat.Presentation.Display
     Patat.Presentation.Display.CodeBlock
