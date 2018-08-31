@@ -1,8 +1,11 @@
 # Changelog
 
-- master
+- 0.8.0.0 (2018-08-31)
+    * Themed border rendering improvements (contribution by Hamza Haiken)
     * Add support for margins (contribution by Hamza Haiken)
     * Add RGB colour support for themes (contribution by Hamza Haiken)
+    * Add experimental images support
+    * Add images support for iTerm2 (contribution by @2mol)
 
 - 0.7.2.0 (2018-05-08)
     * GHC 8.4 compatibility
