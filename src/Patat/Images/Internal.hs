@@ -14,7 +14,7 @@ import qualified Data.Aeson        as A
 
 
 --------------------------------------------------------------------------------
-data Config a = Auto | Explicit a
+data Config a = Auto | Explicit a deriving (Eq)
 
 
 --------------------------------------------------------------------------------

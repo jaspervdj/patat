@@ -205,16 +205,16 @@ defaultExtensionList = ExtensionList $
 
 --------------------------------------------------------------------------------
 data ImageSettings = ImageSettings
-    { isType   :: !T.Text
-    , isParams :: !A.Object
+    { isBackend :: !T.Text
+    , isParams  :: !A.Object
     } deriving (Show)
 
 
 --------------------------------------------------------------------------------
 instance A.FromJSON ImageSettings where
     parseJSON = A.withObject "FromJSON ImageSettings" $ \o -> do
-        t <- o A..: "type"
-        return ImageSettings {isType = t, isParams = o}
+        t <- o A..: "backend"
+        return ImageSettings {isBackend = t, isParams = o}
 
 
 --------------------------------------------------------------------------------

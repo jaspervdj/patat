@@ -20,6 +20,7 @@ Features:
   indentation.
 - Syntax highlighting for nearly one hundred languages generated from [Kate]
   syntax files.
+- Experimental [images](#images) support.
 - Written in [Haskell].
 
 ![screenshot](extra/screenshot.png?raw=true)
@@ -47,6 +48,7 @@ Table of Contents
     -   [Theming](#theming)
     -   [Syntax Highlighting](#syntax-highlighting)
     -   [Pandoc Extensions](#pandoc-extensions)
+    -   [Images](#images)
 -   [Trivia](#trivia)
 
 Installation
@@ -523,6 +525,44 @@ Document content...
 
 If you don't want to enable any extensions, simply set `pandocExtensions` to the
 empty list `[]`.
+
+
+### Images
+
+`patat-0.8.0.0` and newer include images support for some terminal emulators.
+
+```markdown
+---
+patat:
+  images:
+    backend: auto
+...
+
+# A slide with only an image.
+
+![](matterhorn.jpg)
+```
+
+If `images` is enabled (not by default), `patat` will draw slides that consist
+only of a single image just by drawing the image, centered and resized to fit
+the terminal window.
+
+`patat` supports the following image drawing backends:
+
+-   `backend: iterm2`: uses [iTerm2](https://iterm2.com/)'s special escape
+    sequence to render the image.  This even works with animated GIFs!
+
+-   `backend: w3m`: uses the `w3mimgdisplay` executable to draw directly onto
+    the window.  This has been tested in `urxvt` and `xterm`, but is known to
+    produce weird results in `tmux`.
+
+    If `w3mimgdisplay` is in a non-standard location, you can specify that using
+    `path`:
+
+            ```yaml
+            backend: 'w3m
+            path: '/home/jasper/.local/bin/w3mimgdisplay'
+            ```
 
 Trivia
 ------

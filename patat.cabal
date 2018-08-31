@@ -36,9 +36,10 @@ Executable patat
     ansi-terminal        >= 0.6   && < 0.9,
     ansi-wl-pprint       >= 0.6   && < 0.7,
     base                 >= 4.6   && < 5,
+    base64-bytestring    >= 1.0   && < 1.1,
     bytestring           >= 0.10  && < 0.11,
-    containers           >= 0.5   && < 0.6,
     colour               >= 2.3   && < 2.4,
+    containers           >= 0.5   && < 0.6,
     directory            >= 1.2   && < 1.4,
     filepath             >= 1.4   && < 1.5,
     mtl                  >= 2.2   && < 2.3,
@@ -51,7 +52,6 @@ Executable patat
     time                 >= 1.4   && < 1.10,
     unordered-containers >= 0.2   && < 0.3,
     yaml                 >= 0.7   && < 0.9,
-    base64-bytestring,
     -- We don't even depend on these packages but they can break cabal install
     -- because of the conflicting 'Network.URI' module.
     network-uri >= 2.6,
@@ -69,7 +69,7 @@ Executable patat
     Patat.Images
     Patat.Images.Internal
     Patat.Images.W3m
-    Patat.Images.Iterm
+    Patat.Images.ITerm2
     Patat.Presentation
     Patat.Presentation.Display
     Patat.Presentation.Display.CodeBlock
