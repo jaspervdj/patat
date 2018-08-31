@@ -12,7 +12,6 @@ import           Control.Monad.Except        (ExceptT (..), runExceptT,
                                               throwError)
 import           Control.Monad.Trans         (liftIO)
 import qualified Data.Aeson                  as A
-import qualified Data.ByteString             as B
 import qualified Data.HashMap.Strict         as HMS
 import           Data.Maybe                  (fromMaybe)
 import           Data.Monoid                 (mempty, (<>))
@@ -97,8 +96,8 @@ pandocToPresentation pFilePath pSettings pandoc@(Pandoc.Pandoc meta _) = do
 -- since those /can/ contain markdown.
 parseMetadataBlock :: T.Text -> Maybe A.Value
 parseMetadataBlock src = do
-    block <- mbBlock
-    Yaml.decode $! T.encodeUtf8 block
+    block <- T.encodeUtf8 <$> mbBlock
+    either (const Nothing) Just (Yaml.decodeEither' block)
   where
     mbBlock :: Maybe T.Text
     mbBlock = case T.lines src of
@@ -132,8 +131,10 @@ readHomeSettings = do
     if not exists
         then return (Right mempty)
         else do
-            contents <- B.readFile path
-            return $! Yaml.decodeEither contents
+            errOrPs <- Yaml.decodeFileEither path
+            return $! case errOrPs of
+                Left  err -> Left (show err)
+                Right ps  -> Right ps
 
 
 --------------------------------------------------------------------------------

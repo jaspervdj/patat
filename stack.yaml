@@ -1,7 +1,12 @@
-resolver: lts-11.7
+resolver: nightly-2018-08-29
 packages:
 - '.'
 flags:
   patat:
     patat-make-man: true
-extra-deps: []
+extra-deps:
+- 'HsYAML-0.1.1.2'
+- 'aeson-1.4.0.0'
+- 'containers-0.5.11.0'
+- 'pandoc-2.2.3.2'
+- 'yaml-0.10.1.1'
