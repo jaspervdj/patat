@@ -56,6 +56,7 @@ Installation
 
 ### Pre-built-packages
 
+- Archlinux: <https://aur.archlinux.org/packages/patat-bin>
 - Debian: <https://packages.debian.org/unstable/patat>
 - Ubuntu: <https://packages.ubuntu.com/artful/patat>
 - openSUSE: <https://build.opensuse.org/package/show/openSUSE:Factory:ARM/patat>
