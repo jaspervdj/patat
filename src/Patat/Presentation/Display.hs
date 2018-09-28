@@ -110,11 +110,12 @@ displayPresentation mbImages pres@Presentation {..} =
             prettyFragment theme fragment
         Just (ActiveTitle   block)    ->
             displayWithBorders pres $ \canvasSize theme ->
-            let pblock         = prettyBlock theme block
-                (prows, pcols) = PP.dimensions pblock
-                offsetRow      = (csRows canvasSize `div` 2) - (prows `div` 2)
-                offsetCol      = (csCols canvasSize `div` 2) - (pcols `div` 2)
-                spaces         = PP.NotTrimmable $ PP.spaces offsetCol in
+            let pblock          = prettyBlock theme block
+                (prows, pcols)  = PP.dimensions pblock
+                (mLeft, mRight) = marginsOf pSettings
+                offsetRow       = (csRows canvasSize `div` 2) - (prows `div` 2)
+                offsetCol       = ((csCols canvasSize - mLeft - mRight) `div` 2) - (pcols `div` 2)
+                spaces          = PP.NotTrimmable $ PP.spaces offsetCol in
             mconcat (replicate (offsetRow - 3) PP.hardline) <$$>
             PP.indent spaces spaces pblock
 
