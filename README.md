@@ -470,7 +470,7 @@ presentations, it might be better to stick with the named colours listed above.
 As part of theming, syntax highlighting is also configurable.  This can be
 configured like this:
 
-```
+```markdown
 ---
 patat:
   theme:
