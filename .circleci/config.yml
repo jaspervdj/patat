@@ -18,7 +18,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: 'v2-patat-{{ arch }}-{{ .Branch }}'
+          key: 'v3-patat-{{ arch }}-{{ .Branch }}'
       - run:
           name: 'Update cabal indices'
           command: 'cabal update'
@@ -34,7 +34,7 @@ jobs:
           name: 'Run tests'
           command: 'make test'
       - save_cache:
-          key: 'v2-patat-{{ arch }}-{{ .Branch }}-{{ .Revision }}'
+          key: 'v3-patat-{{ arch }}-{{ .Branch }}-{{ .Revision }}'
           paths:
             - '~/.cabal'
             - '~/.ghc'
