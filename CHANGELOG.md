@@ -1,5 +1,9 @@
 # Changelog
 
+- 0.8.1.0 (2018-10-26)
+    * Add support for italic ansi code in themes
+    * Fix centered titles not being centered (contribution by Hamza Haiken)
+
 - 0.8.0.0 (2018-08-31)
     * Themed border rendering improvements (contribution by Hamza Haiken)
     * Add support for margins (contribution by Hamza Haiken)
