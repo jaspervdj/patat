@@ -1,5 +1,8 @@
 # Changelog
 
+- 0.8.1.1 (2018-10-26)
+    * Tickle CircleCI cache
+
 - 0.8.1.0 (2018-10-26)
     * Add support for italic ansi code in themes
     * Fix centered titles not being centered (contribution by Hamza Haiken)
