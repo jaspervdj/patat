@@ -200,6 +200,8 @@ sgrToString (Ansi.SetUnderlining Ansi.SingleUnderline) = Just "underline"
 
 sgrToString (Ansi.SetConsoleIntensity Ansi.BoldIntensity) = Just "bold"
 
+sgrToString (Ansi.SetItalicized True) = Just "italic"
+
 sgrToString (Ansi.SetRGBColor layer color) = Just $
     (\str -> case layer of
         Ansi.Foreground -> str
@@ -231,7 +233,8 @@ namedSgrs = M.fromList
         , c <- [minBound .. maxBound]
         ] ++
         [Ansi.SetUnderlining      u | u <- [minBound .. maxBound]] ++
-        [Ansi.SetConsoleIntensity c | c <- [minBound .. maxBound]]
+        [Ansi.SetConsoleIntensity c | c <- [minBound .. maxBound]] ++
+        [Ansi.SetItalicized       i | i <- [minBound .. maxBound]]
 
 
 --------------------------------------------------------------------------------

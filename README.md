@@ -431,7 +431,8 @@ title: 'This is a test'
 patat:
     wrap: true
     theme:
-        emph: [vividBlue, onVividBlack, bold]
+        emph: [vividBlue, onVividBlack, italic]
+        strong: [bold]
         imageTarget: [onDullWhite, vividRed]
 ...
 
@@ -451,13 +452,13 @@ The properties that can be given a list of styles are:
 
 The accepted styles are:
 
-`bold`, `dullBlack`, `dullBlue`, `dullCyan`, `dullGreen`, `dullMagenta`,
-`dullRed`, `dullWhite`, `dullYellow`, `onDullBlack`, `onDullBlue`, `onDullCyan`,
-`onDullGreen`, `onDullMagenta`, `onDullRed`, `onDullWhite`, `onDullYellow`,
-`onVividBlack`, `onVividBlue`, `onVividCyan`, `onVividGreen`, `onVividMagenta`,
-`onVividRed`, `onVividWhite`, `onVividYellow`, `underline`, `vividBlack`,
-`vividBlue`, `vividCyan`, `vividGreen`, `vividMagenta`, `vividRed`,
-`vividWhite`, `vividYellow`
+`bold`, `italic`, `dullBlack`, `dullBlue`, `dullCyan`, `dullGreen`,
+`dullMagenta`, `dullRed`, `dullWhite`, `dullYellow`, `onDullBlack`,
+`onDullBlue`, `onDullCyan`, `onDullGreen`, `onDullMagenta`, `onDullRed`,
+`onDullWhite`, `onDullYellow`, `onVividBlack`, `onVividBlue`, `onVividCyan`,
+`onVividGreen`, `onVividMagenta`, `onVividRed`, `onVividWhite`, `onVividYellow`,
+`underline`, `vividBlack`, `vividBlue`, `vividCyan`, `vividGreen`,
+`vividMagenta`, `vividRed`, `vividWhite`, `vividYellow`
 
 Also accepted are styles of the form `rgb#RrGgBb` and `onRgb#RrGgBb`, where `Rr`
 `Gg` and `Bb` are hexadecimal bytes (e.g. `rgb#f08000` for an orange foreground,
