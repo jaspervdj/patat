@@ -1,5 +1,9 @@
 # Changelog
 
+- 0.8.1.2 (2018-10-29)
+    * Work around test failure caused by slightly different syntax highlighting
+      in different pandoc versions
+
 - 0.8.1.1 (2018-10-26)
     * Tickle CircleCI cache
 
