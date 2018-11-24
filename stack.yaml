@@ -1,12 +1,21 @@
-resolver: nightly-2018-08-29
+resolver: lts-12.14
+compiler: ghc-8.4.2
+save-hackage-creds: false
+
 packages:
 - '.'
+
 flags:
   patat:
     patat-make-man: true
+
 extra-deps:
+- 'pandoc-2.4'
+- 'pandoc-citeproc-0.15'
+- 'yaml-0.11.0.0'
+
+- 'libyaml-0.1.0.0'
 - 'HsYAML-0.1.1.2'
-- 'aeson-1.4.0.0'
-- 'containers-0.5.11.0'
-- 'pandoc-2.2.3.2'
-- 'yaml-0.10.1.1'
+- 'haddock-library-1.7.0'
+- 'hslua-1.0.1'
+- 'hslua-module-text-0.2.0'
