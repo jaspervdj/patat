@@ -17,6 +17,7 @@ module Patat.PrettyPrint
     , string
     , text
     , space
+    , spaces
     , softline
     , hardline
 
@@ -45,13 +46,14 @@ import           Control.Monad.State  (get, gets, modify)
 import           Control.Monad.Writer (tell)
 import           Data.Foldable        (Foldable)
 import qualified Data.List            as L
-import           Data.Monoid          (Monoid, mconcat, mempty, (<>))
+import           Data.Monoid          (Monoid, mconcat, mempty)
+import           Data.Semigroup       (Semigroup (..))
 import           Data.String          (IsString (..))
 import qualified Data.Text            as T
 import           Data.Traversable     (Traversable, traverse)
+import           Prelude              hiding (null)
 import qualified System.Console.ANSI  as Ansi
 import qualified System.IO            as IO
-import           Prelude              hiding (null)
 
 
 --------------------------------------------------------------------------------
@@ -130,7 +132,7 @@ chunkToDocE (StringChunk codes str) = Ansi (\_ -> codes) (Doc [String str])
 
 --------------------------------------------------------------------------------
 newtype Doc = Doc {unDoc :: [DocE]}
-    deriving (Monoid)
+    deriving (Monoid, Semigroup)
 
 
 --------------------------------------------------------------------------------
@@ -318,6 +320,11 @@ space = mkDoc Softspace
 
 
 --------------------------------------------------------------------------------
+spaces :: Int -> Doc
+spaces n = mconcat $ replicate n space
+
+
+--------------------------------------------------------------------------------
 softline :: Doc
 softline = mkDoc Softline
 
@@ -382,15 +389,15 @@ align width alignment doc0 =
 
     alignLine :: [Chunk] -> [Chunk]
     alignLine line =
-        let actual   = lineWidth line
-            spaces n = [StringChunk [] (replicate n ' ')] in
+        let actual        = lineWidth line
+            chunkSpaces n = [StringChunk [] (replicate n ' ')] in
         case alignment of
-            AlignLeft   -> line <> spaces (width - actual)
-            AlignRight  -> spaces (width - actual) <> line
+            AlignLeft   -> line <> chunkSpaces (width - actual)
+            AlignRight  -> chunkSpaces (width - actual) <> line
             AlignCenter ->
                 let r = (width - actual) `div` 2
                     l = (width - actual) - r in
-                spaces l <> line <> spaces r
+                chunkSpaces l <> line <> chunkSpaces r
 
 
 --------------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 Name:                patat
-Version:             0.2.0.0
+Version:             0.8.1.2
 Synopsis:            Terminal-based presentations using Pandoc
 Description:         Terminal-based presentations using Pandoc
 License:             GPL-2
@@ -10,12 +10,20 @@ Homepage:            http://github.com/jaspervdj/patat
 Copyright:           2016 Jasper Van der Jeugt
 Category:            Text
 Build-type:          Simple
-Extra-source-files:  CHANGELOG.md
 Cabal-version:       >=1.10
+
+Extra-source-files:
+  CHANGELOG.md
+  README.md
 
 Source-repository head
   Type:     git
   Location: git://github.com/jaspervdj/patat.git
+
+Flag patat-make-man
+  Description: Build the executable to generate the man page
+  Default:     False
+  Manual:      True
 
 Executable patat
   Main-is:           Main.hs
@@ -24,33 +32,72 @@ Executable patat
   Default-language:  Haskell2010
 
   Build-depends:
-    aeson                >= 0.11 && < 1.1,
-    ansi-terminal        >= 0.6  && < 0.7,
-    ansi-wl-pprint       >= 0.6  && < 0.7,
-    base                 >= 4.6  && < 4.10,
-    bytestring           >= 0.10 && < 0.11,
-    containers           >= 0.5  && < 0.6,
-    directory            >= 1.2  && < 1.3,
-    filepath             >= 1.4  && < 1.5,
-    mtl                  >= 2.2  && < 2.3,
-    optparse-applicative >= 0.12 && < 0.14,
-    pandoc               >= 1.17 && < 1.18,
-    terminal-size        >= 0.3  && < 0.4,
-    text                 >= 1.2  && < 1.3,
-    time                 >= 1.4  && < 1.7,
-    yaml                 >= 0.7  && < 0.9
+    aeson                >= 0.9   && < 1.5,
+    ansi-terminal        >= 0.6   && < 0.9,
+    ansi-wl-pprint       >= 0.6   && < 0.7,
+    base                 >= 4.6   && < 5,
+    base64-bytestring    >= 1.0   && < 1.1,
+    bytestring           >= 0.10  && < 0.11,
+    colour               >= 2.3   && < 2.4,
+    containers           >= 0.5   && < 0.7,
+    directory            >= 1.2   && < 1.4,
+    filepath             >= 1.4   && < 1.5,
+    mtl                  >= 2.2   && < 2.3,
+    optparse-applicative >= 0.12  && < 0.15,
+    pandoc               >= 2.0.4 && < 2.5,
+    process              >= 1.6   && < 1.7,
+    skylighting          >= 0.1   && < 0.8,
+    terminal-size        >= 0.3   && < 0.4,
+    text                 >= 1.2   && < 1.3,
+    time                 >= 1.4   && < 1.10,
+    unordered-containers >= 0.2   && < 0.3,
+    yaml                 >= 0.8   && < 0.12,
+    -- We don't even depend on these packages but they can break cabal install
+    -- because of the conflicting 'Network.URI' module.
+    network-uri >= 2.6,
+    network     >= 2.6
+
+  If impl(ghc < 8.0)
+    Build-depends:
+      semigroups >= 0.16 && < 0.19
 
   Other-modules:
     Data.Aeson.Extended
     Data.Aeson.TH.Extended
     Data.Data.Extended
+    Patat.AutoAdvance
     Patat.GetKey
+    Patat.Images
+    Patat.Images.Internal
+    Patat.Images.W3m
+    Patat.Images.ITerm2
     Patat.Presentation
     Patat.Presentation.Display
+    Patat.Presentation.Display.CodeBlock
     Patat.Presentation.Display.Table
+    Patat.Presentation.Fragment
     Patat.Presentation.Interactive
     Patat.Presentation.Internal
     Patat.Presentation.Read
     Patat.PrettyPrint
     Patat.Theme
+    Paths_patat
     Text.Pandoc.Extended
+
+Executable patat-make-man
+  Main-is:          make-man.hs
+  Ghc-options:      -Wall
+  Hs-source-dirs:   extra
+  Default-language: Haskell2010
+
+  If flag(patat-make-man)
+    Buildable: True
+  Else
+    Buildable: False
+
+  Build-depends:
+    base   >= 4.6  && < 5,
+    mtl    >= 2.2  && < 2.3,
+    pandoc >= 2.0  && < 2.5,
+    text   >= 1.2  && < 1.3,
+    time   >= 1.6  && < 1.10

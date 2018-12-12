@@ -9,34 +9,41 @@ module Main where
 import           Control.Applicative          ((<$>), (<*>))
 import           Control.Concurrent           (forkIO, threadDelay)
 import qualified Control.Concurrent.Chan      as Chan
+import           Control.Exception            (finally)
 import           Control.Monad                (forever, unless, when)
-import           Data.Monoid                  ((<>))
+import qualified Data.Aeson.Extended          as A
+import           Data.Monoid                  (mempty, (<>))
+import           Data.Time                    (UTCTime)
 import           Data.Version                 (showVersion)
 import qualified Options.Applicative          as OA
 import qualified Patat.GetKey                 as GetKey
+import           Patat.AutoAdvance
+import qualified Patat.Images                 as Images
 import           Patat.Presentation
 import qualified Paths_patat
+import           Prelude
 import qualified System.Console.ANSI          as Ansi
-import           System.Directory             (getModificationTime)
-import           System.Exit                  (exitFailure)
+import           System.Directory             (doesFileExist,
+                                               getModificationTime)
+import           System.Exit                  (exitFailure, exitSuccess)
 import qualified System.IO                    as IO
 import qualified Text.PrettyPrint.ANSI.Leijen as PP
-import           Prelude
 
 
 --------------------------------------------------------------------------------
 data Options = Options
-    { oFilePath :: !FilePath
+    { oFilePath :: !(Maybe FilePath)
     , oForce    :: !Bool
     , oDump     :: !Bool
     , oWatch    :: !Bool
+    , oVersion  :: !Bool
     } deriving (Show)
 
 
 --------------------------------------------------------------------------------
 parseOptions :: OA.Parser Options
 parseOptions = Options
-    <$> (OA.strArgument $
+    <$> (OA.optional $ OA.strArgument $
             OA.metavar "FILENAME" <>
             OA.help    "Input file")
     <*> (OA.switch $
@@ -53,6 +60,10 @@ parseOptions = Options
             OA.long    "watch" <>
             OA.short   'w' <>
             OA.help    "Watch file for changes")
+    <*> (OA.switch $
+            OA.long    "version" <>
+            OA.help    "Display version info and exit" <>
+            OA.hidden)
 
 
 --------------------------------------------------------------------------------
@@ -66,8 +77,8 @@ parserInfo = OA.info (OA.helper <*> parseOptions) $
         [ "Terminal-based presentations using Pandoc"
         , ""
         , "Controls:"
-        , "- Next slide:             space, enter, l, right"
-        , "- Previous slide:         backspace, h, left"
+        , "- Next slide:             space, enter, l, right, pagedown"
+        , "- Previous slide:         backspace, h, left, pageup"
         , "- Go forward 10 slides:   j, down"
         , "- Go backward 10 slides:  k, up"
         , "- First slide:            0"
@@ -75,6 +86,11 @@ parserInfo = OA.info (OA.helper <*> parseOptions) $
         , "- Reload file:            r"
         , "- Quit:                   q"
         ]
+
+
+--------------------------------------------------------------------------------
+parserPrefs :: OA.ParserPrefs
+parserPrefs = OA.prefs OA.showHelpOnError
 
 
 --------------------------------------------------------------------------------
@@ -97,42 +113,80 @@ assertAnsiFeatures = do
 --------------------------------------------------------------------------------
 main :: IO ()
 main = do
-    options   <- OA.customExecParser (OA.prefs OA.showHelpOnError) parserInfo
-    errOrPres <- readPresentation (oFilePath options)
+    options <- OA.customExecParser parserPrefs parserInfo
+
+    when (oVersion options) $ do
+        putStrLn (showVersion Paths_patat.version)
+        exitSuccess
+
+    filePath <- case oFilePath options of
+        Just fp -> return fp
+        Nothing -> OA.handleParseResult $ OA.Failure $
+            OA.parserFailure parserPrefs parserInfo OA.ShowHelpText mempty
+
+    errOrPres <- readPresentation filePath
     pres      <- either (errorAndExit . return) return errOrPres
 
     unless (oForce options) assertAnsiFeatures
 
+    -- (Maybe) initialize images backend.
+    images <- traverse Images.new (psImages $ pSettings pres)
+
     if oDump options
         then dumpPresentation pres
-        else interactiveLoop options pres
-
+        else interactiveLoop options images pres
   where
-    interactiveLoop options pres0 = do
+    interactiveLoop :: Options -> Maybe Images.Handle -> Presentation -> IO ()
+    interactiveLoop options images pres0 = (`finally` cleanup) $ do
         GetKey.initialize
-        commandChan <- Chan.newChan
+        Ansi.hideCursor
 
-        _ <- forkIO $ forever $
-            readPresentationCommand >>= Chan.writeChan commandChan
+        -- Spawn the initial channel that gives us commands based on user input.
+        commandChan0 <- Chan.newChan
+        _            <- forkIO $ forever $
+            readPresentationCommand >>= Chan.writeChan commandChan0
 
+        -- If an auto delay is set, use 'autoAdvance' to create a new one.
+        commandChan <- case psAutoAdvanceDelay (pSettings pres0) of
+            Nothing                    -> return commandChan0
+            Just (A.FlexibleNum delay) -> autoAdvance delay commandChan0
+
+        -- Spawn a thread that adds 'Reload' commands based on the file time.
         mtime0 <- getModificationTime (pFilePath pres0)
-        let watcher mtime = do
-                mtime' <- getModificationTime (pFilePath pres0)
-                when (mtime' > mtime) $ Chan.writeChan commandChan Reload
-                threadDelay (200 * 1000)
-                watcher mtime'
-
         when (oWatch options) $ do
-            _ <- forkIO $ watcher mtime0
+            _ <- forkIO $ watcher commandChan (pFilePath pres0) mtime0
             return ()
 
-        let loop pres = do
-                displayPresentation pres
+        let loop :: Presentation -> Maybe String -> IO ()
+            loop pres mbError = do
+                case mbError of
+                    Nothing  -> displayPresentation images pres
+                    Just err -> displayPresentationError pres err
+
                 c      <- Chan.readChan commandChan
                 update <- updatePresentation c pres
                 case update of
                     ExitedPresentation        -> return ()
-                    UpdatedPresentation pres' -> loop pres'
-                    ErroredPresentation err   -> errorAndExit [err]
+                    UpdatedPresentation pres' -> loop pres' Nothing
+                    ErroredPresentation err   -> loop pres (Just err)
 
-        loop pres0
+        loop pres0 Nothing
+
+    cleanup :: IO ()
+    cleanup = do
+        Ansi.showCursor
+        Ansi.clearScreen
+        Ansi.setCursorPosition 0 0
+
+
+--------------------------------------------------------------------------------
+watcher :: Chan.Chan PresentationCommand -> FilePath -> UTCTime -> IO a
+watcher chan filePath mtime0 = do
+    -- The extra exists check helps because some editors temporarily make the
+    -- file disappear while writing.
+    exists <- doesFileExist filePath
+    mtime1 <- if exists then getModificationTime filePath else return mtime0
+
+    when (mtime1 > mtime0) $ Chan.writeChan chan Reload
+    threadDelay (200 * 1000)
+    watcher chan filePath mtime1

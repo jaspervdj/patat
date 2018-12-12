@@ -1,6 +1,6 @@
-This is how to do _Hello World_ in Haskell:
+This is how you define a `String` in Haskell:
 
-> main :: IO ()
-> main = putStrLn "Hello World!"
+> test :: String
+> test = "Hello World!"
 
 Cool, right?

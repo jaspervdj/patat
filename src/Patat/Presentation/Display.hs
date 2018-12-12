@@ -1,37 +1,49 @@
 --------------------------------------------------------------------------------
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE RecordWildCards            #-}
 module Patat.Presentation.Display
     ( displayPresentation
+    , displayPresentationError
     , dumpPresentation
     ) where
 
 
 --------------------------------------------------------------------------------
-import           Control.Applicative              ((<$>))
-import           Control.Monad                    (mplus, unless)
-import qualified Data.Aeson.Extended              as A
-import           Data.Data.Extended               (grecQ)
-import           Data.List                        (intersperse)
-import           Data.Maybe                       (fromMaybe)
-import           Data.Monoid                      (mconcat, mempty, (<>))
-import qualified Data.Text                        as T
+import           Control.Applicative                  ((<$>))
+import           Control.Monad                        (mplus, unless)
+import qualified Data.Aeson.Extended                  as A
+import           Data.Data.Extended                   (grecQ)
+import qualified Data.List                            as L
+import           Data.Maybe                           (fromMaybe)
+import           Data.Monoid                          (mconcat, mempty, (<>))
+import qualified Data.Text                            as T
+import qualified Patat.Images                         as Images
+import           Patat.Presentation.Display.CodeBlock
 import           Patat.Presentation.Display.Table
 import           Patat.Presentation.Internal
-import           Patat.PrettyPrint                ((<$$>), (<+>))
-import qualified Patat.PrettyPrint                as PP
-import           Patat.Theme                      (Theme (..))
-import qualified Patat.Theme                      as Theme
-import qualified System.Console.ANSI              as Ansi
-import qualified System.Console.Terminal.Size     as Terminal
-import qualified Text.Pandoc.Extended             as Pandoc
+import           Patat.PrettyPrint                    ((<$$>), (<+>))
+import qualified Patat.PrettyPrint                    as PP
+import           Patat.Theme                          (Theme (..))
+import qualified Patat.Theme                          as Theme
 import           Prelude
+import qualified System.Console.ANSI                  as Ansi
+import qualified System.Console.Terminal.Size         as Terminal
+import qualified System.IO                            as IO
+import qualified Text.Pandoc.Extended                 as Pandoc
 
 
 --------------------------------------------------------------------------------
-displayPresentation :: Presentation -> IO ()
-displayPresentation Presentation {..} = do
+data CanvasSize = CanvasSize {csRows :: Int, csCols :: Int} deriving (Show)
+
+
+--------------------------------------------------------------------------------
+-- | Display something within the presentation borders that draw the title and
+-- the active slide number and so on.
+displayWithBorders
+    :: Presentation -> (CanvasSize -> Theme -> PP.Doc) -> IO ()
+displayWithBorders Presentation {..} f = do
     Ansi.clearScreen
     Ansi.setCursorPosition 0 0
 
@@ -52,49 +64,116 @@ displayPresentation Presentation {..} = do
         borders     = themed (themeBorders theme)
 
     unless (null title) $ do
-        Ansi.setCursorColumn titleOffset
-        PP.putDoc $ borders $ PP.string title
+        let titleRemainder = columns - titleWidth - titleOffset
+            wrappedTitle = PP.spaces titleOffset <> PP.string title <> PP.spaces titleRemainder
+        PP.putDoc $ borders wrappedTitle
         putStrLn ""
         putStrLn ""
 
-    let slide = case drop pActiveSlide pSlides of
-            []      -> mempty
-            (s : _) -> s
-
-    PP.putDoc $ withWrapSettings settings $ prettySlide theme slide
+    let canvasSize = CanvasSize (rows - 2) columns
+    PP.putDoc $ formatWith settings $ f canvasSize theme
     putStrLn ""
 
-    let active      = show (pActiveSlide + 1) ++ " / " ++ show (length pSlides)
-        activeWidth = length active
+    let (sidx, _)    = pActiveFragment
+        active       = show (sidx + 1) ++ " / " ++ show (length pSlides)
+        activeWidth  = length active
+        author       = PP.toString (prettyInlines theme pAuthor)
+        authorWidth  = length author
+        middleSpaces = PP.spaces $ columns - activeWidth - authorWidth - 2
 
-    Ansi.setCursorPosition (rows - 2) 0
-    PP.putDoc $ " " <> borders (prettyInlines theme pAuthor)
-    Ansi.setCursorColumn (columns - activeWidth - 1)
-    PP.putDoc $ borders $ PP.string active
+    Ansi.setCursorPosition (rows - 1) 0
+    PP.putDoc $ borders $ PP.space <> PP.string author <> middleSpaces <> PP.string active <> PP.space
+    IO.hFlush IO.stdout
+
+
+--------------------------------------------------------------------------------
+displayImage :: Images.Handle -> FilePath -> IO ()
+displayImage images path = do
+    Ansi.clearScreen
+    Ansi.setCursorPosition 0 0
     putStrLn ""
+    IO.hFlush IO.stdout
+    Images.drawImage images path
+
+
+--------------------------------------------------------------------------------
+displayPresentation :: Maybe Images.Handle -> Presentation -> IO ()
+displayPresentation mbImages pres@Presentation {..} =
+     case getActiveFragment pres of
+        Nothing                       -> displayWithBorders pres mempty
+        Just (ActiveContent fragment)
+                | Just images <- mbImages
+                , Just image <- onlyImage fragment ->
+            displayImage images image
+        Just (ActiveContent fragment) ->
+            displayWithBorders pres $ \_canvasSize theme ->
+            prettyFragment theme fragment
+        Just (ActiveTitle   block)    ->
+            displayWithBorders pres $ \canvasSize theme ->
+            let pblock          = prettyBlock theme block
+                (prows, pcols)  = PP.dimensions pblock
+                (mLeft, mRight) = marginsOf pSettings
+                offsetRow       = (csRows canvasSize `div` 2) - (prows `div` 2)
+                offsetCol       = ((csCols canvasSize - mLeft - mRight) `div` 2) - (pcols `div` 2)
+                spaces          = PP.NotTrimmable $ PP.spaces offsetCol in
+            mconcat (replicate (offsetRow - 3) PP.hardline) <$$>
+            PP.indent spaces spaces pblock
+
+  where
+    -- Check if the fragment consists of just a single image, or a header and
+    -- some image.
+    onlyImage (Fragment blocks)
+            | [Pandoc.Para para] <- filter isVisibleBlock blocks
+            , [Pandoc.Image _ _ (target, _)] <- para =
+        Just target
+    onlyImage (Fragment blocks)
+            | [Pandoc.Header _ _ _, Pandoc.Para para] <- filter isVisibleBlock blocks
+            , [Pandoc.Image _ _ (target, _)] <- para =
+        Just target
+    onlyImage _ = Nothing
+
+
+--------------------------------------------------------------------------------
+-- | Displays an error in the place of the presentation.  This is useful if we
+-- want to display an error but keep the presentation running.
+displayPresentationError :: Presentation -> String -> IO ()
+displayPresentationError pres err = displayWithBorders pres $ \_ Theme {..} ->
+    themed themeStrong "Error occurred in the presentation:" <$$>
+    "" <$$>
+    (PP.string err)
 
 
 --------------------------------------------------------------------------------
 dumpPresentation :: Presentation -> IO ()
 dumpPresentation pres =
-    let theme = fromMaybe Theme.defaultTheme (psTheme $ pSettings pres) in
-    PP.putDoc $ withWrapSettings (pSettings pres) $
-        PP.vcat $ intersperse "----------" $
-        map (prettySlide theme) $ pSlides pres
+    let settings = pSettings pres
+        theme    = fromMaybe Theme.defaultTheme (psTheme $ settings) in
+    PP.putDoc $ formatWith settings $
+        PP.vcat $ L.intersperse "----------" $ do
+            slide <- pSlides pres
+            return $ case slide of
+                TitleSlide   block     -> "~~~title" <$$> prettyBlock theme block
+                ContentSlide fragments -> PP.vcat $ L.intersperse "~~~frag" $ do
+                    fragment <- fragments
+                    return $ prettyFragment theme fragment
 
 
 --------------------------------------------------------------------------------
-withWrapSettings :: PresentationSettings -> PP.Doc -> PP.Doc
-withWrapSettings ps = case (psWrap ps, psColumns ps) of
-    (Just True,  Just (A.FlexibleNum col)) -> PP.wrapAt (Just col)
-    _                                      -> id
-
+formatWith :: PresentationSettings -> PP.Doc -> PP.Doc
+formatWith ps = wrap . indent
+  where
+    (marginLeft, marginRight) = marginsOf ps
+    wrap = case (psWrap ps, psColumns ps) of
+        (Just True,  Just (A.FlexibleNum col)) -> PP.wrapAt (Just $ col - marginRight)
+        _                                      -> id
+    spaces = PP.NotTrimmable $ PP.spaces marginLeft
+    indent = PP.indent spaces spaces
 
 --------------------------------------------------------------------------------
-prettySlide :: Theme -> Slide -> PP.Doc
-prettySlide theme slide@(Slide blocks) =
+prettyFragment :: Theme -> Fragment -> PP.Doc
+prettyFragment theme fragment@(Fragment blocks) =
     prettyBlocks theme blocks <>
-    case prettyReferences theme slide of
+    case prettyReferences theme fragment of
         []   -> mempty
         refs -> PP.hardline <> PP.vcat refs
 
@@ -111,17 +190,8 @@ prettyBlock theme@Theme {..} (Pandoc.Header i _ inlines) =
     themed themeHeader (PP.string (replicate i '#') <+> prettyInlines theme inlines) <>
     PP.hardline
 
-prettyBlock Theme {..} (Pandoc.CodeBlock _ txt) = PP.vcat
-    [ let ind = PP.NotTrimmable "   " in
-      PP.indent ind ind $ themed themeCodeBlock $ PP.string line
-    | line <- blockified txt
-    ] <> PP.hardline
-  where
-    blockified str =
-        let ls       = lines str
-            longest  = foldr max 0 (map length ls)
-            extend l = " " ++ l ++ replicate (longest - length l) ' ' ++ " " in
-        map extend $ [""] ++ ls ++ [""]
+prettyBlock theme (Pandoc.CodeBlock (_, classes, _) txt) =
+    prettyCodeBlock theme classes txt
 
 prettyBlock theme (Pandoc.BulletList bss) = PP.vcat
     [ PP.indent
@@ -195,10 +265,20 @@ prettyBlock theme (Pandoc.Div _attrs blocks) = prettyBlocks theme blocks
 
 prettyBlock _theme Pandoc.Null = mempty
 
+#if MIN_VERSION_pandoc(1,18,0)
+-- 'LineBlock' elements are new in pandoc-1.18
+prettyBlock theme@Theme {..} (Pandoc.LineBlock inliness) =
+    let ind = PP.NotTrimmable (themed themeLineBlock "| ") in
+    PP.wrapAt Nothing $
+    PP.indent ind ind $
+    PP.vcat $
+    map (prettyInlines theme) inliness
+#endif
+
 
 --------------------------------------------------------------------------------
 prettyBlocks :: Theme -> [Pandoc.Block] -> PP.Doc
-prettyBlocks theme = PP.vcat . map (prettyBlock theme)
+prettyBlocks theme = PP.vcat . map (prettyBlock theme) . filter isVisibleBlock
 
 
 --------------------------------------------------------------------------------
@@ -218,7 +298,7 @@ prettyInline theme@Theme {..} (Pandoc.Strong inlines) =
 
 prettyInline Theme {..} (Pandoc.Code _ txt) =
     themed themeCode $
-    " " <> PP.string txt <> " "
+    PP.string (" " <> txt <> " ")
 
 prettyInline theme@Theme {..} link@(Pandoc.Link _attrs text (target, _title))
     | isReferenceLink link =
@@ -262,9 +342,9 @@ prettyInlines theme = mconcat . map (prettyInline theme)
 
 
 --------------------------------------------------------------------------------
-prettyReferences :: Theme -> Slide -> [PP.Doc]
+prettyReferences :: Theme -> Fragment -> [PP.Doc]
 prettyReferences theme@Theme {..} =
-    map prettyReference . getReferences . unSlide
+    map prettyReference . getReferences . unFragment
   where
     getReferences :: [Pandoc.Block] -> [Pandoc.Inline]
     getReferences = filter isReferenceLink . grecQ
@@ -287,3 +367,11 @@ isReferenceLink :: Pandoc.Inline -> Bool
 isReferenceLink (Pandoc.Link _attrs text (target, _)) =
     [Pandoc.Str target] /= text
 isReferenceLink _ = False
+
+
+--------------------------------------------------------------------------------
+isVisibleBlock :: Pandoc.Block -> Bool
+isVisibleBlock Pandoc.Null = False
+isVisibleBlock (Pandoc.RawBlock (Pandoc.Format "html") t) =
+    not ("<!--" `L.isPrefixOf` t && "-->" `L.isSuffixOf` t)
+isVisibleBlock _ = True

@@ -1,0 +1,43 @@
+version: 2
+
+workflows:
+  version: 2
+  build-workflow:
+    jobs:
+      - build:
+          filters:
+            tags:
+              only: /.*/
+
+jobs:
+  build:
+    # This image has most Haskell stuff preinstalled.
+    docker:
+      - image: 'fpco/stack-build:latest'
+
+    steps:
+      - checkout
+      - restore_cache:
+          key: 'v3-patat-{{ arch }}-{{ .Branch }}'
+      - run:
+          name: 'Update cabal indices'
+          command: 'cabal update'
+      - run:
+          # We set jobs to 1 here because that prevents Out-Of-Memory exceptions
+          # while compiling dependencies.
+          name: 'Install dependencies'
+          command: '.circleci/tickle.sh cabal install --only-dependencies --jobs=1'
+      - run:
+          name: 'Build and install'
+          command: 'cabal install --flags="patat-make-man"'
+      - run:
+          name: 'Run tests'
+          command: 'make test'
+      - save_cache:
+          key: 'v3-patat-{{ arch }}-{{ .Branch }}-{{ .Revision }}'
+          paths:
+            - '~/.cabal'
+            - '~/.ghc'
+      - run:
+          name: 'Upload release'
+          command: '.circleci/release.sh "$CIRCLE_TAG"'

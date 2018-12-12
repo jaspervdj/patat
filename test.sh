@@ -8,7 +8,7 @@ for src in $srcs; do
     expected="$src.dump"
     echo -n "Testing $src... "
     actual=$(mktemp)
-    patat --dump --force "$src" >"$actual"
+    HOME=/dev/null patat --dump --force "$src" >"$actual"
 
     if [[ $@ == "--fix" ]]; then
         cp "$actual" "$expected"
