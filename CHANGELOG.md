@@ -1,5 +1,9 @@
 # Changelog
 
+- 0.8.1.3 (2019-01-24)
+    * Bump `pandoc` to 2.4
+    * Bump `yaml` to 0.11
+
 - 0.8.1.2 (2018-10-29)
     * Work around test failure caused by slightly different syntax highlighting
       in different pandoc versions
