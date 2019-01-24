@@ -561,10 +561,10 @@ the terminal window.
     If `w3mimgdisplay` is in a non-standard location, you can specify that using
     `path`:
 
-            ```yaml
-            backend: 'w3m
-            path: '/home/jasper/.local/bin/w3mimgdisplay'
-            ```
+    ```yaml
+    backend: 'w3m'
+    path: '/home/jasper/.local/bin/w3mimgdisplay'
+    ```
 
 Trivia
 ------
