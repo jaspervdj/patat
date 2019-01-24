@@ -1,5 +1,8 @@
 # Changelog
 
+- 0.8.2.0 (2019-01-24)
+    * GHC 7.8 compatibility
+
 - 0.8.1.3 (2019-01-24)
     * Bump `pandoc` to 2.4
     * Bump `yaml` to 0.11
