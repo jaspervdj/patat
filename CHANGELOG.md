@@ -1,5 +1,9 @@
 # Changelog
 
+- 0.8.2.1 (2019-02-03)
+    * Bump `pandoc` to 2.6
+    * Bump `ansi-terminal` to 0.10
+
 - 0.8.2.0 (2019-01-24)
     * GHC 7.8 compatibility
 
