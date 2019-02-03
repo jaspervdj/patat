@@ -9,5 +9,7 @@ flags:
     patat-make-man: true
 
 extra-deps:
-- 'pandoc-2.4'
-- 'zip-archive-0.3.3'
+- 'pandoc-2.6'
+- 'ipynb-0.1'
+- 'ansi-terminal-0.9'
+- 'ansi-wl-pprint-0.6.8.2@rev:1'
