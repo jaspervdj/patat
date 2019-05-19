@@ -1,5 +1,19 @@
 # Changelog
 
+- 0.8.2.2 (2019-02-04)
+    * Bump lower `base` dependency to 4.8
+
+- 0.8.2.1 (2019-02-03)
+    * Bump `pandoc` to 2.6
+    * Bump `ansi-terminal` to 0.10
+
+- 0.8.2.0 (2019-01-24)
+    * GHC 7.8 compatibility
+
+- 0.8.1.3 (2019-01-24)
+    * Bump `pandoc` to 2.4
+    * Bump `yaml` to 0.11
+
 - 0.8.1.2 (2018-10-29)
     * Work around test failure caused by slightly different syntax highlighting
       in different pandoc versions

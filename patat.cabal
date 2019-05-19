@@ -1,7 +1,7 @@
 Name:                patat
-Version:             0.8.1.2
+Version:             0.8.2.2
 Synopsis:            Terminal-based presentations using Pandoc
-Description:         Terminal-based presentations using Pandoc
+Description:         Terminal-based presentations using Pandoc.
 License:             GPL-2
 License-file:        LICENSE
 Author:              Jasper Van der Jeugt <m@jaspervdj.be>
@@ -33,9 +33,9 @@ Executable patat
 
   Build-depends:
     aeson                >= 0.9   && < 1.5,
-    ansi-terminal        >= 0.6   && < 0.9,
+    ansi-terminal        >= 0.6   && < 0.10,
     ansi-wl-pprint       >= 0.6   && < 0.7,
-    base                 >= 4.6   && < 5,
+    base                 >= 4.8   && < 5,
     base64-bytestring    >= 1.0   && < 1.1,
     bytestring           >= 0.10  && < 0.11,
     colour               >= 2.3   && < 2.4,
@@ -44,7 +44,7 @@ Executable patat
     filepath             >= 1.4   && < 1.5,
     mtl                  >= 2.2   && < 2.3,
     optparse-applicative >= 0.12  && < 0.15,
-    pandoc               >= 2.0.4 && < 2.5,
+    pandoc               >= 2.0.4 && < 2.7,
     process              >= 1.6   && < 1.7,
     skylighting          >= 0.1   && < 0.8,
     terminal-size        >= 0.3   && < 0.4,
@@ -96,8 +96,8 @@ Executable patat-make-man
     Buildable: False
 
   Build-depends:
-    base   >= 4.6  && < 5,
+    base   >= 4.8  && < 5,
     mtl    >= 2.2  && < 2.3,
-    pandoc >= 2.0  && < 2.5,
+    pandoc >= 2.0  && < 2.7,
     text   >= 1.2  && < 1.3,
     time   >= 1.6  && < 1.10

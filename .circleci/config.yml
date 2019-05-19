@@ -18,26 +18,20 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: 'v3-patat-{{ arch }}-{{ .Branch }}'
-      - run:
-          name: 'Update cabal indices'
-          command: 'cabal update'
+          key: 'v4-patat-{{ arch }}-{{ .Branch }}'
       - run:
           # We set jobs to 1 here because that prevents Out-Of-Memory exceptions
           # while compiling dependencies.
-          name: 'Install dependencies'
-          command: '.circleci/tickle.sh cabal install --only-dependencies --jobs=1'
-      - run:
-          name: 'Build and install'
-          command: 'cabal install --flags="patat-make-man"'
+          name: 'Install'
+          command: '.circleci/tickle.sh stack build --pedantic --copy-bins --jobs=1 --no-terminal'
       - run:
           name: 'Run tests'
           command: 'make test'
       - save_cache:
-          key: 'v3-patat-{{ arch }}-{{ .Branch }}-{{ .Revision }}'
+          key: 'v4-patat-{{ arch }}-{{ .Branch }}-{{ .Revision }}'
           paths:
-            - '~/.cabal'
-            - '~/.ghc'
+            - '~/.stack-work'
+            - '~/.stack'
       - run:
           name: 'Upload release'
           command: '.circleci/release.sh "$CIRCLE_TAG"'
