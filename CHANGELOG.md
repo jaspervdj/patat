@@ -1,5 +1,8 @@
 # Changelog
 
+- 0.8.2.3 (2019-06-25)
+    * Bump upper `pandoc` dependency to 2.8
+
 - 0.8.2.2 (2019-02-04)
     * Bump lower `base` dependency to 4.8
 
