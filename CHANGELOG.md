@@ -1,5 +1,9 @@
 # Changelog
 
+- 0.8.2.4 (2019-08-12)
+    * Bump `optparse-applicative` upper bound to 0.16
+    * Bump `skylighting` upper bound to 0.9
+
 - 0.8.2.3 (2019-06-25)
     * Bump upper `pandoc` dependency to 2.8
 
