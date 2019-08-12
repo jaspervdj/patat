@@ -1,5 +1,8 @@
 # Changelog
 
+- 0.8.2.5 (2019-08-12)
+    * Fix test failure caused by slightly different pandoc output for lists
+
 - 0.8.2.4 (2019-08-12)
     * Bump `optparse-applicative` upper bound to 0.16
     * Bump `skylighting` upper bound to 0.9
