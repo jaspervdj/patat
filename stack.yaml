@@ -1,4 +1,4 @@
-resolver: 'lts-13.10'
+resolver: 'lts-13.29'
 save-hackage-creds: false
 
 packages:
@@ -9,7 +9,13 @@ flags:
     patat-make-man: true
 
 extra-deps:
-- 'pandoc-2.6'
-- 'ipynb-0.1'
 - 'ansi-terminal-0.9'
 - 'ansi-wl-pprint-0.6.8.2@rev:1'
+- 'cmark-gfm-0.2.0'
+- 'hslua-module-system-0.2.1'
+- 'ipynb-0.1'
+- 'optparse-applicative-0.15.0.0'
+- 'pandoc-2.7.3'
+- 'semigroups-0.19'
+- 'skylighting-0.8.2'
+- 'skylighting-core-0.8.2'
