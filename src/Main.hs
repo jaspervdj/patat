@@ -136,7 +136,7 @@ main = do
         else interactiveLoop options images pres
   where
     interactiveLoop :: Options -> Maybe Images.Handle -> Presentation -> IO ()
-    interactiveLoop options images pres0 = (`finally` cleanup) $ do
+    interactiveLoop options images pres0 = (`finally` cleanall) $ do
         IO.hSetBuffering IO.stdin IO.NoBuffering
         Ansi.hideCursor
 
@@ -158,12 +158,13 @@ main = do
 
         let loop :: Presentation -> Maybe String -> IO ()
             loop pres mbError = do
-                case mbError of
+                cleanup <- case mbError of
                     Nothing  -> displayPresentation images pres
                     Just err -> displayPresentationError pres err
 
                 c      <- Chan.readChan commandChan
                 update <- updatePresentation c pres
+                cleanup
                 case update of
                     ExitedPresentation        -> return ()
                     UpdatedPresentation pres' -> loop pres' Nothing
@@ -171,8 +172,8 @@ main = do
 
         loop pres0 Nothing
 
-    cleanup :: IO ()
-    cleanup = do
+    cleanall :: IO ()
+    cleanall = do
         Ansi.showCursor
         Ansi.clearScreen
         Ansi.setCursorPosition 0 0

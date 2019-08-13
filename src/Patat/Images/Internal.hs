@@ -14,6 +14,7 @@ import           Control.Exception (Exception)
 import qualified Data.Aeson        as A
 import           Data.Data         (Data)
 import           Data.Typeable     (Typeable)
+import           Patat.Cleanup
 
 
 --------------------------------------------------------------------------------
@@ -35,5 +36,5 @@ instance Exception BackendNotSupported
 
 --------------------------------------------------------------------------------
 data Handle = Handle
-    { hDrawImage  :: FilePath -> IO ()
+    { hDrawImage  :: FilePath -> IO Cleanup
     }

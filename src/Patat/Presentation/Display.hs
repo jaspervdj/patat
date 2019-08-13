@@ -19,6 +19,7 @@ import qualified Data.List                            as L
 import           Data.Maybe                           (fromMaybe)
 import           Data.Monoid                          (mconcat, mempty, (<>))
 import qualified Data.Text                            as T
+import           Patat.Cleanup
 import qualified Patat.Images                         as Images
 import           Patat.Presentation.Display.CodeBlock
 import           Patat.Presentation.Display.Table
@@ -42,7 +43,7 @@ data CanvasSize = CanvasSize {csRows :: Int, csCols :: Int} deriving (Show)
 -- | Display something within the presentation borders that draw the title and
 -- the active slide number and so on.
 displayWithBorders
-    :: Presentation -> (CanvasSize -> Theme -> PP.Doc) -> IO ()
+    :: Presentation -> (CanvasSize -> Theme -> PP.Doc) -> IO Cleanup
 displayWithBorders Presentation {..} f = do
     Ansi.clearScreen
     Ansi.setCursorPosition 0 0
@@ -85,9 +86,11 @@ displayWithBorders Presentation {..} f = do
     PP.putDoc $ borders $ PP.space <> PP.string author <> middleSpaces <> PP.string active <> PP.space
     IO.hFlush IO.stdout
 
+    return mempty
+
 
 --------------------------------------------------------------------------------
-displayImage :: Images.Handle -> FilePath -> IO ()
+displayImage :: Images.Handle -> FilePath -> IO Cleanup
 displayImage images path = do
     Ansi.clearScreen
     Ansi.setCursorPosition 0 0
@@ -97,7 +100,7 @@ displayImage images path = do
 
 
 --------------------------------------------------------------------------------
-displayPresentation :: Maybe Images.Handle -> Presentation -> IO ()
+displayPresentation :: Maybe Images.Handle -> Presentation -> IO Cleanup
 displayPresentation mbImages pres@Presentation {..} =
      case getActiveFragment pres of
         Nothing                       -> displayWithBorders pres mempty
@@ -136,7 +139,7 @@ displayPresentation mbImages pres@Presentation {..} =
 --------------------------------------------------------------------------------
 -- | Displays an error in the place of the presentation.  This is useful if we
 -- want to display an error but keep the presentation running.
-displayPresentationError :: Presentation -> String -> IO ()
+displayPresentationError :: Presentation -> String -> IO Cleanup
 displayPresentationError pres err = displayWithBorders pres $ \_ Theme {..} ->
     themed themeStrong "Error occurred in the presentation:" <$$>
     "" <$$>

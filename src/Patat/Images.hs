@@ -12,6 +12,7 @@ module Patat.Images
 import           Control.Exception           (catch)
 import qualified Data.Aeson                  as A
 import qualified Data.Text                   as T
+import           Patat.Cleanup
 import           Patat.Images.Internal
 import qualified Patat.Images.ITerm2         as ITerm2
 import qualified Patat.Images.W3m            as W3m
@@ -56,5 +57,5 @@ backends =
 
 
 --------------------------------------------------------------------------------
-drawImage :: Handle -> FilePath -> IO ()
+drawImage :: Handle -> FilePath -> IO Cleanup
 drawImage = hDrawImage

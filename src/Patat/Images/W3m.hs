@@ -9,6 +9,7 @@ module Patat.Images.W3m
 import           Control.Exception      (throwIO)
 import           Control.Monad          (unless)
 import qualified Data.Aeson.TH.Extended as A
+import           Patat.Cleanup          (Cleanup)
 import qualified Patat.Images.Internal  as Internal
 import qualified System.Directory       as Directory
 import qualified System.Process         as Process
@@ -107,7 +108,7 @@ getImageSize (W3m w3mPath) path = do
 
 
 --------------------------------------------------------------------------------
-drawImage :: W3m -> FilePath -> IO ()
+drawImage :: W3m -> FilePath -> IO Cleanup
 drawImage w3m@(W3m w3mPath) path = do
     exists <- Directory.doesFileExist path
     unless exists $ fail $
@@ -122,7 +123,7 @@ drawImage w3m@(W3m w3mPath) path = do
             ";;;;;" ++ path ++ "\n4;\n3;\n"
 
     _ <- Process.readProcess w3mPath [] command
-    return ()
+    return $ return ()
   where
     fit :: (Int, Int) -> (Int, Int) -> (Int, Int, Int, Int)
     fit (tw, th) (iw0, ih0) =
