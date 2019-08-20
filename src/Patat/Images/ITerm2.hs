@@ -45,7 +45,7 @@ drawImage path = do
     withEscapeSequence $ do
         putStr "1337;File=inline=1;width=100%;height=100%:"
         BL.putStr (B64.encode content)
-    return $ return ()
+    return mempty
 
 
 --------------------------------------------------------------------------------

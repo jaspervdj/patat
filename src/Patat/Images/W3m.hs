@@ -7,8 +7,9 @@ module Patat.Images.W3m
 
 --------------------------------------------------------------------------------
 import           Control.Exception      (throwIO)
-import           Control.Monad          (unless)
+import           Control.Monad          (unless, void)
 import qualified Data.Aeson.TH.Extended as A
+import           Data.List              (intercalate)
 import           Patat.Cleanup          (Cleanup)
 import qualified Patat.Images.Internal  as Internal
 import qualified System.Directory       as Directory
@@ -122,8 +123,12 @@ drawImage w3m@(W3m w3mPath) path = do
             show x ++ ";" ++ show y ++ ";" ++ show w ++ ";" ++ show h ++
             ";;;;;" ++ path ++ "\n4;\n3;\n"
 
+    -- Draw image.
     _ <- Process.readProcess w3mPath [] command
-    return $ return ()
+
+    -- Return a 'Cleanup' that clears the image.
+    return $ void $ Process.readProcess w3mPath [] $
+        "6;" ++ intercalate ";" (map show [x, y, w, h])
   where
     fit :: (Int, Int) -> (Int, Int) -> (Int, Int, Int, Int)
     fit (tw, th) (iw0, ih0) =
