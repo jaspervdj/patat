@@ -16,6 +16,7 @@ import           Data.Monoid                  (mempty, (<>))
 import           Data.Time                    (UTCTime)
 import           Data.Version                 (showVersion)
 import qualified Options.Applicative          as OA
+import qualified Patat.GetKey                 as GetKey
 import           Patat.AutoAdvance
 import qualified Patat.Images                 as Images
 import           Patat.Presentation
@@ -137,7 +138,7 @@ main = do
   where
     interactiveLoop :: Options -> Maybe Images.Handle -> Presentation -> IO ()
     interactiveLoop options images pres0 = (`finally` cleanup) $ do
-        IO.hSetBuffering IO.stdin IO.NoBuffering
+        GetKey.initialize
         Ansi.hideCursor
 
         -- Spawn the initial channel that gives us commands based on user input.

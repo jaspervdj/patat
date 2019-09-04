@@ -13,6 +13,7 @@ module Patat.Presentation.Interactive
 
 
 --------------------------------------------------------------------------------
+import qualified Patat.GetKey                as GetKey
 import           Patat.Presentation.Internal
 import           Patat.Presentation.Read
 
@@ -27,46 +28,35 @@ data PresentationCommand
     | First
     | Last
     | Reload
-    | UnknownCommand String
+    | UnknownCommand GetKey.Key
 
 
 --------------------------------------------------------------------------------
 readPresentationCommand :: IO PresentationCommand
 readPresentationCommand = do
-    k <- readKey
+    k <- GetKey.getKey
     case k of
-        "q"      -> return Exit
-        "\n"     -> return Forward
-        "\DEL"   -> return Backward
-        "h"      -> return Backward
-        "j"      -> return SkipForward
-        "k"      -> return SkipBackward
-        "l"      -> return Forward
+        GetKey.Kill        -> return Exit
+        GetKey.CharKey 'q' -> return Exit
+        GetKey.Enter       -> return Forward
+        GetKey.Backspace   -> return Backward
+        GetKey.CharKey 'h' -> return Backward
+        GetKey.CharKey 'j' -> return SkipForward
+        GetKey.CharKey 'k' -> return SkipBackward
+        GetKey.CharKey 'l' -> return Forward
         -- Arrow keys
-        "\ESC[C" -> return Forward
-        "\ESC[D" -> return Backward
-        "\ESC[B" -> return SkipForward
-        "\ESC[A" -> return SkipBackward
+        GetKey.RightArrow  -> return Forward
+        GetKey.LeftArrow   -> return Backward
+        GetKey.DownArrow   -> return SkipForward
+        GetKey.UpArrow     -> return SkipBackward
         -- PageUp and PageDown
-        "\ESC[6" -> return Forward
-        "\ESC[5" -> return Backward
-        "0"      -> return First
-        "G"      -> return Last
-        "r"      -> return Reload
-        _        -> return (UnknownCommand k)
-  where
-    readKey :: IO String
-    readKey = do
-        c0 <- getChar
-        case c0 of
-            '\ESC' -> do
-                c1 <- getChar
-                case c1 of
-                    '[' -> do
-                        c2 <- getChar
-                        return [c0, c1, c2]
-                    _ -> return [c0, c1]
-            _ -> return [c0]
+        GetKey.PageDown    -> return Forward
+        GetKey.PageUp      -> return Backward
+        GetKey.CharKey '0' -> return First
+        GetKey.CharKey 'G' -> return Last
+        GetKey.CharKey 'r' -> return Reload
+        GetKey.CharKey    _ -> return (UnknownCommand k)
+        GetKey.UnknownKey _ -> return (UnknownCommand k)
 
 
 --------------------------------------------------------------------------------

@@ -66,6 +66,7 @@ Executable patat
     Data.Aeson.TH.Extended
     Data.Data.Extended
     Patat.AutoAdvance
+    Patat.GetKey
     Patat.Images
     Patat.Images.Internal
     Patat.Images.W3m
