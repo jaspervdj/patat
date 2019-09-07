@@ -1,5 +1,10 @@
 # Changelog
 
+- 0.8.3.0 (2019-09-07)
+    * Fix test failure again, and ensure that it works for multiple pandoc
+      versions by slightly modifying test input
+    * Include pandoc version info in `patat --version`
+
 - 0.8.2.5 (2019-08-12)
     * Fix test failure caused by slightly different pandoc output for lists
 
