@@ -26,6 +26,7 @@ import           System.Directory             (doesFileExist,
                                                getModificationTime)
 import           System.Exit                  (exitFailure, exitSuccess)
 import qualified System.IO                    as IO
+import qualified Text.Pandoc                  as Pandoc
 import qualified Text.PrettyPrint.ANSI.Leijen as PP
 
 
@@ -116,6 +117,7 @@ main = do
 
     when (oVersion options) $ do
         putStrLn (showVersion Paths_patat.version)
+        putStrLn $ "Using pandoc: " ++ Pandoc.pandocVersion
         exitSuccess
 
     filePath <- case oFilePath options of
