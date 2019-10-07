@@ -1,7 +1,7 @@
 #!/bin/bash
 set -o nounset -o errexit -o pipefail
 
-srcs=$(find tests -type f ! -name '*.dump')
+srcs=$(find tests/golden -type f ! -name '*.dump')
 stuff_went_wrong=false
 
 for src in $srcs; do

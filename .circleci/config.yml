@@ -23,9 +23,9 @@ jobs:
           # We set jobs to 1 here because that prevents Out-Of-Memory exceptions
           # while compiling dependencies.
           name: 'Install'
-          command: '.circleci/tickle.sh stack build --pedantic --copy-bins --jobs=1 --no-terminal'
+          command: '.circleci/tickle.sh stack build --pedantic --copy-bins --jobs=1 --no-terminal --test'
       - run:
-          name: 'Run tests'
+          name: 'Run golden tests'
           command: 'make test'
       - save_cache:
           key: 'v4-patat-{{ arch }}-{{ .Branch }}-{{ .Revision }}'
