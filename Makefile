@@ -16,7 +16,7 @@ man: extra/patat.1
 
 # Also check if we can generate the manual.
 test: man
-	bash test.sh
+	bash tests/golden.sh
 
 clean:
 	rm -f extra/patat.1
