@@ -15,6 +15,7 @@ module Patat.Presentation.Interactive
 --------------------------------------------------------------------------------
 import           Patat.Presentation.Internal
 import           Patat.Presentation.Read
+import qualified System.IO                   as IO
 
 
 --------------------------------------------------------------------------------
@@ -28,11 +29,12 @@ data PresentationCommand
     | Last
     | Reload
     | UnknownCommand String
+    deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
-readPresentationCommand :: IO PresentationCommand
-readPresentationCommand = do
+readPresentationCommand :: IO.Handle -> IO PresentationCommand
+readPresentationCommand h = do
     k <- readKey
     case k of
         "q"      -> return Exit
@@ -57,13 +59,13 @@ readPresentationCommand = do
   where
     readKey :: IO String
     readKey = do
-        c0 <- getChar
+        c0 <- IO.hGetChar h
         case c0 of
             '\ESC' -> do
-                c1 <- getChar
+                c1 <- IO.hGetChar h
                 case c1 of
                     '[' -> do
-                        c2 <- getChar
+                        c2 <- IO.hGetChar h
                         return [c0, c1, c2]
                     _ -> return [c0, c1]
             _ -> return [c0]
