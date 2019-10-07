@@ -62,6 +62,7 @@ Library
 
   Exposed-modules:
     Patat.AutoAdvance
+    Patat.Cleanup
     Patat.Images
     Patat.Images.Internal
     Patat.Images.W3m
