@@ -13,9 +13,11 @@ module Patat.Presentation.Interactive
 
 
 --------------------------------------------------------------------------------
+import           Data.Char                   (isDigit)
 import           Patat.Presentation.Internal
 import           Patat.Presentation.Read
 import qualified System.IO                   as IO
+import           Text.Read                   (readMaybe)
 
 
 --------------------------------------------------------------------------------
@@ -28,6 +30,7 @@ data PresentationCommand
     | First
     | Last
     | Reload
+    | Seek Int
     | UnknownCommand String
     deriving (Eq, Show)
 
@@ -35,30 +38,32 @@ data PresentationCommand
 --------------------------------------------------------------------------------
 readPresentationCommand :: IO.Handle -> IO PresentationCommand
 readPresentationCommand h = do
-    k <- readKey
+    k <- readKeys
     case k of
-        "q"      -> return Exit
-        "\n"     -> return Forward
-        "\DEL"   -> return Backward
-        "h"      -> return Backward
-        "j"      -> return SkipForward
-        "k"      -> return SkipBackward
-        "l"      -> return Forward
+        "q"                       -> return Exit
+        "\n"                      -> return Forward
+        "\DEL"                    -> return Backward
+        "h"                       -> return Backward
+        "j"                       -> return SkipForward
+        "k"                       -> return SkipBackward
+        "l"                       -> return Forward
         -- Arrow keys
-        "\ESC[C" -> return Forward
-        "\ESC[D" -> return Backward
-        "\ESC[B" -> return SkipForward
-        "\ESC[A" -> return SkipBackward
+        "\ESC[C"                  -> return Forward
+        "\ESC[D"                  -> return Backward
+        "\ESC[B"                  -> return SkipForward
+        "\ESC[A"                  -> return SkipBackward
         -- PageUp and PageDown
-        "\ESC[6" -> return Forward
-        "\ESC[5" -> return Backward
-        "0"      -> return First
-        "G"      -> return Last
-        "r"      -> return Reload
-        _        -> return (UnknownCommand k)
+        "\ESC[6"                  -> return Forward
+        "\ESC[5"                  -> return Backward
+        "0"                       -> return First
+        "G"                       -> return Last
+        "r"                       -> return Reload
+        -- Number followed by enter
+        _ | Just n <- readMaybe k -> return (Seek n)
+        _                         -> return (UnknownCommand k)
   where
-    readKey :: IO String
-    readKey = do
+    readKeys :: IO String
+    readKeys = do
         c0 <- IO.hGetChar h
         case c0 of
             '\ESC' -> do
@@ -68,7 +73,15 @@ readPresentationCommand h = do
                         c2 <- IO.hGetChar h
                         return [c0, c1, c2]
                     _ -> return [c0, c1]
+
+            _ | isDigit c0 && c0 /= '0' -> (c0 :) <$> readDigits
+
             _ -> return [c0]
+
+    readDigits :: IO String
+    readDigits = do
+        c <- IO.hGetChar h
+        if isDigit c then (c :) <$> readDigits else return [c]
 
 
 --------------------------------------------------------------------------------
@@ -91,6 +104,7 @@ updatePresentation cmd presentation = case cmd of
     SkipBackward     -> return $ goToSlide $ \(s, _) -> (s - 10, 0)
     First            -> return $ goToSlide $ \_ -> (0, 0)
     Last             -> return $ goToSlide $ \_ -> (numSlides presentation, 0)
+    Seek n           -> return $ goToSlide $ \_ -> (n - 1, 0)
     Reload           -> reloadPresentation
     UnknownCommand _ -> return (UpdatedPresentation presentation)
   where
