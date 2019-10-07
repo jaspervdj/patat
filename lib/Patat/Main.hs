@@ -9,9 +9,10 @@ module Patat.Main
 
 --------------------------------------------------------------------------------
 import           Control.Applicative          ((<$>), (<*>))
-import           Control.Concurrent           (forkIO, threadDelay)
+import           Control.Concurrent           (forkIO, killThread, threadDelay)
+import           Control.Concurrent.Chan      (Chan)
 import qualified Control.Concurrent.Chan      as Chan
-import           Control.Exception            (finally)
+import           Control.Exception            (bracket)
 import           Control.Monad                (forever, unless, when)
 import qualified Data.Aeson.Extended          as A
 import           Data.Monoid                  (mempty, (<>))
@@ -140,14 +141,8 @@ main = do
         else interactiveLoop options images pres
   where
     interactiveLoop :: Options -> Maybe Images.Handle -> Presentation -> IO ()
-    interactiveLoop options images pres0 = (`finally` cleanall) $ do
-        IO.hSetBuffering IO.stdin IO.NoBuffering
-        Ansi.hideCursor
-
-        -- Spawn the initial channel that gives us commands based on user input.
-        commandChan0 <- Chan.newChan
-        _            <- forkIO $ forever $
-            readPresentationCommand IO.stdin >>= Chan.writeChan commandChan0
+    interactiveLoop options images pres0 =
+        interactively readPresentationCommand $ \commandChan0 -> do
 
         -- If an auto delay is set, use 'autoAdvance' to create a new one.
         commandChan <- case psAutoAdvanceDelay (pSettings pres0) of
@@ -176,11 +171,39 @@ main = do
 
         loop pres0 Nothing
 
-    cleanall :: IO ()
-    cleanall = do
+
+--------------------------------------------------------------------------------
+-- | Utility for dealing with pecularities of stdin & interactive applications
+-- on the terminal.  Tries to restore the original state of the terminal as much
+-- as possible.
+interactively
+    -- | Reads a command from stdin (or from some other IO).  This will be
+    -- interrupted by 'killThread' when the application finishes.
+    :: (IO.Handle -> IO a)
+    -- | Application to run.
+    -> (Chan a -> IO ())
+    -- | Returns when application finishes.
+    -> IO ()
+interactively reader app = bracket setup teardown $ \(_, _, _, chan) -> app chan
+  where
+    setup = do
+        chan <- Chan.newChan
+        echo <- IO.hGetEcho      IO.stdin
+        buff <- IO.hGetBuffering IO.stdin
+        IO.hSetEcho      IO.stdin False
+        IO.hSetBuffering IO.stdin IO.NoBuffering
+        Ansi.hideCursor
+        readerThreadId <- forkIO $ forever $
+            reader IO.stdin >>= Chan.writeChan chan
+        return (echo, buff, readerThreadId, chan)
+
+    teardown (echo, buff, readerThreadId, _chan) = do
         Ansi.showCursor
         Ansi.clearScreen
         Ansi.setCursorPosition 0 0
+        killThread readerThreadId
+        IO.hSetEcho      IO.stdin echo
+        IO.hSetBuffering IO.stdin buff
 
 
 --------------------------------------------------------------------------------
