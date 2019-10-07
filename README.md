@@ -128,6 +128,7 @@ Controls
 - **Go backward 10 slides**: `k`, `↑`
 - **First slide**: `0`
 - **Last slide**: `G`
+- **Jump to slide N**: `N` followed by `enter`
 - **Reload file**: `r`
 - **Quit**: `q`
 

@@ -23,23 +23,26 @@ data ArbitraryCommand = ArbitraryCommand String PresentationCommand
     deriving (Show)
 
 instance QC.Arbitrary ArbitraryCommand where
-    arbitrary = QC.elements $
-        [ ArbitraryCommand "q"      Exit
-        , ArbitraryCommand "\n"     Forward
-        , ArbitraryCommand "\DEL"   Backward
-        , ArbitraryCommand "h"      Backward
-        , ArbitraryCommand "j"      SkipForward
-        , ArbitraryCommand "k"      SkipBackward
-        , ArbitraryCommand "l"      Forward
-        , ArbitraryCommand "\ESC[C" Forward
-        , ArbitraryCommand "\ESC[D" Backward
-        , ArbitraryCommand "\ESC[B" SkipForward
-        , ArbitraryCommand "\ESC[A" SkipBackward
-        , ArbitraryCommand "\ESC[6" Forward
-        , ArbitraryCommand "\ESC[5" Backward
-        , ArbitraryCommand "0"      First
-        , ArbitraryCommand "G"      Last
-        , ArbitraryCommand "r"      Reload
+    arbitrary = QC.oneof $
+        [ return $ ArbitraryCommand "q"      Exit
+        , return $ ArbitraryCommand "\n"     Forward
+        , return $ ArbitraryCommand "\DEL"   Backward
+        , return $ ArbitraryCommand "h"      Backward
+        , return $ ArbitraryCommand "j"      SkipForward
+        , return $ ArbitraryCommand "k"      SkipBackward
+        , return $ ArbitraryCommand "l"      Forward
+        , return $ ArbitraryCommand "\ESC[C" Forward
+        , return $ ArbitraryCommand "\ESC[D" Backward
+        , return $ ArbitraryCommand "\ESC[B" SkipForward
+        , return $ ArbitraryCommand "\ESC[A" SkipBackward
+        , return $ ArbitraryCommand "\ESC[6" Forward
+        , return $ ArbitraryCommand "\ESC[5" Backward
+        , return $ ArbitraryCommand "0"      First
+        , return $ ArbitraryCommand "G"      Last
+        , return $ ArbitraryCommand "r"      Reload
+        , do
+            n <- QC.choose (1, 1000)
+            return $ ArbitraryCommand (show n <> "\n") (Seek n)
         ]
 
 testReadPresentationCommands :: [ArbitraryCommand] -> IO Bool
