@@ -1,5 +1,10 @@
 # Changelog
 
+- 0.8.4.0 (2019-10-09)
+    * Add slide seeking (enter slide number + `enter`)
+    * Fix turning tty echo off/on during presentation
+    * Run `w3mimgdisplay` cleanup action, fixing image issues on some terminals
+
 - 0.8.3.0 (2019-09-07)
     * Fix test failure again, and ensure that it works for multiple pandoc
       versions by slightly modifying test input
