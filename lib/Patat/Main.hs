@@ -86,6 +86,7 @@ parserInfo = OA.info (OA.helper <*> parseOptions) $
         , "- Go backward 10 slides:  k, up"
         , "- First slide:            0"
         , "- Last slide:             G"
+        , "- Jump to slide N:        N followed by enter"
         , "- Reload file:            r"
         , "- Quit:                   q"
         ]
