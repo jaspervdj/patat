@@ -13,17 +13,12 @@ jobs:
   build:
     # This image has most Haskell stuff preinstalled.
     docker:
-      - image: 'fpco/stack-build:latest'
+      - image: 'haskell:8.6'
 
     steps:
-      # 'checkout' command is currently broken because the Docker image stopped
-      # providing 'ssh'.  We do a manual checkout instead.
-      # - checkout
-      - run:
-          name: 'Checkout'
-          command: 'git clone https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .'
+      - checkout
       - restore_cache:
-          key: 'v4-patat-{{ arch }}-{{ .Branch }}'
+          key: 'v5-patat-{{ arch }}-{{ .Branch }}'
       - run:
           # We set jobs to 1 here because that prevents Out-Of-Memory exceptions
           # while compiling dependencies.
@@ -33,7 +28,7 @@ jobs:
           name: 'Run golden tests'
           command: 'make test'
       - save_cache:
-          key: 'v4-patat-{{ arch }}-{{ .Branch }}-{{ .Revision }}'
+          key: 'v5-patat-{{ arch }}-{{ .Branch }}-{{ .Revision }}'
           paths:
             - '~/.stack-work'
             - '~/.stack'
