@@ -4,39 +4,34 @@ workflows:
   version: 2
   build-workflow:
     jobs:
-      - build:
-          filters:
-            tags:
-              only: /.*/
+    - build:
+        filters:
+          tags:
+            only: /.*/
 
 jobs:
   build:
     # This image has most Haskell stuff preinstalled.
     docker:
-      - image: 'fpco/stack-build:latest'
+    - image: 'haskell:8.6'
 
     steps:
-      # 'checkout' command is currently broken because the Docker image stopped
-      # providing 'ssh'.  We do a manual checkout instead.
-      # - checkout
-      - run:
-          name: 'Checkout'
-          command: 'git clone https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .'
-      - restore_cache:
-          key: 'v4-patat-{{ arch }}-{{ .Branch }}'
-      - run:
-          # We set jobs to 1 here because that prevents Out-Of-Memory exceptions
-          # while compiling dependencies.
-          name: 'Install'
-          command: '.circleci/tickle.sh stack build --pedantic --copy-bins --jobs=1 --no-terminal --test'
-      - run:
-          name: 'Run golden tests'
-          command: 'make test'
-      - save_cache:
-          key: 'v4-patat-{{ arch }}-{{ .Branch }}-{{ .Revision }}'
-          paths:
-            - '~/.stack-work'
-            - '~/.stack'
-      - run:
-          name: 'Upload release'
-          command: '.circleci/release.sh "$CIRCLE_TAG"'
+    - checkout
+    - restore_cache:
+        key: 'v5-patat-{{ arch }}-{{ .Branch }}'
+    - run:
+        # We set jobs to 1 here because that prevents Out-Of-Memory exceptions
+        # while compiling dependencies.
+        name: 'Install'
+        command: '.circleci/tickle.sh stack build --pedantic --copy-bins --jobs=1 --no-terminal --test'
+    - run:
+        name: 'Run golden tests'
+        command: 'make test'
+    - save_cache:
+        key: 'v5-patat-{{ arch }}-{{ .Branch }}-{{ .Revision }}'
+        paths:
+          - '~/.stack-work'
+          - '~/.stack'
+    - run:
+        name: 'Upload release'
+        command: '.circleci/release.sh "$CIRCLE_TAG"'
