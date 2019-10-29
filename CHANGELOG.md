@@ -1,5 +1,10 @@
 # Changelog
 
+- 0.8.4.1 (2019-10-29)
+    * Bump CircleCI configuration
+    * Bump release script
+    * Add slide seeking to `--help` output
+
 - 0.8.4.0 (2019-10-09)
     * Add slide seeking (enter slide number + `enter`)
     * Fix turning tty echo off/on during presentation
