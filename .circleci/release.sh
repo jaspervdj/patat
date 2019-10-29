@@ -19,14 +19,15 @@ if [[ -z "$TAG" ]]; then
 fi
 
 # Install ghr
-GHR_VERSION="v0.5.4"
-wget --quiet \
-    "https://github.com/tcnksm/ghr/releases/download/${GHR_VERSION}/ghr_${GHR_VERSION}_linux_386.zip"
-unzip ghr_${GHR_VERSION}_linux_386.zip
+GHR_VERSION="v0.13.0"
+curl --silent -L -O \
+    "https://github.com/tcnksm/ghr/releases/download/${GHR_VERSION}/ghr_${GHR_VERSION}_linux_386.tar.gz"
+tar xf ghr_${GHR_VERSION}_linux_386.tar.gz
+mv ghr_${GHR_VERSION}_linux_386/ghr .
 
 # Install upx
 UPX_VERSION="3.94"
-wget --quiet \
+curl --silent -L -O \
     "https://github.com/upx/upx/releases/download/v${UPX_VERSION}/upx-${UPX_VERSION}-amd64_linux.tar.xz"
 tar xf upx-${UPX_VERSION}-amd64_linux.tar.xz
 mv upx-${UPX_VERSION}-amd64_linux/upx .
