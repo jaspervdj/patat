@@ -60,6 +60,7 @@ Installation
 - Debian: <https://packages.debian.org/unstable/patat>
 - Ubuntu: <https://packages.ubuntu.com/bionic/patat>
 - openSUSE: <https://build.opensuse.org/package/show/openSUSE:Factory:ARM/patat>
+- Fedora: <https://src.fedoraproject.org/rpms/patat>
 
 You can also find generic linux binaries here:
 <https://github.com/jaspervdj/patat/releases>.
