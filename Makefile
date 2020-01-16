@@ -9,6 +9,10 @@ GHR_VERSION=0.13.0
 GHR_NAME=ghr_v$(GHR_VERSION)_$(UNAME)_amd64
 GHR_BINARY=$(HOME)/.local/bin/ghr
 
+UPX_VERSION=3.94
+UPX_NAME=upx-$(UPX_VERSION)-$(ARCH)_$(UNAME)
+UPX_BINARY=$(HOME)/.local/bin/upx
+
 ifeq ($(UNAME), darwin)
 ARCHIVE=zip
 ARCHIVE_CREATE=zip -r
@@ -24,19 +28,35 @@ ifeq ($(UNAME), darwin)
 # we can't use `git --date=unix` since only very recent git versions support
 # that, so we need to make a round trip through `date`.
 SOURCE_DATE_EPOCH?=$(shell date '+%s' \
-					   --date="$(shell git log -1 --format=%cd --date=rfc)")
+                       --date="$(shell git log -1 --format=%cd --date=rfc)")
 else
 SOURCE_DATE_EPOCH?=$(shell git log -1 --format=%cd --date=unix)
 endif
 
+ifeq ($(UNAME), darwin)
+COMPRESS_BIN_DEPS=
+COMPRESS_BIN=ls
+else
+COMPRESS_BIN_DEPS=$(UPX_BINARY)
+COMPRESS_BIN=upx
+endif
+
+# Default target.
 build: $(PATAT_BINARY)
 
-$(PATAT_PACKAGE).$(ARCHIVE): $(PATAT_BINARY)
+# Upload a release.
+release: $(PATAT_PACKAGE).$(ARCHIVE)
+	ghr -draft -u jaspervdj -r patat v$(PATAT_VERSION) \
+	    $(PATAT_PACKAGE).$(ARCHIVE)
+
+$(PATAT_PACKAGE).$(ARCHIVE): $(PATAT_BINARY) extra/patat.1 $(COMPRESS_BIN_DEPS)
 	mkdir $(PATAT_PACKAGE)
 	cp $(PATAT_BINARY) $(PATAT_PACKAGE)/
+	$(COMPRESS_BIN) $(PATAT_PACKAGE)/patat
 	cp README.md $(PATAT_PACKAGE)/
 	cp CHANGELOG.md $(PATAT_PACKAGE)/
 	cp LICENSE $(PATAT_PACKAGE)/
+	cp extra/patat.1 $(PATAT_PACKAGE)/
 	$(ARCHIVE_CREATE) $(PATAT_PACKAGE).$(ARCHIVE) $(PATAT_PACKAGE)
 
 $(PATAT_BINARY):
@@ -49,6 +69,15 @@ $(GHR_BINARY):
 	cd /tmp && $(ARCHIVE_EXTRACT) $(GHR_NAME).$(ARCHIVE)
 	mv /tmp/$(GHR_NAME)/ghr $(GHR_BINARY)
 	ghr --version
+
+# UPX is used to compress the resulting binary.  We currently don't use this on
+# Mac OS.
+$(UPX_BINARY):
+	curl -Lo /tmp/$(UPX_NAME).tar.xz \
+	    https://github.com/upx/upx/releases/download/v$(UPX_VERSION)/$(UPX_NAME).tar.xz
+	cd /tmp && tar xf $(UPX_NAME).tar.xz
+	mv /tmp/$(UPX_NAME)/upx $(UPX_BINARY)
+	upx --version
 
 # Man page.
 extra/patat.1: README.md $(PATAT_BINARY)
