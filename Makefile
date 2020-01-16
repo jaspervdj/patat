@@ -1,9 +1,3 @@
-# We use `?=` to set SOURCE_DATE_EPOCH only if it is not present.  Unfortunately
-# we can't use `git --date=unix` since only very recent git versions support
-# that, so we need to make a round trip through `date`.
-SOURCE_DATE_EPOCH?=$(shell date '+%s' \
-					   --date="$(shell git log -1 --format=%cd --date=rfc)")
-
 ARCH=$(shell uname -m)
 UNAME=$(shell uname | tr 'A-Z' 'a-z')
 
@@ -23,6 +17,16 @@ else
 ARCHIVE=tar.gz
 ARCHIVE_CREATE=tar czf
 ARCHIVE_EXTRACT=tar xvzf
+endif
+
+ifeq ($(UNAME), darwin)
+# We use `?=` to set SOURCE_DATE_EPOCH only if it is not present.  Unfortunately
+# we can't use `git --date=unix` since only very recent git versions support
+# that, so we need to make a round trip through `date`.
+SOURCE_DATE_EPOCH?=$(shell date '+%s' \
+					   --date="$(shell git log -1 --format=%cd --date=rfc)")
+else
+SOURCE_DATE_EPOCH?=$(shell git log -1 --format=%cd --date=unix)
 endif
 
 build: $(PATAT_BINARY)
