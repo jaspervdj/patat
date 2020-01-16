@@ -18,6 +18,9 @@ jobs:
     macos:
       xcode: '10.0.0'
     steps:
+    - run:
+        name: 'Set up PATH'
+        command: echo "export PATH=$HOME/.local/bin:$PATH" >> $BASH_ENV
     - checkout
     - run:
         name: 'Install stack'
