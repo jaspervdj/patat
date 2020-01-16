@@ -25,13 +25,7 @@ jobs:
     - restore_cache:
         key: 'v6-{{ arch }}'
     - run:
-        # We set jobs to 1 here because that prevents Out-Of-Memory exceptions
-        # while compiling dependencies.
-        name: 'Install'
-        command: '.circleci/tickle.sh stack build --pedantic --copy-bins --jobs=1 --no-terminal --test'
-    - run:
-        name: 'Run golden tests'
-        command: 'make test'
+        command: 'make build test'
     - save_cache:
         key: 'v6-{{ arch }}'
         paths:
@@ -47,13 +41,7 @@ jobs:
     - restore_cache:
         key: 'v6-{{ arch }}'
     - run:
-        # We set jobs to 1 here because that prevents Out-Of-Memory exceptions
-        # while compiling dependencies.
-        name: 'Install'
-        command: '.circleci/tickle.sh stack build --pedantic --copy-bins --jobs=1 --no-terminal --test'
-    - run:
-        name: 'Run golden tests'
-        command: 'make test'
+        command: 'make build test'
     - save_cache:
         key: 'v6-{{ arch }}'
         paths:
