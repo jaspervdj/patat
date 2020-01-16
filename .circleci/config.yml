@@ -4,21 +4,26 @@ workflows:
   version: 2
   build-workflow:
     jobs:
-    - build:
+    - build-macos:
+        filters:
+          tags:
+            only: /.*/
+    - build-linux:
         filters:
           tags:
             only: /.*/
 
 jobs:
-  build:
-    # This image has most Haskell stuff preinstalled.
-    docker:
-    - image: 'haskell:8.6'
-
+  build-macos:
+    macos:
+      xcode: '10.0.0'
     steps:
     - checkout
+    - run:
+        name: 'Install stack'
+        command: 'curl -sSL https://get.haskellstack.org/ | sh'
     - restore_cache:
-        key: 'v5-patat-{{ arch }}-{{ .Branch }}'
+        key: 'v6-{{ arch }}'
     - run:
         # We set jobs to 1 here because that prevents Out-Of-Memory exceptions
         # while compiling dependencies.
@@ -28,9 +33,30 @@ jobs:
         name: 'Run golden tests'
         command: 'make test'
     - save_cache:
-        key: 'v5-patat-{{ arch }}-{{ .Branch }}-{{ .Revision }}'
+        key: 'v6-{{ arch }}'
         paths:
-          - '~/.stack-work'
+        - '~/.stack'
+
+  build-linux:
+    # This image has most Haskell stuff preinstalled.
+    docker:
+    - image: 'haskell:8.6'
+
+    steps:
+    - checkout
+    - restore_cache:
+        key: 'v6-{{ arch }}'
+    - run:
+        # We set jobs to 1 here because that prevents Out-Of-Memory exceptions
+        # while compiling dependencies.
+        name: 'Install'
+        command: '.circleci/tickle.sh stack build --pedantic --copy-bins --jobs=1 --no-terminal --test'
+    - run:
+        name: 'Run golden tests'
+        command: 'make test'
+    - save_cache:
+        key: 'v6-{{ arch }}'
+        paths:
           - '~/.stack'
     - run:
         name: 'Upload release'
