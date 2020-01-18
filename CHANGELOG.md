@@ -1,5 +1,9 @@
 # Changelog
 
+- 0.8.4.2 (2020-01-18)
+    * Add builds for Mac OS
+    * Refactor CircleCI config & Makefile
+
 - 0.8.4.1 (2019-10-29)
     * Bump CircleCI configuration
     * Bump release script
