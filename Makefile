@@ -45,7 +45,7 @@ endif
 build: $(PATAT_BINARY)
 
 # Upload a release.
-release: $(PATAT_PACKAGE).$(ARCHIVE)
+release: $(PATAT_PACKAGE).$(ARCHIVE) $(GHR_BINARY)
 	ghr -draft -u jaspervdj -r patat v$(PATAT_VERSION) \
 	    $(PATAT_PACKAGE).$(ARCHIVE)
 
