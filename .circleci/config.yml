@@ -4,13 +4,40 @@ workflows:
   version: 2
   build-workflow:
     jobs:
-    - build:
+    - build-macos:
+        filters:
+          tags:
+            only: /.*/
+    - build-linux:
         filters:
           tags:
             only: /.*/
 
 jobs:
-  build:
+  build-macos:
+    macos:
+      xcode: '10.0.0'
+    steps:
+    - run:
+        name: 'Set up PATH'
+        command: echo "export PATH=$HOME/.local/bin:$PATH" >> $BASH_ENV
+    - checkout
+    - run:
+        name: 'Install stack'
+        command: 'curl -sSL https://get.haskellstack.org/ | sh'
+    - restore_cache:
+        key: 'v6-{{ arch }}'
+    - run:
+        command: 'make build test'
+    - save_cache:
+        key: 'v6-{{ arch }}'
+        paths:
+        - '~/.stack'
+    - run:
+        name: 'Upload release'
+        command: 'if [[ ! -z "$CIRCLE_TAG" ]]; then make release; fi'
+
+  build-linux:
     # This image has most Haskell stuff preinstalled.
     docker:
     - image: 'haskell:8.6'
@@ -18,20 +45,13 @@ jobs:
     steps:
     - checkout
     - restore_cache:
-        key: 'v5-patat-{{ arch }}-{{ .Branch }}'
+        key: 'v6-{{ arch }}'
     - run:
-        # We set jobs to 1 here because that prevents Out-Of-Memory exceptions
-        # while compiling dependencies.
-        name: 'Install'
-        command: '.circleci/tickle.sh stack build --pedantic --copy-bins --jobs=1 --no-terminal --test'
-    - run:
-        name: 'Run golden tests'
-        command: 'make test'
+        command: 'make build test'
     - save_cache:
-        key: 'v5-patat-{{ arch }}-{{ .Branch }}-{{ .Revision }}'
+        key: 'v6-{{ arch }}'
         paths:
-          - '~/.stack-work'
           - '~/.stack'
     - run:
         name: 'Upload release'
-        command: '.circleci/release.sh "$CIRCLE_TAG"'
+        command: 'if [[ ! -z "$CIRCLE_TAG" ]]; then make release; fi'
