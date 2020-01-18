@@ -10,7 +10,7 @@ GHR_NAME=ghr_v$(GHR_VERSION)_$(UNAME)_amd64
 GHR_BINARY=$(HOME)/.local/bin/ghr
 
 UPX_VERSION=3.94
-UPX_NAME=upx-$(UPX_VERSION)-$(ARCH)_$(UNAME)
+UPX_NAME=upx-$(UPX_VERSION)-amd64_$(UNAME)
 UPX_BINARY=$(HOME)/.local/bin/upx
 
 ifeq ($(UNAME), darwin)
@@ -75,7 +75,7 @@ $(GHR_BINARY):
 $(UPX_BINARY):
 	curl -Lo /tmp/$(UPX_NAME).tar.xz \
 	    https://github.com/upx/upx/releases/download/v$(UPX_VERSION)/$(UPX_NAME).tar.xz
-	cd /tmp && tar xJf $(UPX_NAME).tar.xz
+	cd /tmp && tar xf $(UPX_NAME).tar.xz
 	mv /tmp/$(UPX_NAME)/upx $(UPX_BINARY)
 	upx --version
 
