@@ -46,7 +46,7 @@ build: $(PATAT_BINARY)
 
 # Upload a release.
 release: $(PATAT_PACKAGE).$(ARCHIVE)
-	ghr -draft -u jaspervdj -r patat v$(PATAT_VERSION) \
+	echo ghr -draft -u jaspervdj -r patat v$(PATAT_VERSION) \
 	    $(PATAT_PACKAGE).$(ARCHIVE)
 
 $(PATAT_PACKAGE).$(ARCHIVE): $(PATAT_BINARY) extra/patat.1 $(COMPRESS_BIN_DEPS)
