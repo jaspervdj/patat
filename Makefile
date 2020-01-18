@@ -3,7 +3,7 @@ UNAME=$(shell uname | tr 'A-Z' 'a-z')
 
 PATAT_BINARY=$(HOME)/.local/bin/patat
 PATAT_VERSION=$(shell sed -n 's/^Version: *//p' *.cabal)
-PATAT_PACKAGE=fregot-v$(PATAT_VERSION)-$(UNAME)-$(ARCH)
+PATAT_PACKAGE=patat-v$(PATAT_VERSION)-$(UNAME)-$(ARCH)
 
 GHR_VERSION=0.13.0
 GHR_NAME=ghr_v$(GHR_VERSION)_$(UNAME)_amd64
@@ -75,7 +75,7 @@ $(GHR_BINARY):
 $(UPX_BINARY):
 	curl -Lo /tmp/$(UPX_NAME).tar.xz \
 	    https://github.com/upx/upx/releases/download/v$(UPX_VERSION)/$(UPX_NAME).tar.xz
-	cd /tmp && tar xf $(UPX_NAME).tar.xz
+	cd /tmp && tar xJf $(UPX_NAME).tar.xz
 	mv /tmp/$(UPX_NAME)/upx $(UPX_BINARY)
 	upx --version
 
