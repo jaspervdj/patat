@@ -12,22 +12,6 @@ workflows:
         filters:
           tags:
             only: /.*/
-    - release-macos:
-        requires:
-        - build-macos
-        filters:
-          tags:
-            only: /^v.*/
-          branches:
-            ignore: /.*/
-    - release-linux:
-        requires:
-        - build-macos
-        filters:
-          tags:
-            only: /^v.*/
-          branches:
-            ignore: /.*/
 
 jobs:
   build-macos:
@@ -49,13 +33,9 @@ jobs:
         key: 'v6-{{ arch }}'
         paths:
         - '~/.stack'
-
-  release-macos:
-    macos:
-      xcode: '10.0.0'
-    steps:
     - run:
-        command: 'make release'
+        name: 'Upload release'
+        command: 'if [[ ! -z "$CIRCLE_TAG" ]]; then make release; fi'
 
   build-linux:
     # This image has most Haskell stuff preinstalled.
@@ -74,11 +54,4 @@ jobs:
           - '~/.stack'
     - run:
         name: 'Upload release'
-        command: '.circleci/release.sh "$CIRCLE_TAG"'
-
-  release-linux:
-    docker:
-    - image: 'haskell:8.6'
-    steps:
-    - run:
-        command: 'make release'
+        command: 'if [[ ! -z "$CIRCLE_TAG" ]]; then make release; fi'
