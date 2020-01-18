@@ -28,8 +28,7 @@ jobs:
     - restore_cache:
         key: 'v6-{{ arch }}'
     - run:
-        command: 'make build'
-        # command: 'make build test'
+        command: 'make build test'
     - save_cache:
         key: 'v6-{{ arch }}'
         paths:
