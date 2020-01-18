@@ -61,7 +61,7 @@ Installation
 - Ubuntu: <https://packages.ubuntu.com/bionic/patat>
 - openSUSE: <https://build.opensuse.org/package/show/openSUSE:Factory:ARM/patat>
 
-You can also find generic linux binaries here:
+You can also find generic Linux and Mac OS binaries here:
 <https://github.com/jaspervdj/patat/releases>.
 
 ### From source
