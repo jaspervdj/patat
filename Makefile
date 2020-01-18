@@ -27,10 +27,10 @@ ifeq ($(UNAME), darwin)
 # We use `?=` to set SOURCE_DATE_EPOCH only if it is not present.  Unfortunately
 # we can't use `git --date=unix` since only very recent git versions support
 # that, so we need to make a round trip through `date`.
+SOURCE_DATE_EPOCH?=$(shell git log -1 --format=%cd --date=unix)
+else
 SOURCE_DATE_EPOCH?=$(shell date '+%s' \
                        --date="$(shell git log -1 --format=%cd --date=rfc)")
-else
-SOURCE_DATE_EPOCH?=$(shell git log -1 --format=%cd --date=unix)
 endif
 
 ifeq ($(UNAME), darwin)
@@ -60,7 +60,6 @@ $(PATAT_PACKAGE).$(ARCHIVE): $(PATAT_BINARY) extra/patat.1 $(COMPRESS_BIN_DEPS)
 	$(ARCHIVE_CREATE) $(PATAT_PACKAGE).$(ARCHIVE) $(PATAT_PACKAGE)
 
 $(PATAT_BINARY):
-	echo "Building for $(UNAME)"
 	stack build -j1 --copy-bins --pedantic
 
 # GHR is used to upload releases to GitHub.
