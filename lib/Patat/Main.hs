@@ -178,13 +178,13 @@ main = do
 -- on the terminal.  Tries to restore the original state of the terminal as much
 -- as possible.
 interactively
-    -- | Reads a command from stdin (or from some other IO).  This will be
-    -- interrupted by 'killThread' when the application finishes.
     :: (IO.Handle -> IO a)
-    -- | Application to run.
+    -- ^ Reads a command from stdin (or from some other IO).  This will be
+    -- interrupted by 'killThread' when the application finishes.
     -> (Chan a -> IO ())
-    -- | Returns when application finishes.
+    -- ^ Application to run.
     -> IO ()
+    -- ^ Returns when application finishes.
 interactively reader app = bracket setup teardown $ \(_, _, _, chan) -> app chan
   where
     setup = do
