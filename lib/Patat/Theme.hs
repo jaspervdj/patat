@@ -224,7 +224,7 @@ namedSgrs = M.fromList
     , name <- maybeToList (sgrToString sgr)
     ]
   where
-    -- | It doesn't really matter if we generate "too much" SGRs here since
+    -- It doesn't really matter if we generate "too much" SGRs here since
     -- 'sgrToString' will only pick the ones we support.
     knownSgrs =
         [ Ansi.SetColor l i c
