@@ -1,5 +1,8 @@
 # Changelog
 
+- 0.8.4.3 (2020-01-21)
+    * Fix Haddock syntax in some comments (contribution by Asad Saeeduddin)
+
 - 0.8.4.2 (2020-01-18)
     * Add builds for Mac OS
     * Refactor CircleCI config & Makefile
