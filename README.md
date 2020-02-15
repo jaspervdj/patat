@@ -490,6 +490,13 @@ an obvious way.
 
 [this list]: https://hackage.haskell.org/package/highlighting-kate-0.6.3/docs/Text-Highlighting-Kate-Types.html#t:TokenType
 
+Note that in order to get syntax highlighting to work, you should annotate code
+blocks with the language, e.g. using a fenced code block:
+
+    ```ruby
+    puts "Hello, world!"
+    ```
+
 ### Pandoc Extensions
 
 Pandoc comes with a fair number of extensions on top of markdown, listed [here](https://hackage.haskell.org/package/pandoc-2.0.5/docs/Text-Pandoc-Extensions.html).
