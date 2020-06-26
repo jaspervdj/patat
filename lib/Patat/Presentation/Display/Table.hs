@@ -11,7 +11,6 @@ module Patat.Presentation.Display.Table
 
 --------------------------------------------------------------------------------
 import           Data.List         (intersperse, transpose)
-import           Data.Monoid       (mconcat, mempty, (<>))
 import           Patat.PrettyPrint ((<$$>))
 import qualified Patat.PrettyPrint as PP
 import           Patat.Theme       (Theme (..))

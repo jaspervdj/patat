@@ -11,13 +11,11 @@ module Patat.Presentation.Display
 
 
 --------------------------------------------------------------------------------
-import           Control.Applicative                  ((<$>))
 import           Control.Monad                        (mplus, unless)
 import qualified Data.Aeson.Extended                  as A
 import           Data.Data.Extended                   (grecQ)
 import qualified Data.List                            as L
 import           Data.Maybe                           (fromMaybe)
-import           Data.Monoid                          (mconcat, mempty, (<>))
 import qualified Data.Text                            as T
 import           Patat.Cleanup
 import qualified Patat.Images                         as Images
@@ -107,7 +105,7 @@ displayPresentation mbImages pres@Presentation {..} =
         Just (ActiveContent fragment)
                 | Just images <- mbImages
                 , Just image <- onlyImage fragment ->
-            displayImage images image
+            displayImage images $ T.unpack image
         Just (ActiveContent fragment) ->
             displayWithBorders pres $ \_canvasSize theme ->
             prettyFragment theme fragment
@@ -229,7 +227,7 @@ prettyBlock theme@Theme {..} (Pandoc.OrderedList _ bss) = PP.vcat
         | i <- [1 .. length bss]
         ]
 
-prettyBlock _theme (Pandoc.RawBlock _ t) = PP.string t <> PP.hardline
+prettyBlock _theme (Pandoc.RawBlock _ t) = PP.text t <> PP.hardline
 
 prettyBlock _theme Pandoc.HorizontalRule = "---"
 
@@ -289,7 +287,7 @@ prettyInline :: Theme -> Pandoc.Inline -> PP.Doc
 
 prettyInline _theme Pandoc.Space = PP.space
 
-prettyInline _theme (Pandoc.Str str) = PP.string str
+prettyInline _theme (Pandoc.Str str) = PP.text str
 
 prettyInline theme@Theme {..} (Pandoc.Emph inlines) =
     themed themeEmph $
@@ -301,13 +299,13 @@ prettyInline theme@Theme {..} (Pandoc.Strong inlines) =
 
 prettyInline Theme {..} (Pandoc.Code _ txt) =
     themed themeCode $
-    PP.string (" " <> txt <> " ")
+    PP.text (" " <> txt <> " ")
 
 prettyInline theme@Theme {..} link@(Pandoc.Link _attrs text (target, _title))
     | isReferenceLink link =
         "[" <> themed themeLinkText (prettyInlines theme text) <> "]"
     | otherwise =
-        "<" <> themed themeLinkTarget (PP.string target) <> ">"
+        "<" <> themed themeLinkTarget (PP.text target) <> ">"
 
 prettyInline _theme Pandoc.SoftBreak = PP.softline
 
@@ -322,16 +320,16 @@ prettyInline theme@Theme {..} (Pandoc.Quoted Pandoc.DoubleQuote t) =
     "'" <> themed themeQuoted (prettyInlines theme t) <> "'"
 
 prettyInline Theme {..} (Pandoc.Math _ t) =
-    themed themeMath (PP.string t)
+    themed themeMath (PP.text t)
 
 prettyInline theme@Theme {..} (Pandoc.Image _attrs text (target, _title)) =
     "![" <> themed themeImageText (prettyInlines theme text) <> "](" <>
-    themed themeImageTarget (PP.string target) <> ")"
+    themed themeImageTarget (PP.text target) <> ")"
 
 -- These elements aren't really supported.
 prettyInline theme  (Pandoc.Cite      _ t) = prettyInlines theme t
 prettyInline theme  (Pandoc.Span      _ t) = prettyInlines theme t
-prettyInline _theme (Pandoc.RawInline _ t) = PP.string t
+prettyInline _theme (Pandoc.RawInline _ t) = PP.text t
 prettyInline theme  (Pandoc.Note        t) = prettyBlocks  theme t
 prettyInline theme  (Pandoc.Superscript t) = prettyInlines theme t
 prettyInline theme  (Pandoc.Subscript   t) = prettyInlines theme t
@@ -357,10 +355,10 @@ prettyReferences theme@Theme {..} =
         "[" <>
         themed themeLinkText (prettyInlines theme $ Pandoc.newlineToSpace text) <>
         "](" <>
-        themed themeLinkTarget (PP.string target) <>
-        (if null title
+        themed themeLinkTarget (PP.text target) <>
+        (if T.null title
             then mempty
-            else PP.space <> "\"" <> PP.string title <> "\"")
+            else PP.space <> "\"" <> PP.text title <> "\"")
         <> ")"
     prettyReference _ = mempty
 
@@ -376,5 +374,5 @@ isReferenceLink _ = False
 isVisibleBlock :: Pandoc.Block -> Bool
 isVisibleBlock Pandoc.Null = False
 isVisibleBlock (Pandoc.RawBlock (Pandoc.Format "html") t) =
-    not ("<!--" `L.isPrefixOf` t && "-->" `L.isSuffixOf` t)
+    not ("<!--" `T.isPrefixOf` t && "-->" `T.isSuffixOf` t)
 isVisibleBlock _ = True

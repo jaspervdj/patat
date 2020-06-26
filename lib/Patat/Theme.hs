@@ -15,22 +15,20 @@ module Patat.Theme
 
 
 --------------------------------------------------------------------------------
-import           Control.Monad           (forM_, mplus)
-import qualified Data.Aeson              as A
-import qualified Data.Aeson.TH.Extended  as A
-import           Data.Char               (toLower, toUpper)
-import           Data.Colour.SRGB        (RGB(..), sRGB24reads, toSRGB24)
-import           Data.List               (intercalate, isPrefixOf, isSuffixOf)
-import qualified Data.Map                as M
-import           Data.Maybe              (mapMaybe, maybeToList)
-import           Data.Monoid             (Monoid (..))
-import           Data.Semigroup          (Semigroup (..))
-import qualified Data.Text               as T
-import           Numeric                 (showHex)
+import           Control.Monad          (forM_, mplus)
+import qualified Data.Aeson             as A
+import qualified Data.Aeson.TH.Extended as A
+import           Data.Char              (toLower, toUpper)
+import           Data.Colour.SRGB       (RGB (..), sRGB24reads, toSRGB24)
+import           Data.List              (intercalate, isPrefixOf, isSuffixOf)
+import qualified Data.Map               as M
+import           Data.Maybe             (mapMaybe, maybeToList)
+import qualified Data.Text              as T
+import           Numeric                (showHex)
 import           Prelude
-import qualified Skylighting             as Skylighting
-import qualified System.Console.ANSI     as Ansi
-import           Text.Read               (readMaybe)
+import qualified Skylighting            as Skylighting
+import qualified System.Console.ANSI    as Ansi
+import           Text.Read              (readMaybe)
 
 
 --------------------------------------------------------------------------------

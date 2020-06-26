@@ -9,7 +9,6 @@ module Patat.Presentation.Display.CodeBlock
 
 --------------------------------------------------------------------------------
 import           Data.Maybe                       (mapMaybe)
-import           Data.Monoid                      (mconcat, (<>))
 import qualified Data.Text                        as T
 import           Patat.Presentation.Display.Table (themed)
 import qualified Patat.PrettyPrint                as PP
@@ -19,16 +18,16 @@ import qualified Skylighting                      as Skylighting
 
 
 --------------------------------------------------------------------------------
-highlight :: [String] -> String -> [Skylighting.SourceLine]
+highlight :: [T.Text] -> T.Text -> [Skylighting.SourceLine]
 highlight classes rawCodeBlock = case mapMaybe getSyntax classes of
     []        -> zeroHighlight rawCodeBlock
     (syn : _) ->
-        case Skylighting.tokenize config syn (T.pack rawCodeBlock) of
+        case Skylighting.tokenize config syn rawCodeBlock of
             Left  _  -> zeroHighlight rawCodeBlock
             Right sl -> sl
   where
-    getSyntax :: String -> Maybe Skylighting.Syntax
-    getSyntax c = Skylighting.lookupSyntax (T.pack c) syntaxMap
+    getSyntax :: T.Text -> Maybe Skylighting.Syntax
+    getSyntax c = Skylighting.lookupSyntax c syntaxMap
 
     config :: Skylighting.TokenizerConfig
     config = Skylighting.TokenizerConfig
@@ -44,13 +43,13 @@ highlight classes rawCodeBlock = case mapMaybe getSyntax classes of
 -- | This does fake highlighting, everything becomes a normal token.  That makes
 -- things a bit easier, since we only need to deal with one cases in the
 -- renderer.
-zeroHighlight :: String -> [Skylighting.SourceLine]
-zeroHighlight str =
-    [[(Skylighting.NormalTok, T.pack line)] | line <- lines str]
+zeroHighlight :: T.Text -> [Skylighting.SourceLine]
+zeroHighlight txt =
+    [[(Skylighting.NormalTok, line)] | line <- T.lines txt]
 
 
 --------------------------------------------------------------------------------
-prettyCodeBlock :: Theme -> [String] -> String -> PP.Doc
+prettyCodeBlock :: Theme -> [T.Text] -> T.Text -> PP.Doc
 prettyCodeBlock theme@Theme {..} classes rawCodeBlock =
     PP.vcat (map blockified sourceLines) <>
     PP.hardline
