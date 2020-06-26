@@ -1,19 +1,20 @@
 -- | This script generates a man page for patat.
 {-# LANGUAGE OverloadedStrings #-}
-import           Control.Applicative ((<$>))
 import           Control.Exception   (throw)
 import           Control.Monad       (guard)
 import           Control.Monad.Trans (liftIO)
 import           Data.Char           (isSpace, toLower)
 import           Data.List           (isPrefixOf)
+import qualified Data.Map            as M
 import           Data.Maybe          (isJust)
 import qualified Data.Text           as T
 import qualified Data.Text.IO        as T
+import qualified Data.Time           as Time
 import qualified GHC.IO.Encoding     as Encoding
 import           Prelude
 import           System.Environment  (getEnv)
 import qualified System.IO           as IO
-import qualified Data.Time as Time
+import           Text.DocTemplates   as DT
 import qualified Text.Pandoc         as Pandoc
 
 getVersion :: IO String
@@ -54,7 +55,7 @@ toSections level = go
 
 fromSections :: Sections -> [Pandoc.Block]
 fromSections = concatMap $ \(level, title, blocks) ->
-    Pandoc.Header level ("", [], []) [Pandoc.Str $ T.unpack title] : blocks
+    Pandoc.Header level ("", [], []) [Pandoc.Str title] : blocks
 
 reorganizeSections :: Pandoc.Pandoc -> Pandoc.Pandoc
 reorganizeSections (Pandoc.Pandoc meta0 blocks0) =
@@ -89,6 +90,9 @@ reorganizeSections (Pandoc.Pandoc meta0 blocks0) =
     lookupSection name sections =
         [section | section@(_, n, _) <- sections, name == n]
 
+simpleContext :: [(T.Text, T.Text)] -> DT.Context T.Text
+simpleContext = DT.toContext . M.fromList
+
 main :: IO ()
 main = Pandoc.runIOorExplode $ do
     liftIO $ Encoding.setLocaleEncoding Encoding.utf8
@@ -99,18 +103,18 @@ main = Pandoc.runIOorExplode $ do
 
     source   <- liftIO $ T.readFile "README.md"
     pandoc0  <- Pandoc.readMarkdown readerOptions source
-    template <- Pandoc.getDefaultTemplate "man"
+    template <- Pandoc.compileDefaultTemplate "man"
 
-    version <- liftIO getVersion
-    date    <- liftIO getPrettySourceDate
+    version <- T.pack <$> liftIO getVersion
+    date    <- T.pack <$> liftIO getPrettySourceDate
 
     let writerOptions = Pandoc.def
             { Pandoc.writerTemplate   = Just template
-            , Pandoc.writerVariables  =
+            , Pandoc.writerVariables  = simpleContext
                 [ ("author",  "Jasper Van der Jeugt")
                 , ("title",   "patat manual")
                 , ("date",    date)
-                , ("footer",  "patat v" ++ version)
+                , ("footer",  "patat v" <> version)
                 , ("section", "1")
                 ]
             }
