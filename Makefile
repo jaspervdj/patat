@@ -60,8 +60,8 @@ $(PATAT_PACKAGE).$(ARCHIVE): $(PATAT_BINARY) extra/patat.1 $(COMPRESS_BIN_DEPS)
 	cp extra/patat.1 $(PATAT_PACKAGE)/
 	$(ARCHIVE_CREATE) $(PATAT_PACKAGE).$(ARCHIVE) $(PATAT_PACKAGE)
 
-    # For the GitHub action.
-    @echo "::set-output name=archive::$(PATAT_PACKAGE).$(ARCHIVE)"
+	# For the GitHub action.
+	@echo "::set-output name=archive::$(PATAT_PACKAGE).$(ARCHIVE)"
 
 $(PATAT_BINARY):
 	stack build --system-ghc --copy-bins --pedantic
