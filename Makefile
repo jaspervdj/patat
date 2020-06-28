@@ -59,7 +59,7 @@ $(PATAT_PACKAGE).$(ARCHIVE): $(PATAT_BINARY) extra/patat.1 $(COMPRESS_BIN_DEPS)
 	$(ARCHIVE_CREATE) $(PATAT_PACKAGE).$(ARCHIVE) $(PATAT_PACKAGE)
 
 $(PATAT_BINARY):
-	stack build -j1 --copy-bins --pedantic
+	stack build --system-ghc -j1 --copy-bins --pedantic
 
 # GHR is used to upload releases to GitHub.
 $(GHR_BINARY):
