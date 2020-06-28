@@ -35,7 +35,7 @@ jobs:
       id: build
 
     - name: Print created archive
-      run: echo "Archive: ${{ steps.build.outputs.archive }}"
+      run: echo ${{ steps.build.outputs.archive }}
 
     - name: Test
       run: make test
