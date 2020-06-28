@@ -41,7 +41,7 @@ jobs:
     # This image has most Haskell stuff preinstalled.
     docker:
     - image: 'haskell:8.8'
-    resource_class: 'large'
+    resource_class: 'medium+'
 
     steps:
     - checkout
