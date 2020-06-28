@@ -40,16 +40,16 @@ jobs:
   build-linux:
     # This image has most Haskell stuff preinstalled.
     docker:
-    - image: 'haskell:8.6'
+    - image: 'haskell:8.8'
 
     steps:
     - checkout
     - restore_cache:
-        key: 'v6-{{ arch }}'
+        key: 'v7-{{ arch }}'
     - run:
         command: 'make build test'
     - save_cache:
-        key: 'v6-{{ arch }}'
+        key: 'v7-{{ arch }}'
         paths:
           - '~/.stack'
     - run:
