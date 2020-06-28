@@ -51,7 +51,7 @@ release: $(PATAT_PACKAGE).$(ARCHIVE) $(GHR_BINARY)
 	ghr -u jaspervdj -r patat v$(PATAT_VERSION) $(PATAT_PACKAGE).$(ARCHIVE)
 
 $(PATAT_PACKAGE).$(ARCHIVE): $(PATAT_BINARY) extra/patat.1 $(COMPRESS_BIN_DEPS)
-	mkdir $(PATAT_PACKAGE)
+	mkdir -p $(PATAT_PACKAGE)
 	cp $(PATAT_BINARY) $(PATAT_PACKAGE)/
 	$(COMPRESS_BIN) $(PATAT_PACKAGE)/patat
 	cp README.md $(PATAT_PACKAGE)/
@@ -61,7 +61,7 @@ $(PATAT_PACKAGE).$(ARCHIVE): $(PATAT_BINARY) extra/patat.1 $(COMPRESS_BIN_DEPS)
 	$(ARCHIVE_CREATE) $(PATAT_PACKAGE).$(ARCHIVE) $(PATAT_PACKAGE)
 
 	# For the GitHub action.
-	@echo "::set-output name=archive::$(PATAT_PACKAGE).$(ARCHIVE)"
+	echo "::set-output name=archive::$(PATAT_PACKAGE).$(ARCHIVE)"
 
 $(PATAT_BINARY):
 	stack build --system-ghc --copy-bins --pedantic
