@@ -33,7 +33,8 @@ jobs:
     - name: Build
       run: make build
       outputs:
-        archive: 'File name of the artifact'
+        archive:
+          description: 'File name of the artifact'
 
     - name: Test
       run: make test
