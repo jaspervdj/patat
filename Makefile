@@ -42,9 +42,11 @@ COMPRESS_BIN=upx
 endif
 
 # Default target.
-build: $(PATAT_BINARY)
+.PHONY: build
+build: $(PATAT_PACKAGE).$(ARCHIVE)
 
 # Upload a release.
+.PHONY: release
 release: $(PATAT_PACKAGE).$(ARCHIVE) $(GHR_BINARY)
 	ghr -u jaspervdj -r patat v$(PATAT_VERSION) $(PATAT_PACKAGE).$(ARCHIVE)
 
