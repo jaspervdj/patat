@@ -34,15 +34,23 @@ jobs:
       run: make build
       id: build
 
-    - name: Print created archive
-      run: echo ${{ steps.build.outputs.archive }}
-
     - name: Test
       run: make test
 
-    - name: Create release
-      if: startsWith(github.ref, 'refs/tags')
-      uses: actions/create-release@v1
+    - uses: actions/upload-artifact@v2
+      with:
+        path: artifacts/*
+
+  release:
+    name: Create release
+    if: startsWith(github.ref, 'refs/tags')
+
+    steps:
+    - uses: actions/download-artifact@v2
+      with:
+        path: artifacts/
+
+    - uses: actions/create-release@v1
       id: create_release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

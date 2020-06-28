@@ -5,10 +5,6 @@ PATAT_BINARY=$(HOME)/.local/bin/patat
 PATAT_VERSION=$(shell sed -n 's/^Version: *//p' *.cabal)
 PATAT_PACKAGE=patat-v$(PATAT_VERSION)-$(UNAME)-$(ARCH)
 
-GHR_VERSION=0.13.0
-GHR_NAME=ghr_v$(GHR_VERSION)_$(UNAME)_amd64
-GHR_BINARY=$(HOME)/.local/bin/ghr
-
 UPX_VERSION=3.94
 UPX_NAME=upx-$(UPX_VERSION)-amd64_$(UNAME)
 UPX_BINARY=$(HOME)/.local/bin/upx
@@ -46,11 +42,8 @@ endif
 # Default target.
 .PHONY: build
 build: $(PATAT_PACKAGE).$(ARCHIVE)
-
-# Upload a release.
-.PHONY: release
-release: $(PATAT_PACKAGE).$(ARCHIVE) $(GHR_BINARY)
-	ghr -u jaspervdj -r patat v$(PATAT_VERSION) $(PATAT_PACKAGE).$(ARCHIVE)
+	mkdir -p artifacts
+	cp $(PATAT_PACKAGE).$(ARCHIVE) artifacts/
 
 $(PATAT_PACKAGE).$(ARCHIVE): $(PATAT_BINARY) extra/patat.1 $(COMPRESS_BIN_DEPS)
 	mkdir -p $(PATAT_PACKAGE)
@@ -69,14 +62,6 @@ $(PATAT_PACKAGE).$(ARCHIVE): $(PATAT_BINARY) extra/patat.1 $(COMPRESS_BIN_DEPS)
 
 $(PATAT_BINARY):
 	stack build --system-ghc --copy-bins --pedantic
-
-# GHR is used to upload releases to GitHub.
-$(GHR_BINARY):
-	curl -Lo /tmp/$(GHR_NAME).$(ARCHIVE) \
-	    https://github.com/tcnksm/ghr/releases/download/v$(GHR_VERSION)/$(GHR_NAME).$(ARCHIVE)
-	cd /tmp && $(ARCHIVE_EXTRACT) $(GHR_NAME).$(ARCHIVE)
-	mv /tmp/$(GHR_NAME)/ghr $(GHR_BINARY)
-	ghr --version
 
 # UPX is used to compress the resulting binary.  We currently don't use this on
 # Mac OS.
