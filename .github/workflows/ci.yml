@@ -5,11 +5,10 @@ on: ['push']
 jobs:
   build:
     name: ghc ${{ matrix.ghc }}
-    runs-on:
-    - ubuntu-latest
-    - macOS-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ubuntu-latest, macOS-latest]
         stack: ["2.1.3"]
         ghc: ["8.8.3"]
 
