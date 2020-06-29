@@ -14,7 +14,6 @@ import           Control.Monad.Trans         (liftIO)
 import qualified Data.Aeson                  as A
 import qualified Data.HashMap.Strict         as HMS
 import           Data.Maybe                  (fromMaybe)
-import           Data.Monoid                 (mempty, (<>))
 import qualified Data.Text                   as T
 import qualified Data.Text.Encoding          as T
 import qualified Data.Text.IO                as T

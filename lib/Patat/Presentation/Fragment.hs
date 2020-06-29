@@ -4,18 +4,17 @@
 {-# LANGUAGE DeriveFoldable    #-}
 {-# LANGUAGE DeriveFunctor     #-}
 {-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Patat.Presentation.Fragment
     ( FragmentSettings (..)
     , fragmentBlocks
     , fragmentBlock
     ) where
 
-import           Data.Foldable    (Foldable)
-import           Data.List        (foldl', intersperse)
-import           Data.Maybe       (fromMaybe)
-import           Data.Traversable (Traversable)
+import           Data.List   (foldl', intersperse)
+import           Data.Maybe  (fromMaybe)
 import           Prelude
-import qualified Text.Pandoc      as Pandoc
+import qualified Text.Pandoc as Pandoc
 
 data FragmentSettings = FragmentSettings
     { fsIncrementalLists :: !Bool

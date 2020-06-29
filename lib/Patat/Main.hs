@@ -8,14 +8,13 @@ module Patat.Main
 
 
 --------------------------------------------------------------------------------
-import           Control.Applicative          ((<$>), (<*>))
 import           Control.Concurrent           (forkIO, killThread, threadDelay)
 import           Control.Concurrent.Chan      (Chan)
 import qualified Control.Concurrent.Chan      as Chan
 import           Control.Exception            (bracket)
 import           Control.Monad                (forever, unless, when)
 import qualified Data.Aeson.Extended          as A
-import           Data.Monoid                  (mempty, (<>))
+import qualified Data.Text                    as T
 import           Data.Time                    (UTCTime)
 import           Data.Version                 (showVersion)
 import qualified Options.Applicative          as OA
@@ -121,7 +120,7 @@ main = do
 
     when (oVersion options) $ do
         putStrLn (showVersion Paths_patat.version)
-        putStrLn $ "Using pandoc: " ++ Pandoc.pandocVersion
+        putStrLn $ "Using pandoc: " ++ T.unpack Pandoc.pandocVersion
         exitSuccess
 
     filePath <- case oFilePath options of

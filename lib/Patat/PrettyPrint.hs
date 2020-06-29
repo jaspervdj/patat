@@ -44,13 +44,9 @@ import           Control.Monad.Reader (asks, local)
 import           Control.Monad.RWS    (RWS, runRWS)
 import           Control.Monad.State  (get, gets, modify)
 import           Control.Monad.Writer (tell)
-import           Data.Foldable        (Foldable)
 import qualified Data.List            as L
-import           Data.Monoid          (Monoid, mconcat, mempty)
-import           Data.Semigroup       (Semigroup (..))
 import           Data.String          (IsString (..))
 import qualified Data.Text            as T
-import           Data.Traversable     (Traversable, traverse)
 import           Prelude              hiding (null)
 import qualified System.Console.ANSI  as Ansi
 import qualified System.IO            as IO

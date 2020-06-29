@@ -34,8 +34,6 @@ import qualified Data.Aeson.TH.Extended as A
 import qualified Data.Foldable          as Foldable
 import           Data.List              (intercalate)
 import           Data.Maybe             (fromMaybe, listToMaybe)
-import           Data.Monoid            (Monoid (..))
-import           Data.Semigroup         (Semigroup (..))
 import qualified Data.Text              as T
 import qualified Patat.Theme            as Theme
 import           Prelude

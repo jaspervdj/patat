@@ -1,0 +1,100 @@
+name: CI
+
+on: ['push']
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macOS-latest]
+        stack: ["2.1.3"]
+        ghc: ["8.8.3"]
+
+    steps:
+    - name: Get the version
+      id: get_version
+      run: 'echo ::set-output name=version::${GITHUB_REF#refs/tags/}'
+
+    - uses: actions/checkout@v2
+
+    - uses: actions/setup-haskell@v1.1
+      name: Setup Haskell Stack
+      with:
+        ghc-version: ${{ matrix.ghc }}
+        stack-version: ${{ matrix.stack }}
+
+    - uses: actions/cache@v2
+      name: Cache ~/.stack
+      with:
+        path: ~/.stack
+        key: ${{ runner.os }}-${{ matrix.ghc }}-v1
+
+    - name: Add ~/.local/bin to PATH
+      run: echo "::add-path::$HOME/.local/bin"
+
+    - name: Build
+      run: make build
+      id: build
+
+    - name: Test
+      run: make test
+
+    - name: Build artifact
+      if: startsWith(github.ref, 'refs/tags')
+      run: make artifact
+      env:
+        PATAT_TAG: ${{ steps.get_version.outputs.version }}
+
+    - uses: actions/upload-artifact@v2
+      if: startsWith(github.ref, 'refs/tags')
+      with:
+        path: artifacts/*
+        name: artifacts
+
+  release:
+    name: Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags')
+
+    steps:
+    - name: Get the version
+      id: get_version
+      run: 'echo ::set-output name=version::${GITHUB_REF#refs/tags/}'
+
+    - uses: actions/download-artifact@v2
+      with:
+        name: artifacts
+
+    - name: Display structure of downloaded files
+      run: ls -R
+
+    - uses: actions/create-release@v1
+      id: create_release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.get_version.outputs.version }}
+        release_name: ${{ steps.get_version.outputs.version }}
+
+    - name: Upload Linux Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./patat-${{ steps.get_version.outputs.version }}-linux-x86_64.tar.gz
+        asset_name: patat-${{ steps.get_version.outputs.version }}-linux-x86_64.tar.gz
+        asset_content_type: application/gzip
+
+    - name: Upload MacOS Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./patat-${{ steps.get_version.outputs.version }}-darwin-x86_64.zip
+        asset_name: patat-${{ steps.get_version.outputs.version }}-darwin-x86_64.zip
+        asset_content_type: application/zip
