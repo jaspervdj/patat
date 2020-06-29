@@ -40,6 +40,7 @@ jobs:
     - uses: actions/upload-artifact@v2
       with:
         path: artifacts/*
+        name: artifacts
 
   release:
     name: Release
@@ -53,6 +54,8 @@ jobs:
       run: 'echo ::set-output name=version::${GITHUB_REF#refs/tags/}'
 
     - uses: actions/download-artifact@v2
+      with:
+        name: artifacts
 
     - name: Display structure of downloaded files
       run: ls -R
@@ -71,7 +74,7 @@ jobs:
   #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   #   with:
   #     upload_url: ${{ steps.create_release.outputs.upload_url }}
-  #     asset_path: ./patat-${{ steps.get_version.outputs.version }}-linux-x86_64.tar.gz
+  #     asset_path: artifacts/patat-${{ steps.get_version.outputs.version }}-linux-x86_64.tar.gz
   #     asset_name: patat-${{ steps.get_version.outputs.version }}-linux-x86_64.tar.gz
   #     asset_content_type: application/gzip
 
@@ -81,6 +84,6 @@ jobs:
   #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   #   with:
   #     upload_url: ${{ steps.create_release.outputs.upload_url }}
-  #     asset_path: ./patat-${{ steps.get_version.outputs.version }}-darwin-x86_64.zip
+  #     asset_path: artifacts/patat-${{ steps.get_version.outputs.version }}-darwin-x86_64.zip
   #     asset_name: patat-${{ steps.get_version.outputs.version }}-darwin-x86_64.zip
   #     asset_content_type: application/zip
