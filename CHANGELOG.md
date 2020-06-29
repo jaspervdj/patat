@@ -1,5 +1,9 @@
 # Changelog
 
+- 0.8.5.0 (2020-06-29)
+    * Bump `pandoc` dependency to 2.9
+    * Switch to `goldplate` for testing
+
 - 0.8.4.3 (2020-01-21)
     * Fix Haddock syntax in some comments (contribution by Asad Saeeduddin)
 
