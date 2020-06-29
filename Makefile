@@ -2,8 +2,8 @@ ARCH=$(shell uname -m)
 UNAME=$(shell uname | tr 'A-Z' 'a-z')
 
 PATAT_BINARY=$(HOME)/.local/bin/patat
-PATAT_VERSION=$(shell sed -n 's/^Version: *//p' *.cabal)
-PATAT_PACKAGE=patat-v$(PATAT_VERSION)-$(UNAME)-$(ARCH)
+PATAT_TAG=$(shell git describe)
+PATAT_PACKAGE=patat-$(PATAT_TAG)-$(UNAME)-$(ARCH)
 
 UPX_VERSION=3.94
 UPX_NAME=upx-$(UPX_VERSION)-amd64_$(UNAME)
