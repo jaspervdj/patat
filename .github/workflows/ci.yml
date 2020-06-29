@@ -45,7 +45,7 @@ jobs:
     name: Release
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags')
+    # if: startsWith(github.ref, 'refs/tags')
 
     steps:
     - name: Get the version
@@ -53,33 +53,34 @@ jobs:
       run: 'echo ::set-output name=version::${GITHUB_REF#refs/tags/}'
 
     - uses: actions/download-artifact@v2
-      with:
-        path: artifacts/
 
-    - uses: actions/create-release@v1
-      id: create_release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ steps.get_version.outputs.version }}
-        release_name: ${{ steps.get_version.outputs.version }}
+    - name: Display structure of downloaded files
+      run: ls -R
 
-    - name: Upload Linux Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./patat-${{ steps.get_version.outputs.version }}-linux-x86_64.tar.gz
-        asset_name: patat-${{ steps.get_version.outputs.version }}-linux-x86_64.tar.gz
-        asset_content_type: application/gzip
+  # - uses: actions/create-release@v1
+  #   id: create_release
+  #   env:
+  #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #   with:
+  #     tag_name: ${{ steps.get_version.outputs.version }}
+  #     release_name: ${{ steps.get_version.outputs.version }}
 
-    - name: Upload MacOS Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./patat-${{ steps.get_version.outputs.version }}-darwin-x86_64.zip
-        asset_name: patat-${{ steps.get_version.outputs.version }}-darwin-x86_64.zip
-        asset_content_type: application/zip
+  # - name: Upload Linux Asset
+  #   uses: actions/upload-release-asset@v1
+  #   env:
+  #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #   with:
+  #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+  #     asset_path: ./patat-${{ steps.get_version.outputs.version }}-linux-x86_64.tar.gz
+  #     asset_name: patat-${{ steps.get_version.outputs.version }}-linux-x86_64.tar.gz
+  #     asset_content_type: application/gzip
+
+  # - name: Upload MacOS Asset
+  #   uses: actions/upload-release-asset@v1
+  #   env:
+  #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #   with:
+  #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+  #     asset_path: ./patat-${{ steps.get_version.outputs.version }}-darwin-x86_64.zip
+  #     asset_name: patat-${{ steps.get_version.outputs.version }}-darwin-x86_64.zip
+  #     asset_content_type: application/zip
