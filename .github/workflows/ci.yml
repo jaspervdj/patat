@@ -13,6 +13,10 @@ jobs:
         ghc: ["8.8.3"]
 
     steps:
+    - name: Get the version
+      id: get_version
+      run: 'echo ::set-output name=version::${GITHUB_REF#refs/tags/}'
+
     - uses: actions/checkout@v2
 
     - uses: actions/setup-haskell@v1.1
@@ -40,6 +44,8 @@ jobs:
     - name: Build artifact
       if: startsWith(github.ref, 'refs/tags')
       run: make artifact
+      env:
+        PATAT_TAG: ${{ steps.get_version.outputs.version }}
 
     - uses: actions/upload-artifact@v2
       if: startsWith(github.ref, 'refs/tags')
