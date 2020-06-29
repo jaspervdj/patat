@@ -13,12 +13,10 @@ ifeq ($(UNAME), darwin)
 ARCHIVE=zip
 ARCHIVE_CREATE=zip -r
 ARCHIVE_EXTRACT=unzip
-ARCHIVE_CONTENT_TYPE=application/zip
 else
 ARCHIVE=tar.gz
 ARCHIVE_CREATE=tar czf
 ARCHIVE_EXTRACT=tar xvzf
-ARCHIVE_CONTENT_TYPE=application/gzip
 endif
 
 ifeq ($(UNAME), darwin)
@@ -54,11 +52,6 @@ $(PATAT_PACKAGE).$(ARCHIVE): $(PATAT_BINARY) extra/patat.1 $(COMPRESS_BIN_DEPS)
 	cp LICENSE $(PATAT_PACKAGE)/
 	cp extra/patat.1 $(PATAT_PACKAGE)/
 	$(ARCHIVE_CREATE) $(PATAT_PACKAGE).$(ARCHIVE) $(PATAT_PACKAGE)
-
-	# For the GitHub action.
-	echo "::set-output name=asset_name::$(PATAT_PACKAGE).$(ARCHIVE)"
-	echo "::set-output name=asset_path::./$(PATAT_PACKAGE).$(ARCHIVE)"
-	echo "::set-output name=asset_content_type::$(ARCHIVE_CONTENT_TYPE)"
 
 $(PATAT_BINARY):
 	stack build --system-ghc --copy-bins --pedantic
