@@ -39,7 +39,11 @@ endif
 
 # Default target.
 .PHONY: build
-build: $(PATAT_PACKAGE).$(ARCHIVE)
+build: $(PATAT_BINARY)
+
+# When we want to do a release.
+.PHONY: artifact
+artifact: $(PATAT_PACKAGE).$(ARCHIVE)
 	mkdir -p artifacts
 	cp $(PATAT_PACKAGE).$(ARCHIVE) artifacts/
 
