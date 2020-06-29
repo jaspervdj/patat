@@ -8,4 +8,5 @@ flags:
   patat:
     patat-make-man: true
 
-extra-deps: []
+extra-deps:
+- 'goldplate-0.1.1'

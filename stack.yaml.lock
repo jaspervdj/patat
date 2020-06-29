@@ -3,7 +3,14 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: goldplate-0.1.1@sha256:2dfa9ee5a29e7bb9dd19fa118b247b61d78558eee1e6709a80c6471816b1272a,1306
+    pantry-tree:
+      size: 391
+      sha256: 77b8279582b775f6dfb74380418c70de102fd7a951bc44ad39d9ebb6d0fe1a60
+  original:
+    hackage: goldplate-0.1.1
 snapshots:
 - completed:
     size: 491387

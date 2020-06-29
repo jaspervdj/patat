@@ -37,6 +37,8 @@ COMPRESS_BIN_DEPS=$(UPX_BINARY)
 COMPRESS_BIN=upx
 endif
 
+STACK=stack --system-ghc
+
 # Default target.
 .PHONY: build
 build: $(PATAT_BINARY)
@@ -58,7 +60,7 @@ $(PATAT_PACKAGE).$(ARCHIVE): $(PATAT_BINARY) extra/patat.1 $(COMPRESS_BIN_DEPS)
 	$(ARCHIVE_CREATE) $(PATAT_PACKAGE).$(ARCHIVE) $(PATAT_PACKAGE)
 
 $(PATAT_BINARY):
-	stack build --system-ghc --copy-bins --pedantic
+	$(STACK) build --copy-bins
 
 # UPX is used to compress the resulting binary.  We currently don't use this on
 # Mac OS.
@@ -86,7 +88,8 @@ man: extra/patat.1
 # Also check if we can generate the manual.
 .PHONY: test
 test: man
-	bash tests/golden.sh
+	$(STACK) install goldplate
+	goldplate --pretty-diff tests
 
 .PHONY: clean
 clean:
