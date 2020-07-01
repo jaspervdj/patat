@@ -1,7 +1,7 @@
 patat
 =====
 
-[![Build Status](https://img.shields.io/circleci/project/github/jaspervdj/patat.svg)](https://circleci.com/gh/jaspervdj/patat) [![Hackage](https://img.shields.io/hackage/v/patat.svg)](https://hackage.haskell.org/package/patat) [![GitHub tag](https://img.shields.io/github/tag/jaspervdj/patat.svg)]()
+![CI](https://github.com/jaspervdj/patat/workflows/CI/badge.svg) [![Hackage](https://img.shields.io/hackage/v/patat.svg)](https://hackage.haskell.org/package/patat) [![GitHub tag](https://img.shields.io/github/tag/jaspervdj/patat.svg)]()
 
 `patat` (**P**resentations **A**top **T**he **A**NSI **T**erminal) is a small
 tool that allows you to show presentations using only an ANSI terminal.  It does
