@@ -38,7 +38,6 @@ readPresentation filePath = runExceptT $ do
     src          <- liftIO $ T.readFile filePath
     homeSettings <- ExceptT readHomeSettings
     metaSettings <- ExceptT $ return $ readMetaSettings src
-
     let settings = metaSettings <> homeSettings <> defaultPresentationSettings
 
     let pexts = fromMaybe defaultExtensionList (psPandocExtensions settings)
