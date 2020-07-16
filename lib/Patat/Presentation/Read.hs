@@ -4,6 +4,9 @@
 {-# LANGUAGE RecordWildCards   #-}
 module Patat.Presentation.Read
     ( readPresentation
+
+      -- Exposed for testing mostly.
+    , readMetaSettings
     ) where
 
 
@@ -12,6 +15,7 @@ import           Control.Monad.Except        (ExceptT (..), runExceptT,
                                               throwError)
 import           Control.Monad.Trans         (liftIO)
 import qualified Data.Aeson                  as A
+import           Data.Bifunctor              (first)
 import qualified Data.HashMap.Strict         as HMS
 import           Data.Maybe                  (fromMaybe)
 import qualified Data.Text                   as T
@@ -34,6 +38,7 @@ readPresentation filePath = runExceptT $ do
     src          <- liftIO $ T.readFile filePath
     homeSettings <- ExceptT readHomeSettings
     metaSettings <- ExceptT $ return $ readMetaSettings src
+
     let settings = metaSettings <> homeSettings <> defaultPresentationSettings
 
     let pexts = fromMaybe defaultExtensionList (psPandocExtensions settings)
@@ -93,26 +98,24 @@ pandocToPresentation pFilePath pSettings pandoc@(Pandoc.Pandoc meta _) = do
 -- avoids the problems caused by pandoc involving rendering Markdown.  This
 -- should only be used for settings though, not things like title / authors
 -- since those /can/ contain markdown.
-parseMetadataBlock :: T.Text -> Maybe A.Value
-parseMetadataBlock src = do
-    block <- T.encodeUtf8 <$> mbBlock
-    either (const Nothing) Just (Yaml.decodeEither' block)
-  where
-    mbBlock :: Maybe T.Text
-    mbBlock = case T.lines src of
-        ("---" : ls) -> case break (`elem` ["---", "..."]) ls of
-            (_,     [])      -> Nothing
-            (block, (_ : _)) -> Just (T.unlines block)
-        _            -> Nothing
+parseMetadataBlock :: T.Text -> Maybe (Either String A.Value)
+parseMetadataBlock src = case T.lines src of
+    ("---" : ls) -> case break (`elem` ["---", "..."]) ls of
+        (_,     [])      -> Nothing
+        (block, (_ : _)) -> Just . first Yaml.prettyPrintParseException .
+            Yaml.decodeEither' . T.encodeUtf8 . T.unlines $! block
+    _            -> Nothing
 
 
 --------------------------------------------------------------------------------
 -- | Read settings from the metadata block in the Pandoc document.
 readMetaSettings :: T.Text -> Either String PresentationSettings
-readMetaSettings src = fromMaybe (Right mempty) $ do
-    A.Object obj <- parseMetadataBlock src
-    val          <- HMS.lookup "patat" obj
-    return $! resultToEither $! A.fromJSON val
+readMetaSettings src = case parseMetadataBlock src of
+    Nothing -> Right mempty
+    Just (Left err) -> Left err
+    Just (Right (A.Object obj)) | Just val <- HMS.lookup "patat" obj ->
+       resultToEither $! A.fromJSON val
+    Just (Right _) -> Right mempty
   where
     resultToEither :: A.Result a -> Either String a
     resultToEither (A.Success x) = Right x
