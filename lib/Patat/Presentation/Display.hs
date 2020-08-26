@@ -15,7 +15,7 @@ import           Control.Monad                        (mplus, unless)
 import qualified Data.Aeson.Extended                  as A
 import           Data.Data.Extended                   (grecQ)
 import qualified Data.List                            as L
-import           Data.Maybe                           (fromMaybe)
+import           Data.Maybe                           (fromMaybe, listToMaybe)
 import qualified Data.Text                            as T
 import           Patat.Cleanup
 import qualified Patat.Images                         as Images
@@ -55,9 +55,12 @@ displayWithBorders Presentation {..} f = do
             (A.unFlexibleNum <$> psRows pSettings) `mplus`
             (Terminal.height <$> mbWindow)
 
-    let settings    = pSettings {psColumns = Just $ A.FlexibleNum columns}
+    let (sidx, _)   = pActiveFragment
+        settings    = pSettings {psColumns = Just $ A.FlexibleNum columns}
         theme       = fromMaybe Theme.defaultTheme (psTheme settings)
-        title       = PP.toString (prettyInlines theme pTitle)
+        breadcrumbs = fromMaybe [] . listToMaybe $ drop sidx pBreadcrumbs
+        title       = PP.toString $ PP.intersperse " > " $
+            map (prettyInlines theme) $ pTitle : breadcrumbs
         titleWidth  = length title
         titleOffset = (columns - titleWidth) `div` 2
         borders     = themed (themeBorders theme)
@@ -73,8 +76,7 @@ displayWithBorders Presentation {..} f = do
     PP.putDoc $ formatWith settings $ f canvasSize theme
     putStrLn ""
 
-    let (sidx, _)    = pActiveFragment
-        active       = show (sidx + 1) ++ " / " ++ show (length pSlides)
+    let active       = show (sidx + 1) ++ " / " ++ show (length pSlides)
         activeWidth  = length active
         author       = PP.toString (prettyInlines theme pAuthor)
         authorWidth  = length author
@@ -153,7 +155,8 @@ dumpPresentation pres =
         PP.vcat $ L.intersperse "----------" $ do
             slide <- pSlides pres
             return $ case slide of
-                TitleSlide   block     -> "~~~title" <$$> prettyBlock theme block
+                TitleSlide   l inlines -> "~~~title" <$$>
+                    prettyBlock theme (Pandoc.Header l Pandoc.nullAttr inlines)
                 ContentSlide fragments -> PP.vcat $ L.intersperse "~~~frag" $ do
                     fragment <- fragments
                     return $ prettyFragment theme fragment

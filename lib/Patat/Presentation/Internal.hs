@@ -3,7 +3,8 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE TemplateHaskell            #-}
 module Patat.Presentation.Internal
-    ( Presentation (..)
+    ( Breadcrumbs
+    , Presentation (..)
     , PresentationSettings (..)
     , defaultPresentationSettings
 
@@ -42,12 +43,17 @@ import           Text.Read              (readMaybe)
 
 
 --------------------------------------------------------------------------------
+type Breadcrumbs = [[Pandoc.Inline]]
+
+
+--------------------------------------------------------------------------------
 data Presentation = Presentation
     { pFilePath       :: !FilePath
     , pTitle          :: ![Pandoc.Inline]
     , pAuthor         :: ![Pandoc.Inline]
     , pSettings       :: !PresentationSettings
     , pSlides         :: [Slide]
+    , pBreadcrumbs    :: [Breadcrumbs]  -- One for each slide.
     , pActiveFragment :: !Index
     } deriving (Show)
 
@@ -218,7 +224,7 @@ instance A.FromJSON ImageSettings where
 --------------------------------------------------------------------------------
 data Slide
     = ContentSlide [Fragment]
-    | TitleSlide   Pandoc.Block
+    | TitleSlide   Int [Pandoc.Inline]
     deriving (Show)
 
 
@@ -240,7 +246,7 @@ getSlide sidx = listToMaybe . drop sidx . pSlides
 --------------------------------------------------------------------------------
 numFragments :: Slide -> Int
 numFragments (ContentSlide fragments) = length fragments
-numFragments (TitleSlide _)           = 1
+numFragments (TitleSlide _ _)         = 1
 
 
 --------------------------------------------------------------------------------
@@ -254,7 +260,8 @@ getActiveFragment presentation = do
     let (sidx, fidx) = pActiveFragment presentation
     slide <- getSlide sidx presentation
     case slide of
-        TitleSlide   block     -> return (ActiveTitle block)
+        TitleSlide   lvl is    -> return . ActiveTitle $
+            Pandoc.Header lvl Pandoc.nullAttr is
         ContentSlide fragments ->
             fmap ActiveContent . listToMaybe $ drop fidx fragments
 

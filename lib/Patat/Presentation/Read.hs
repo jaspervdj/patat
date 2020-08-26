@@ -1,5 +1,6 @@
 -- | Read a presentation from disk.
 {-# LANGUAGE BangPatterns      #-}
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 module Patat.Presentation.Read
@@ -26,7 +27,8 @@ import           Patat.Presentation.Fragment
 import           Patat.Presentation.Internal
 import           Prelude
 import           System.Directory            (doesFileExist, getHomeDirectory)
-import           System.FilePath             (takeExtension, (</>))
+import           System.FilePath             (splitFileName, takeExtension,
+                                              (</>))
 import qualified Text.Pandoc.Error           as Pandoc
 import qualified Text.Pandoc.Extended        as Pandoc
 
@@ -85,8 +87,11 @@ pandocToPresentation
     :: FilePath -> PresentationSettings -> Pandoc.Pandoc
     -> Either String Presentation
 pandocToPresentation pFilePath pSettings pandoc@(Pandoc.Pandoc meta _) = do
-    let !pTitle          = Pandoc.docTitle meta
+    let !pTitle          = case Pandoc.docTitle meta of
+            []    -> [Pandoc.Str . T.pack . snd $ splitFileName pFilePath]
+            title -> title
         !pSlides         = pandocToSlides pSettings pandoc
+        !pBreadcrumbs    = collectBreadcrumbs pSlides
         !pActiveFragment = (0, 0)
         !pAuthor         = concat (Pandoc.docAuthors meta)
     return Presentation {..}
@@ -145,7 +150,7 @@ pandocToSlides settings pandoc =
         unfragmented = splitSlides slideLevel pandoc
         fragmented   =
             [ case slide of
-                TitleSlide   _          -> slide
+                TitleSlide   _ _        -> slide
                 ContentSlide fragments0 ->
                     let blocks  = concatMap unFragment fragments0
                         blockss = fragmentBlocks fragmentSettings blocks in
@@ -196,11 +201,22 @@ splitSlides slideLevel (Pandoc.Pandoc _meta blocks0)
 
     splitAtHeaders acc [] =
         mkContentSlide (reverse acc)
-    splitAtHeaders acc (b@(Pandoc.Header i _ _) : bs)
+    splitAtHeaders acc (b@(Pandoc.Header i _ txt) : bs)
         | i > slideLevel  = splitAtHeaders (b : acc) bs
         | i == slideLevel =
             mkContentSlide (reverse acc) ++ splitAtHeaders [b] bs
         | otherwise       =
-            mkContentSlide (reverse acc) ++ [TitleSlide b] ++ splitAtHeaders [] bs
+            mkContentSlide (reverse acc) ++ [TitleSlide i txt] ++
+            splitAtHeaders [] bs
     splitAtHeaders acc (b : bs) =
         splitAtHeaders (b : acc) bs
+
+collectBreadcrumbs :: [Slide] -> [Breadcrumbs]
+collectBreadcrumbs = go []
+  where
+    go breadcrumbs = \case
+        [] -> []
+        ContentSlide _ : slides -> breadcrumbs : go breadcrumbs slides
+        TitleSlide lvl inlines : slides ->
+            let parent = take (lvl - 1) breadcrumbs in
+            parent : go (parent ++ [inlines]) slides
