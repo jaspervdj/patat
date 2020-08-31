@@ -58,9 +58,19 @@ displayWithBorders Presentation {..} f = do
     let (sidx, _)   = pActiveFragment
         settings    = pSettings {psColumns = Just $ A.FlexibleNum columns}
         theme       = fromMaybe Theme.defaultTheme (psTheme settings)
-        breadcrumbs = fromMaybe [] . listToMaybe $ drop sidx pBreadcrumbs
-        title       = PP.toString $ PP.intersperse " > " $
-            map (prettyInlines theme) $ pTitle : breadcrumbs
+
+    let breadcrumbs = fromMaybe [] . listToMaybe $ drop sidx pBreadcrumbs
+        plainTitle  = PP.toString $ prettyInlines theme pTitle
+        breadTitle  = mappend plainTitle $ mconcat
+            [ s
+            | b <- map (prettyInlines theme . snd) breadcrumbs
+            , s <- [" > ", PP.toString b]
+            ]
+        title
+            | not . fromMaybe True $ psBreadcrumbs settings = plainTitle
+            | length breadTitle > columns                   = plainTitle
+            | otherwise                                     = breadTitle
+
         titleWidth  = length title
         titleOffset = (columns - titleWidth) `div` 2
         borders     = themed (themeBorders theme)

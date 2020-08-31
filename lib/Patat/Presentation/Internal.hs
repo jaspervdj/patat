@@ -43,7 +43,7 @@ import           Text.Read              (readMaybe)
 
 
 --------------------------------------------------------------------------------
-type Breadcrumbs = [[Pandoc.Inline]]
+type Breadcrumbs = [(Int, [Pandoc.Inline])]
 
 
 --------------------------------------------------------------------------------
@@ -72,6 +72,7 @@ data PresentationSettings = PresentationSettings
     , psSlideLevel       :: !(Maybe Int)
     , psPandocExtensions :: !(Maybe ExtensionList)
     , psImages           :: !(Maybe ImageSettings)
+    , psBreadcrumbs      :: !(Maybe Bool)
     } deriving (Show)
 
 
@@ -88,6 +89,7 @@ instance Semigroup PresentationSettings where
         , psSlideLevel       = psSlideLevel       l `mplus` psSlideLevel       r
         , psPandocExtensions = psPandocExtensions l `mplus` psPandocExtensions r
         , psImages           = psImages           l `mplus` psImages           r
+        , psBreadcrumbs      = psBreadcrumbs      l `mplus` psBreadcrumbs      r
         }
 
 
@@ -96,7 +98,7 @@ instance Monoid PresentationSettings where
     mappend = (<>)
     mempty  = PresentationSettings
                     Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-                    Nothing Nothing Nothing
+                    Nothing Nothing Nothing Nothing
 
 
 --------------------------------------------------------------------------------
@@ -112,6 +114,7 @@ defaultPresentationSettings = PresentationSettings
     , psSlideLevel       = Nothing
     , psPandocExtensions = Nothing
     , psImages           = Nothing
+    , psBreadcrumbs      = Nothing
     }
 
 

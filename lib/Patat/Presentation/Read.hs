@@ -218,5 +218,5 @@ collectBreadcrumbs = go []
         [] -> []
         ContentSlide _ : slides -> breadcrumbs : go breadcrumbs slides
         TitleSlide lvl inlines : slides ->
-            let parent = take (lvl - 1) breadcrumbs in
-            parent : go (parent ++ [inlines]) slides
+            let parent = filter ((< lvl) . fst) breadcrumbs in
+            parent : go (parent ++ [(lvl, inlines)]) slides
