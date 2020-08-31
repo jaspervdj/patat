@@ -49,6 +49,7 @@ Table of Contents
     -   [Syntax Highlighting](#syntax-highlighting)
     -   [Pandoc Extensions](#pandoc-extensions)
     -   [Images](#images)
+    -   [Breadcrumbs](#breadcrumbs)
 -   [Trivia](#trivia)
 
 Installation
@@ -574,6 +575,19 @@ the terminal window.
     backend: 'w3m'
     path: '/home/jasper/.local/bin/w3mimgdisplay'
     ```
+
+### Breadcrumbs
+
+By default, `patat` will print a breadcrumbs-style header, e.g.:
+
+    example.md > This is a title > This is a subtitle
+
+This feature can be turned off by using:
+
+```yaml
+patat:
+  breadcrumbs: false
+```
 
 Trivia
 ------

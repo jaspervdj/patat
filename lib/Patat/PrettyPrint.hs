@@ -31,6 +31,7 @@ module Patat.PrettyPrint
     , (<+>)
     , (<$$>)
     , vcat
+    , intersperse
 
     -- * Exotic combinators
     , Alignment (..)
@@ -363,7 +364,12 @@ infixr 5 <$$>
 
 --------------------------------------------------------------------------------
 vcat :: [Doc] -> Doc
-vcat = mconcat . L.intersperse hardline
+vcat = intersperse hardline
+
+
+--------------------------------------------------------------------------------
+intersperse :: Doc -> [Doc] -> Doc
+intersperse sep = mconcat . L.intersperse sep
 
 
 --------------------------------------------------------------------------------
