@@ -16,6 +16,8 @@ module Patat.Presentation.Internal
 
     , ImageSettings (..)
 
+    , EvalSettings (..)
+
     , Slide (..)
     , Fragment (..)
     , Index
@@ -73,6 +75,7 @@ data PresentationSettings = PresentationSettings
     , psPandocExtensions :: !(Maybe ExtensionList)
     , psImages           :: !(Maybe ImageSettings)
     , psBreadcrumbs      :: !(Maybe Bool)
+    , psEval             :: !(Maybe EvalSettings)
     } deriving (Show)
 
 
@@ -90,6 +93,7 @@ instance Semigroup PresentationSettings where
         , psPandocExtensions = psPandocExtensions l `mplus` psPandocExtensions r
         , psImages           = psImages           l `mplus` psImages           r
         , psBreadcrumbs      = psBreadcrumbs      l `mplus` psBreadcrumbs      r
+        , psEval             = psEval             l `mplus` psEval             r
         }
 
 
@@ -98,7 +102,7 @@ instance Monoid PresentationSettings where
     mappend = (<>)
     mempty  = PresentationSettings
                     Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-                    Nothing Nothing Nothing Nothing
+                    Nothing Nothing Nothing Nothing Nothing
 
 
 --------------------------------------------------------------------------------
@@ -115,6 +119,7 @@ defaultPresentationSettings = PresentationSettings
     , psPandocExtensions = Nothing
     , psImages           = Nothing
     , psBreadcrumbs      = Nothing
+    , psEval             = Nothing
     }
 
 
@@ -225,6 +230,12 @@ instance A.FromJSON ImageSettings where
 
 
 --------------------------------------------------------------------------------
+data EvalSettings = EvalSettings
+    { evalCommand :: !T.Text
+    } deriving (Show)
+
+
+--------------------------------------------------------------------------------
 data Slide
     = ContentSlide [Fragment]
     | TitleSlide   Int [Pandoc.Inline]
@@ -271,4 +282,5 @@ getActiveFragment presentation = do
 
 --------------------------------------------------------------------------------
 $(A.deriveFromJSON A.dropPrefixOptions ''PresentationSettings)
+$(A.deriveFromJSON A.dropPrefixOptions ''EvalSettings)
 $(A.deriveFromJSON A.dropPrefixOptions ''Margins)
