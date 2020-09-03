@@ -231,7 +231,8 @@ instance A.FromJSON ImageSettings where
 
 --------------------------------------------------------------------------------
 data EvalSettings = EvalSettings
-    { evalCommand :: !T.Text
+    { evalCommand   :: !T.Text
+    , evalTimeout   :: !(Maybe Int)  -- ^ Seconds
     } deriving (Show)
 
 

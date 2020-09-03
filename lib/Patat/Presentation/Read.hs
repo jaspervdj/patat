@@ -23,6 +23,7 @@ import qualified Data.Text                   as T
 import qualified Data.Text.Encoding          as T
 import qualified Data.Text.IO                as T
 import qualified Data.Yaml                   as Yaml
+import           Patat.Eval                  (eval)
 import           Patat.Presentation.Fragment
 import           Patat.Presentation.Internal
 import           Prelude
@@ -46,11 +47,14 @@ readPresentation filePath = runExceptT $ do
     reader <- case readExtension pexts ext of
         Nothing -> throwError $ "Unknown file extension: " ++ show ext
         Just x  -> return x
-    doc    <- case reader src of
+    doc0   <- case reader src of
         Left  e -> throwError $ "Could not parse document: " ++ show e
         Right x -> return x
 
-    ExceptT $ return $ pandocToPresentation filePath settings doc
+    -- We probably need to move this call.
+    doc1 <- liftIO $ maybe pure eval (psEval settings) doc0
+
+    ExceptT $ return $ pandocToPresentation filePath settings doc1
   where
     ext = takeExtension filePath
 
