@@ -29,18 +29,18 @@ module Patat.Presentation.Internal
 
 
 --------------------------------------------------------------------------------
-import           Control.Monad           (mplus)
-import qualified Data.Aeson.Extended     as A
-import qualified Data.Aeson.TH.Extended  as A
-import qualified Data.Foldable           as Foldable
-import           Data.List               (intercalate)
-import           Data.Maybe              (fromMaybe, listToMaybe)
-import qualified Data.Text               as T
-import           Patat.Presentation.Tree
-import qualified Patat.Theme             as Theme
+import           Control.Monad                  (mplus)
+import qualified Data.Aeson.Extended            as A
+import qualified Data.Aeson.TH.Extended         as A
+import qualified Data.Foldable                  as Foldable
+import           Data.List                      (intercalate)
+import           Data.Maybe                     (fromMaybe, listToMaybe)
+import qualified Data.Text                      as T
+import qualified Patat.Presentation.Instruction as Instruction
+import qualified Patat.Theme                    as Theme
 import           Prelude
-import qualified Text.Pandoc             as Pandoc
-import           Text.Read               (readMaybe)
+import qualified Text.Pandoc                    as Pandoc
+import           Text.Read                      (readMaybe)
 
 
 --------------------------------------------------------------------------------
@@ -227,7 +227,7 @@ instance A.FromJSON ImageSettings where
 
 --------------------------------------------------------------------------------
 data Slide
-    = ContentSlide [Instruction Pandoc.Block]
+    = ContentSlide (Instruction.Instructions Pandoc.Block)
     | TitleSlide   Int [Pandoc.Inline]
     deriving (Show)
 
@@ -249,7 +249,7 @@ getSlide sidx = listToMaybe . drop sidx . pSlides
 
 --------------------------------------------------------------------------------
 numFragments :: Slide -> Int
-numFragments (ContentSlide instrs) = numPauses instrs + 1
+numFragments (ContentSlide instrs) = Instruction.numFragments instrs
 numFragments (TitleSlide _ _)      = 1
 
 
@@ -264,9 +264,10 @@ getActiveFragment presentation = do
     let (sidx, fidx) = pActiveFragment presentation
     slide <- getSlide sidx presentation
     pure $ case slide of
-        TitleSlide   lvl is -> ActiveTitle $
+        TitleSlide lvl is -> ActiveTitle $
             Pandoc.Header lvl Pandoc.nullAttr is
-        ContentSlide instrs -> ActiveContent $ renderAt fidx instrs
+        ContentSlide instrs -> ActiveContent $
+            Instruction.renderFragment fidx instrs
 
 
 --------------------------------------------------------------------------------

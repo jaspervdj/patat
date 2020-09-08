@@ -21,8 +21,8 @@ import           Patat.Cleanup
 import qualified Patat.Images                         as Images
 import           Patat.Presentation.Display.CodeBlock
 import           Patat.Presentation.Display.Table
+import qualified Patat.Presentation.Instruction       as Instruction
 import           Patat.Presentation.Internal
-import           Patat.Presentation.Tree
 import           Patat.PrettyPrint                    ((<$$>), (<+>))
 import qualified Patat.PrettyPrint                    as PP
 import           Patat.Theme                          (Theme (..))
@@ -169,8 +169,9 @@ dumpPresentation pres =
                 TitleSlide   l inlines -> "~~~title" <$$>
                     prettyBlock theme (Pandoc.Header l Pandoc.nullAttr inlines)
                 ContentSlide instrs -> PP.vcat $ L.intersperse "~~~frag" $ do
-                    n <- [0 .. numPauses instrs + 1]
-                    return $ prettyFragment theme $ renderAt n instrs
+                    n <- [0 .. Instruction.numFragments instrs - 1]
+                    return $ prettyFragment theme $
+                        Instruction.renderFragment n instrs
 
 
 --------------------------------------------------------------------------------
