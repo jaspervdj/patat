@@ -11,6 +11,8 @@ module Patat.Presentation.Instruction
 
     , Instruction (..)
     , numFragments
+
+    , Fragment (..)
     , renderFragment
     ) where
 
@@ -54,8 +56,10 @@ numPauses (Instructions xs) = length $ filter isPause xs
 numFragments :: Instructions a -> Int
 numFragments = succ . numPauses
 
-renderFragment :: Int -> Instructions Pandoc.Block -> [Pandoc.Block]
-renderFragment = \n (Instructions instrs) -> go [] n instrs
+newtype Fragment = Fragment [Pandoc.Block] deriving (Show)
+
+renderFragment :: Int -> Instructions Pandoc.Block -> Fragment
+renderFragment = \n (Instructions instrs) -> Fragment $ go [] n instrs
   where
     go acc _ []         = acc
     go acc n (Pause : instrs) = if n <= 0 then acc else go acc (n - 1) instrs

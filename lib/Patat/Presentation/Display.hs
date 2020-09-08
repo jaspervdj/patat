@@ -136,11 +136,11 @@ displayPresentation mbImages pres@Presentation {..} =
   where
     -- Check if the fragment consists of just a single image, or a header and
     -- some image.
-    onlyImage blocks
+    onlyImage (Fragment blocks)
             | [Pandoc.Para para] <- filter isVisibleBlock blocks
             , [Pandoc.Image _ _ (target, _)] <- para =
         Just target
-    onlyImage blocks
+    onlyImage (Fragment blocks)
             | [Pandoc.Header _ _ _, Pandoc.Para para] <- filter isVisibleBlock blocks
             , [Pandoc.Image _ _ (target, _)] <- para =
         Just target
@@ -187,8 +187,8 @@ formatWith ps = wrap . indent
 
 
 --------------------------------------------------------------------------------
-prettyFragment :: Theme -> [Pandoc.Block] -> PP.Doc
-prettyFragment theme blocks =
+prettyFragment :: Theme -> Fragment -> PP.Doc
+prettyFragment theme (Fragment blocks) =
     prettyBlocks theme blocks <>
     case prettyReferences theme blocks of
         []   -> mempty

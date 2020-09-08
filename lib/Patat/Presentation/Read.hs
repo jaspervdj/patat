@@ -23,7 +23,6 @@ import qualified Data.Text                      as T
 import qualified Data.Text.Encoding             as T
 import qualified Data.Text.IO                   as T
 import qualified Data.Yaml                      as Yaml
-import           Debug.Trace
 import           Patat.Presentation.Fragment
 import qualified Patat.Presentation.Instruction as Instruction
 import           Patat.Presentation.Internal
@@ -97,7 +96,6 @@ pandocToPresentation pFilePath pSettings pandoc@(Pandoc.Pandoc meta _) = do
         !pBreadcrumbs    = collectBreadcrumbs pSlides
         !pActiveFragment = (0, 0)
         !pAuthor         = concat (Pandoc.docAuthors meta)
-    traceM $ show pSlides
     return Presentation {..}
 
 

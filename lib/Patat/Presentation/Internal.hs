@@ -17,7 +17,7 @@ module Patat.Presentation.Internal
     , ImageSettings (..)
 
     , Slide (..)
-    , Fragment (..)
+    , Instruction.Fragment (..)
     , Index
 
     , getSlide
@@ -233,11 +233,6 @@ data Slide
 
 
 --------------------------------------------------------------------------------
-newtype Fragment = Fragment {unFragment :: [Pandoc.Block]}
-    deriving (Monoid, Semigroup, Show)
-
-
---------------------------------------------------------------------------------
 -- | Active slide, active fragment.
 type Index = (Int, Int)
 
@@ -254,7 +249,9 @@ numFragments (TitleSlide _ _)      = 1
 
 
 --------------------------------------------------------------------------------
-data ActiveFragment = ActiveContent [Pandoc.Block] | ActiveTitle Pandoc.Block
+data ActiveFragment
+    = ActiveContent Instruction.Fragment
+    | ActiveTitle Pandoc.Block
     deriving (Show)
 
 
