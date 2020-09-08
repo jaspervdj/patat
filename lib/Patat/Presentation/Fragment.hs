@@ -7,53 +7,38 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Patat.Presentation.Fragment
     ( FragmentSettings (..)
+
+    , fragmentInstructions
     , fragmentBlocks
     , fragmentBlock
     ) where
 
-import           Data.List   (foldl', intersperse)
-import           Data.Maybe  (fromMaybe)
+import           Data.List                      (intersperse, intercalate)
+import           Patat.Presentation.Instruction
 import           Prelude
-import qualified Text.Pandoc as Pandoc
+import qualified Text.Pandoc                    as Pandoc
 
 data FragmentSettings = FragmentSettings
     { fsIncrementalLists :: !Bool
     } deriving (Show)
 
--- fragmentBlocks :: [Pandoc.Block] -> [[Pandoc.Block]]
--- fragmentBlocks = NonEmpty.toList . joinFragmentedBlocks . map fragmentBlock
-fragmentBlocks :: FragmentSettings -> [Pandoc.Block] -> [[Pandoc.Block]]
-fragmentBlocks fs blocks0 =
-    case joinFragmentedBlocks (map (fragmentBlock fs) blocks0) of
-        Unfragmented  bs -> [bs]
-        Fragmented xs bs -> map (fromMaybe []) xs ++ [fromMaybe [] bs]
+fragmentInstructions
+    :: FragmentSettings
+    -> Instructions Pandoc.Block -> Instructions Pandoc.Block
+fragmentInstructions fs = fromList . concatMap fragmentInstruction . toList
+  where
+    fragmentInstruction Pause = [Pause]
+    fragmentInstruction (Append xs) = fragmentBlocks fs xs
+    fragmentInstruction (ModifyLast f) = map ModifyLast $ fragmentInstruction f
 
--- | This is all the ways we can "present" a block, after splitting in
--- fragments.
---
--- In the simplest (and most common case) a block can only be presented in a
--- single way ('Unfragmented').
---
--- Alternatively, we might want to show different (partial) versions of the
--- block first before showing the final complete one.  These partial or complete
--- versions can be empty, hence the 'Maybe'.
---
--- For example, imagine that we display the following bullet list incrementally:
---
--- > [1, 2, 3]
---
--- Then we would get something like:
---
--- > Fragmented [Nothing, Just [1], Just [1, 2]] (Just [1, 2, 3])
-data Fragmented a
-    = Unfragmented a
-    | Fragmented [Maybe a] (Maybe a)
-    deriving (Functor, Foldable, Show, Traversable)
+fragmentBlocks
+    :: FragmentSettings -> [Pandoc.Block] -> [Instruction Pandoc.Block]
+fragmentBlocks = concatMap . fragmentBlock
 
-fragmentBlock :: FragmentSettings -> Pandoc.Block -> Fragmented Pandoc.Block
+fragmentBlock :: FragmentSettings -> Pandoc.Block -> [Instruction Pandoc.Block]
 fragmentBlock _fs block@(Pandoc.Para inlines)
-    | inlines == threeDots = Fragmented [Nothing] Nothing
-    | otherwise            = Unfragmented block
+    | inlines == threeDots = [Pause]
+    | otherwise            = [Append [block]]
   where
     threeDots = intersperse Pandoc.Space $ replicate 3 (Pandoc.Str ".")
 
@@ -69,65 +54,38 @@ fragmentBlock fs (Pandoc.BlockQuote [Pandoc.BulletList bs0]) =
 fragmentBlock fs (Pandoc.BlockQuote [Pandoc.OrderedList attr bs0]) =
     fragmentList fs (not $ fsIncrementalLists fs) (Pandoc.OrderedList attr) bs0
 
-fragmentBlock _ block@(Pandoc.BlockQuote _)     = Unfragmented block
+fragmentBlock _ block@(Pandoc.BlockQuote _)     = [Append [block]]
 
-fragmentBlock _ block@(Pandoc.Header _ _ _)     = Unfragmented block
-fragmentBlock _ block@(Pandoc.Plain _)          = Unfragmented block
-fragmentBlock _ block@(Pandoc.CodeBlock _ _)    = Unfragmented block
-fragmentBlock _ block@(Pandoc.RawBlock _ _)     = Unfragmented block
-fragmentBlock _ block@(Pandoc.DefinitionList _) = Unfragmented block
-fragmentBlock _ block@(Pandoc.Table _ _ _ _ _)  = Unfragmented block
-fragmentBlock _ block@(Pandoc.Div _ _)          = Unfragmented block
-fragmentBlock _ block@Pandoc.HorizontalRule     = Unfragmented block
-fragmentBlock _ block@Pandoc.Null               = Unfragmented block
-
-#if MIN_VERSION_pandoc(1,18,0)
-fragmentBlock _ block@(Pandoc.LineBlock _)      = Unfragmented block
-#endif
-
-joinFragmentedBlocks :: [Fragmented block] -> Fragmented [block]
-joinFragmentedBlocks =
-    foldl' append (Unfragmented [])
-  where
-    append (Unfragmented xs) (Unfragmented y) =
-        Unfragmented (xs ++ [y])
-
-    append (Fragmented xs x) (Unfragmented y) =
-        Fragmented xs (appendMaybe x (Just y))
-
-    append (Unfragmented x) (Fragmented ys y) =
-        Fragmented
-            [appendMaybe (Just x) y' | y' <- ys]
-            (appendMaybe (Just x) y)
-
-    append (Fragmented xs x) (Fragmented ys y) =
-        Fragmented
-            (xs ++ [appendMaybe x y' | y' <- ys])
-            (appendMaybe x y)
-
-    appendMaybe :: Maybe [a] -> Maybe a -> Maybe [a]
-    appendMaybe Nothing   Nothing  = Nothing
-    appendMaybe Nothing   (Just x) = Just [x]
-    appendMaybe (Just xs) Nothing  = Just xs
-    appendMaybe (Just xs) (Just x) = Just (xs ++ [x])
+fragmentBlock _ block@(Pandoc.Header _ _ _)     = [Append [block]]
+fragmentBlock _ block@(Pandoc.Plain _)          = [Append [block]]
+fragmentBlock _ block@(Pandoc.CodeBlock _ _)    = [Append [block]]
+fragmentBlock _ block@(Pandoc.RawBlock _ _)     = [Append [block]]
+fragmentBlock _ block@(Pandoc.DefinitionList _) = [Append [block]]
+fragmentBlock _ block@(Pandoc.Table _ _ _ _ _)  = [Append [block]]
+fragmentBlock _ block@(Pandoc.Div _ _)          = [Append [block]]
+fragmentBlock _ block@Pandoc.HorizontalRule     = [Append [block]]
+fragmentBlock _ block@Pandoc.Null               = [Append [block]]
+fragmentBlock _ block@(Pandoc.LineBlock _)      = [Append [block]]
 
 fragmentList
     :: FragmentSettings                    -- ^ Global settings
     -> Bool                                -- ^ Fragment THIS list?
     -> ([[Pandoc.Block]] -> Pandoc.Block)  -- ^ List constructor
     -> [[Pandoc.Block]]                    -- ^ List items
-    -> Fragmented Pandoc.Block             -- ^ Resulting list
-fragmentList fs fragmentThisList constructor blocks0 =
-    fmap constructor fragmented
+    -> [Instruction Pandoc.Block]          -- ^ Resulting list
+fragmentList fs fragmentThisList constructor items =
+    -- Insert the new list, initially empty.
+    (if fragmentThisList then [Pause] else []) ++
+    [Append [constructor []]] ++
+    (map ModifyLast $
+        (if fragmentThisList then intercalate [Pause] else concat) $
+        map fragmentItem items)
   where
     -- The fragmented list per list item.
-    items :: [Fragmented [Pandoc.Block]]
-    items = map (joinFragmentedBlocks . map (fragmentBlock fs)) blocks0
-
-    fragmented :: Fragmented [[Pandoc.Block]]
-    fragmented = joinFragmentedBlocks $
-        map (if fragmentThisList then insertPause else id) items
-
-    insertPause :: Fragmented a -> Fragmented a
-    insertPause (Unfragmented x)  = Fragmented [Nothing] (Just x)
-    insertPause (Fragmented xs x) = Fragmented (Nothing : xs) x
+    fragmentItem :: [Pandoc.Block] -> [Instruction Pandoc.Block]
+    fragmentItem item =
+        -- Append a new item to the list so we can start adding
+        -- content there.
+        Append [] :
+        -- Modify this new item to add the content.
+        map ModifyLast (fragmentBlocks fs item)
