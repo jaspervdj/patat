@@ -232,9 +232,18 @@ instance A.FromJSON ImageSettings where
 
 --------------------------------------------------------------------------------
 data EvalSettings = EvalSettings
-    { evalCommand   :: !T.Text
-    , evalTimeout   :: !(Maybe Int)  -- ^ Seconds
+    { evalCommand  :: !T.Text
+    , evalReplace  :: !Bool
+    , evalFragment :: !Bool
     } deriving (Show)
+
+
+--------------------------------------------------------------------------------
+instance A.FromJSON EvalSettings where
+    parseJSON = A.withObject "FromJSON EvalSettings" $ \o -> EvalSettings
+        <$> o A..: "command"
+        <*> o A..:? "replace" A..!= False
+        <*> o A..:? "fragment" A..!= True
 
 
 --------------------------------------------------------------------------------
@@ -281,5 +290,4 @@ getActiveFragment presentation = do
 
 --------------------------------------------------------------------------------
 $(A.deriveFromJSON A.dropPrefixOptions ''PresentationSettings)
-$(A.deriveFromJSON A.dropPrefixOptions ''EvalSettings)
 $(A.deriveFromJSON A.dropPrefixOptions ''Margins)

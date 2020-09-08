@@ -44,6 +44,7 @@ evalInstruction settings instr = case instr of
     Pause -> pure [Pause]
     ModifyLast i -> map ModifyLast <$> evalInstruction settings i
     Append blocks -> concat <$> traverse (evalBlock settings) blocks
+    Delete -> pure [Delete]
 
 
 --------------------------------------------------------------------------------
@@ -56,7 +57,15 @@ evalBlock s@EvalSettings {..} orig@(Pandoc.CodeBlock attr@(_, classes, _) txt)
                 ExitFailure i ->
                     evalCommand <> ": exit code " <> T.pack (show i) <> "\n" <>
                     erStderr
-        pure [Append [orig], Pause, Append [Pandoc.CodeBlock attr out]]
+        pure $ case (evalFragment, evalReplace) of
+            (False, True) -> [Append [Pandoc.CodeBlock attr out]]
+            (False, False) -> [Append [orig, Pandoc.CodeBlock attr out]]
+            (True, True) ->
+                [ Append [orig], Pause
+                , Delete, Append [Pandoc.CodeBlock attr out]
+                ]
+            (True, False) ->
+                [Append [orig], Pause, Append [Pandoc.CodeBlock attr out]]
 evalBlock _ block =
     pure [Append [block]]
 

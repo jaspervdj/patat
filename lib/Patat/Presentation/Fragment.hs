@@ -29,6 +29,7 @@ fragmentInstructions fs = fromList . concatMap fragmentInstruction . toList
   where
     fragmentInstruction Pause = [Pause]
     fragmentInstruction (Append xs) = fragmentBlocks fs xs
+    fragmentInstruction Delete = [Delete]
     fragmentInstruction (ModifyLast f) = map ModifyLast $ fragmentInstruction f
 
 fragmentBlocks
