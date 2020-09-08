@@ -19,7 +19,7 @@ module Patat.Presentation.Internal
     , EvalSettings (..)
 
     , Slide (..)
-    , Fragment (..)
+    , Instruction.Fragment (..)
     , Index
 
     , getSlide
@@ -31,17 +31,18 @@ module Patat.Presentation.Internal
 
 
 --------------------------------------------------------------------------------
-import           Control.Monad          (mplus)
-import qualified Data.Aeson.Extended    as A
-import qualified Data.Aeson.TH.Extended as A
-import qualified Data.Foldable          as Foldable
-import           Data.List              (intercalate)
-import           Data.Maybe             (fromMaybe, listToMaybe)
-import qualified Data.Text              as T
-import qualified Patat.Theme            as Theme
+import           Control.Monad                  (mplus)
+import qualified Data.Aeson.Extended            as A
+import qualified Data.Aeson.TH.Extended         as A
+import qualified Data.Foldable                  as Foldable
+import           Data.List                      (intercalate)
+import           Data.Maybe                     (fromMaybe, listToMaybe)
+import qualified Data.Text                      as T
+import qualified Patat.Presentation.Instruction as Instruction
+import qualified Patat.Theme                    as Theme
 import           Prelude
-import qualified Text.Pandoc            as Pandoc
-import           Text.Read              (readMaybe)
+import qualified Text.Pandoc                    as Pandoc
+import           Text.Read                      (readMaybe)
 
 
 --------------------------------------------------------------------------------
@@ -238,14 +239,9 @@ data EvalSettings = EvalSettings
 
 --------------------------------------------------------------------------------
 data Slide
-    = ContentSlide [Fragment]
+    = ContentSlide (Instruction.Instructions Pandoc.Block)
     | TitleSlide   Int [Pandoc.Inline]
     deriving (Show)
-
-
---------------------------------------------------------------------------------
-newtype Fragment = Fragment {unFragment :: [Pandoc.Block]}
-    deriving (Monoid, Semigroup, Show)
 
 
 --------------------------------------------------------------------------------
@@ -260,12 +256,14 @@ getSlide sidx = listToMaybe . drop sidx . pSlides
 
 --------------------------------------------------------------------------------
 numFragments :: Slide -> Int
-numFragments (ContentSlide fragments) = length fragments
-numFragments (TitleSlide _ _)         = 1
+numFragments (ContentSlide instrs) = Instruction.numFragments instrs
+numFragments (TitleSlide _ _)      = 1
 
 
 --------------------------------------------------------------------------------
-data ActiveFragment = ActiveContent Fragment | ActiveTitle Pandoc.Block
+data ActiveFragment
+    = ActiveContent Instruction.Fragment
+    | ActiveTitle Pandoc.Block
     deriving (Show)
 
 
@@ -274,11 +272,11 @@ getActiveFragment :: Presentation -> Maybe ActiveFragment
 getActiveFragment presentation = do
     let (sidx, fidx) = pActiveFragment presentation
     slide <- getSlide sidx presentation
-    case slide of
-        TitleSlide   lvl is    -> return . ActiveTitle $
+    pure $ case slide of
+        TitleSlide lvl is -> ActiveTitle $
             Pandoc.Header lvl Pandoc.nullAttr is
-        ContentSlide fragments ->
-            fmap ActiveContent . listToMaybe $ drop fidx fragments
+        ContentSlide instrs -> ActiveContent $
+            Instruction.renderFragment fidx instrs
 
 
 --------------------------------------------------------------------------------

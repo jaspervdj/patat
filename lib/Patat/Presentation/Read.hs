@@ -12,26 +12,28 @@ module Patat.Presentation.Read
 
 
 --------------------------------------------------------------------------------
-import           Control.Monad.Except        (ExceptT (..), runExceptT,
-                                              throwError)
-import           Control.Monad.Trans         (liftIO)
-import qualified Data.Aeson                  as A
-import           Data.Bifunctor              (first)
-import qualified Data.HashMap.Strict         as HMS
-import           Data.Maybe                  (fromMaybe)
-import qualified Data.Text                   as T
-import qualified Data.Text.Encoding          as T
-import qualified Data.Text.IO                as T
-import qualified Data.Yaml                   as Yaml
-import           Patat.Eval                  (eval)
+import           Control.Monad.Except           (ExceptT (..), runExceptT,
+                                                 throwError)
+import           Control.Monad.Trans            (liftIO)
+import qualified Data.Aeson                     as A
+import           Data.Bifunctor                 (first)
+import qualified Data.HashMap.Strict            as HMS
+import           Data.Maybe                     (fromMaybe)
+import qualified Data.Text                      as T
+import qualified Data.Text.Encoding             as T
+import qualified Data.Text.IO                   as T
+import qualified Data.Yaml                      as Yaml
+import           Patat.Eval                     (eval)
 import           Patat.Presentation.Fragment
+import qualified Patat.Presentation.Instruction as Instruction
 import           Patat.Presentation.Internal
 import           Prelude
-import           System.Directory            (doesFileExist, getHomeDirectory)
-import           System.FilePath             (splitFileName, takeExtension,
-                                              (</>))
-import qualified Text.Pandoc.Error           as Pandoc
-import qualified Text.Pandoc.Extended        as Pandoc
+import           System.Directory               (doesFileExist,
+                                                 getHomeDirectory)
+import           System.FilePath                (splitFileName, takeExtension,
+                                                 (</>))
+import qualified Text.Pandoc.Error              as Pandoc
+import qualified Text.Pandoc.Extended           as Pandoc
 
 
 --------------------------------------------------------------------------------
@@ -155,10 +157,8 @@ pandocToSlides settings pandoc =
         fragmented   =
             [ case slide of
                 TitleSlide   _ _        -> slide
-                ContentSlide fragments0 ->
-                    let blocks  = concatMap unFragment fragments0
-                        blockss = fragmentBlocks fragmentSettings blocks in
-                    ContentSlide (map Fragment blockss)
+                ContentSlide instrs0 -> ContentSlide $
+                    fragmentInstructions fragmentSettings instrs0
             | slide <- unfragmented
             ] in
     fragmented
@@ -197,7 +197,8 @@ splitSlides slideLevel (Pandoc.Pandoc _meta blocks0)
   where
     mkContentSlide :: [Pandoc.Block] -> [Slide]
     mkContentSlide [] = []  -- Never create empty slides
-    mkContentSlide bs = [ContentSlide [Fragment bs]]
+    mkContentSlide bs =
+        [ContentSlide $ Instruction.fromList [Instruction.Append bs]]
 
     splitAtRules blocks = case break (== Pandoc.HorizontalRule) blocks of
         (xs, [])           -> mkContentSlide xs

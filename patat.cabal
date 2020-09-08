@@ -76,6 +76,7 @@ Library
     Patat.Presentation.Display.CodeBlock
     Patat.Presentation.Display.Table
     Patat.Presentation.Fragment
+    Patat.Presentation.Instruction
     Patat.Presentation.Interactive
     Patat.Presentation.Internal
     Patat.Presentation.Read

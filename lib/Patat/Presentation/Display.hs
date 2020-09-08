@@ -21,6 +21,7 @@ import           Patat.Cleanup
 import qualified Patat.Images                         as Images
 import           Patat.Presentation.Display.CodeBlock
 import           Patat.Presentation.Display.Table
+import qualified Patat.Presentation.Instruction       as Instruction
 import           Patat.Presentation.Internal
 import           Patat.PrettyPrint                    ((<$$>), (<+>))
 import qualified Patat.PrettyPrint                    as PP
@@ -167,9 +168,10 @@ dumpPresentation pres =
             return $ case slide of
                 TitleSlide   l inlines -> "~~~title" <$$>
                     prettyBlock theme (Pandoc.Header l Pandoc.nullAttr inlines)
-                ContentSlide fragments -> PP.vcat $ L.intersperse "~~~frag" $ do
-                    fragment <- fragments
-                    return $ prettyFragment theme fragment
+                ContentSlide instrs -> PP.vcat $ L.intersperse "~~~frag" $ do
+                    n <- [0 .. Instruction.numFragments instrs - 1]
+                    return $ prettyFragment theme $
+                        Instruction.renderFragment n instrs
 
 
 --------------------------------------------------------------------------------
@@ -183,11 +185,12 @@ formatWith ps = wrap . indent
     spaces = PP.NotTrimmable $ PP.spaces marginLeft
     indent = PP.indent spaces spaces
 
+
 --------------------------------------------------------------------------------
 prettyFragment :: Theme -> Fragment -> PP.Doc
-prettyFragment theme fragment@(Fragment blocks) =
+prettyFragment theme (Fragment blocks) =
     prettyBlocks theme blocks <>
-    case prettyReferences theme fragment of
+    case prettyReferences theme blocks of
         []   -> mempty
         refs -> PP.hardline <> PP.vcat refs
 
@@ -356,9 +359,9 @@ prettyInlines theme = mconcat . map (prettyInline theme)
 
 
 --------------------------------------------------------------------------------
-prettyReferences :: Theme -> Fragment -> [PP.Doc]
+prettyReferences :: Theme -> [Pandoc.Block] -> [PP.Doc]
 prettyReferences theme@Theme {..} =
-    map prettyReference . getReferences . unFragment
+    map prettyReference . getReferences
   where
     getReferences :: [Pandoc.Block] -> [Pandoc.Inline]
     getReferences = filter isReferenceLink . grecQ
