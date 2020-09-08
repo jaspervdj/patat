@@ -76,6 +76,7 @@ Library
     Patat.Presentation.Interactive
     Patat.Presentation.Internal
     Patat.Presentation.Read
+    Patat.Presentation.Tree
     Patat.PrettyPrint
     Patat.Theme
 

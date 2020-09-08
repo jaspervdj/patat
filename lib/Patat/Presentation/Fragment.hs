@@ -9,12 +9,18 @@ module Patat.Presentation.Fragment
     ( FragmentSettings (..)
     , fragmentBlocks
     , fragmentBlock
+
+    , fragmentInstructions'
+    , fragmentBlocks'
+    , fragmentBlock'
     ) where
 
-import           Data.List   (foldl', intersperse)
-import           Data.Maybe  (fromMaybe)
+import           Data.List               (foldl', intersperse)
+import           Data.Maybe              (fromMaybe)
+import           Patat.Presentation.Tree
+import Debug.Trace
 import           Prelude
-import qualified Text.Pandoc as Pandoc
+import qualified Text.Pandoc             as Pandoc
 
 data FragmentSettings = FragmentSettings
     { fsIncrementalLists :: !Bool
@@ -49,6 +55,79 @@ data Fragmented a
     = Unfragmented a
     | Fragmented [Maybe a] (Maybe a)
     deriving (Functor, Foldable, Show, Traversable)
+
+fragmentInstructions'
+    :: FragmentSettings
+    -> [Instruction Pandoc.Block] -> [Instruction Pandoc.Block]
+fragmentInstructions' fs = concatMap fragmentInstruction
+  where
+    fragmentInstruction Pause = [Pause]
+    fragmentInstruction (Append xs) = fragmentBlocks' fs xs
+    fragmentInstruction (ModifyLast f) = map ModifyLast $ fragmentInstruction f
+
+fragmentBlocks'
+    :: FragmentSettings -> [Pandoc.Block] -> [Instruction Pandoc.Block]
+fragmentBlocks' fs = concatMap $ fragmentBlock' fs
+
+fragmentBlock' :: FragmentSettings -> Pandoc.Block -> [Instruction Pandoc.Block]
+fragmentBlock' _fs block@(Pandoc.Para inlines)
+    | inlines == threeDots = [Pause]
+    | otherwise            = [Append [block]]
+  where
+    threeDots = intersperse Pandoc.Space $ replicate 3 (Pandoc.Str ".")
+
+fragmentBlock' fs (Pandoc.BulletList bs0) =
+    fragmentList' fs (fsIncrementalLists fs) Pandoc.BulletList bs0
+
+fragmentBlock' fs (Pandoc.OrderedList attr bs0) =
+    fragmentList' fs (fsIncrementalLists fs) (Pandoc.OrderedList attr) bs0
+
+fragmentBlock' fs (Pandoc.BlockQuote [Pandoc.BulletList bs0]) =
+    fragmentList' fs (not $ fsIncrementalLists fs) Pandoc.BulletList bs0
+
+fragmentBlock' fs (Pandoc.BlockQuote [Pandoc.OrderedList attr bs0]) =
+    fragmentList' fs (not $ fsIncrementalLists fs) (Pandoc.OrderedList attr) bs0
+
+fragmentBlock' _ block@(Pandoc.BlockQuote _)     = [Append [block]]
+
+fragmentBlock' _ block@(Pandoc.Header _ _ _)     = [Append [block]]
+fragmentBlock' _ block@(Pandoc.Plain _)          = [Append [block]]
+fragmentBlock' _ block@(Pandoc.CodeBlock _ _)    = [Append [block]]
+fragmentBlock' _ block@(Pandoc.RawBlock _ _)     = [Append [block]]
+fragmentBlock' _ block@(Pandoc.DefinitionList _) = [Append [block]]
+fragmentBlock' _ block@(Pandoc.Table _ _ _ _ _)  = [Append [block]]
+fragmentBlock' _ block@(Pandoc.Div _ _)          = [Append [block]]
+fragmentBlock' _ block@Pandoc.HorizontalRule     = [Append [block]]
+fragmentBlock' _ block@Pandoc.Null               = [Append [block]]
+fragmentBlock' _ block@(Pandoc.LineBlock _)      = [Append [block]]
+
+fragmentList'
+    :: FragmentSettings                    -- ^ Global settings
+    -> Bool                                -- ^ Fragment THIS list?
+    -> ([[Pandoc.Block]] -> Pandoc.Block)  -- ^ List constructor
+    -> [[Pandoc.Block]]                    -- ^ List items
+    -> [Instruction Pandoc.Block]          -- ^ Resulting list
+fragmentList' fs fragmentThisList constructor blocks0 =
+    [Append [constructor []]] ++ map ModifyLast items
+  where
+    -- The fragmented list per list item.
+    items :: [Instruction Pandoc.Block]
+    items = do
+        item <- blocks0
+        let nested = fragmentBlocks' fs item
+        traceM $ "NESTED: " ++ show nested
+        let instrs = Append [] : map ModifyLast nested
+        if fragmentThisList then Pause : instrs else instrs
+
+    {-
+    fragmented :: Fragmented [[Pandoc.Block]]
+    fragmented = joinFragmentedBlocks $
+        map (if fragmentThisList then insertPause else id) items
+
+    insertPause :: Fragmented a -> Fragmented a
+    insertPause (Unfragmented x)  = Fragmented [Nothing] (Just x)
+    insertPause (Fragmented xs x) = Fragmented (Nothing : xs) x
+    -}
 
 fragmentBlock :: FragmentSettings -> Pandoc.Block -> Fragmented Pandoc.Block
 fragmentBlock _fs block@(Pandoc.Para inlines)

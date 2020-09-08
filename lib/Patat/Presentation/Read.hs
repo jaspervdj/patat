@@ -25,6 +25,8 @@ import qualified Data.Text.IO                as T
 import qualified Data.Yaml                   as Yaml
 import           Patat.Presentation.Fragment
 import           Patat.Presentation.Internal
+import           Patat.Presentation.Tree
+import Debug.Trace
 import           Prelude
 import           System.Directory            (doesFileExist, getHomeDirectory)
 import           System.FilePath             (splitFileName, takeExtension,
@@ -94,6 +96,7 @@ pandocToPresentation pFilePath pSettings pandoc@(Pandoc.Pandoc meta _) = do
         !pBreadcrumbs    = collectBreadcrumbs pSlides
         !pActiveFragment = (0, 0)
         !pAuthor         = concat (Pandoc.docAuthors meta)
+    traceM $ show pSlides
     return Presentation {..}
 
 
@@ -151,10 +154,8 @@ pandocToSlides settings pandoc =
         fragmented   =
             [ case slide of
                 TitleSlide   _ _        -> slide
-                ContentSlide fragments0 ->
-                    let blocks  = concatMap unFragment fragments0
-                        blockss = fragmentBlocks fragmentSettings blocks in
-                    ContentSlide (map Fragment blockss)
+                ContentSlide instrs0 -> ContentSlide $
+                    fragmentInstructions' fragmentSettings instrs0
             | slide <- unfragmented
             ] in
     fragmented
@@ -193,7 +194,7 @@ splitSlides slideLevel (Pandoc.Pandoc _meta blocks0)
   where
     mkContentSlide :: [Pandoc.Block] -> [Slide]
     mkContentSlide [] = []  -- Never create empty slides
-    mkContentSlide bs = [ContentSlide [Fragment bs]]
+    mkContentSlide bs = [ContentSlide [Append bs]]
 
     splitAtRules blocks = case break (== Pandoc.HorizontalRule) blocks of
         (xs, [])           -> mkContentSlide xs

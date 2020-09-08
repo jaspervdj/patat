@@ -22,6 +22,7 @@ import qualified Patat.Images                         as Images
 import           Patat.Presentation.Display.CodeBlock
 import           Patat.Presentation.Display.Table
 import           Patat.Presentation.Internal
+import           Patat.Presentation.Tree
 import           Patat.PrettyPrint                    ((<$$>), (<+>))
 import qualified Patat.PrettyPrint                    as PP
 import           Patat.Theme                          (Theme (..))
@@ -135,11 +136,11 @@ displayPresentation mbImages pres@Presentation {..} =
   where
     -- Check if the fragment consists of just a single image, or a header and
     -- some image.
-    onlyImage (Fragment blocks)
+    onlyImage blocks
             | [Pandoc.Para para] <- filter isVisibleBlock blocks
             , [Pandoc.Image _ _ (target, _)] <- para =
         Just target
-    onlyImage (Fragment blocks)
+    onlyImage blocks
             | [Pandoc.Header _ _ _, Pandoc.Para para] <- filter isVisibleBlock blocks
             , [Pandoc.Image _ _ (target, _)] <- para =
         Just target
@@ -167,9 +168,9 @@ dumpPresentation pres =
             return $ case slide of
                 TitleSlide   l inlines -> "~~~title" <$$>
                     prettyBlock theme (Pandoc.Header l Pandoc.nullAttr inlines)
-                ContentSlide fragments -> PP.vcat $ L.intersperse "~~~frag" $ do
-                    fragment <- fragments
-                    return $ prettyFragment theme fragment
+                ContentSlide instrs -> PP.vcat $ L.intersperse "~~~frag" $ do
+                    n <- [0 .. numPauses instrs + 1]
+                    return $ prettyFragment theme $ renderAt n instrs
 
 
 --------------------------------------------------------------------------------
@@ -183,11 +184,12 @@ formatWith ps = wrap . indent
     spaces = PP.NotTrimmable $ PP.spaces marginLeft
     indent = PP.indent spaces spaces
 
+
 --------------------------------------------------------------------------------
-prettyFragment :: Theme -> Fragment -> PP.Doc
-prettyFragment theme fragment@(Fragment blocks) =
+prettyFragment :: Theme -> [Pandoc.Block] -> PP.Doc
+prettyFragment theme blocks =
     prettyBlocks theme blocks <>
-    case prettyReferences theme fragment of
+    case prettyReferences theme blocks of
         []   -> mempty
         refs -> PP.hardline <> PP.vcat refs
 
@@ -356,9 +358,9 @@ prettyInlines theme = mconcat . map (prettyInline theme)
 
 
 --------------------------------------------------------------------------------
-prettyReferences :: Theme -> Fragment -> [PP.Doc]
+prettyReferences :: Theme -> [Pandoc.Block] -> [PP.Doc]
 prettyReferences theme@Theme {..} =
-    map prettyReference . getReferences . unFragment
+    map prettyReference . getReferences
   where
     getReferences :: [Pandoc.Block] -> [Pandoc.Inline]
     getReferences = filter isReferenceLink . grecQ
