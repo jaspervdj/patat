@@ -43,6 +43,7 @@ evalInstruction
 evalInstruction settings instr = case instr of
     Pause -> pure [Pause]
     ModifyLast i -> map ModifyLast <$> evalInstruction settings i
+    Append [] -> pure [Append []]
     Append blocks -> concat <$> traverse (evalBlock settings) blocks
     Delete -> pure [Delete]
 
