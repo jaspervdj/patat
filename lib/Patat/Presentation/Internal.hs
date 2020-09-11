@@ -16,6 +16,7 @@ module Patat.Presentation.Internal
 
     , ImageSettings (..)
 
+    , EvalSettingsMap
     , EvalSettings (..)
 
     , Slide (..)
@@ -35,6 +36,7 @@ import           Control.Monad                  (mplus)
 import qualified Data.Aeson.Extended            as A
 import qualified Data.Aeson.TH.Extended         as A
 import qualified Data.Foldable                  as Foldable
+import qualified Data.HashMap.Strict            as HMS
 import           Data.List                      (intercalate)
 import           Data.Maybe                     (fromMaybe, listToMaybe)
 import qualified Data.Text                      as T
@@ -76,7 +78,7 @@ data PresentationSettings = PresentationSettings
     , psPandocExtensions :: !(Maybe ExtensionList)
     , psImages           :: !(Maybe ImageSettings)
     , psBreadcrumbs      :: !(Maybe Bool)
-    , psEval             :: !(Maybe EvalSettings)
+    , psEval             :: !(Maybe EvalSettingsMap)
     } deriving (Show)
 
 
@@ -94,7 +96,7 @@ instance Semigroup PresentationSettings where
         , psPandocExtensions = psPandocExtensions l `mplus` psPandocExtensions r
         , psImages           = psImages           l `mplus` psImages           r
         , psBreadcrumbs      = psBreadcrumbs      l `mplus` psBreadcrumbs      r
-        , psEval             = psEval             l `mplus` psEval             r
+        , psEval             = psEval             l <>      psEval             r
         }
 
 
@@ -228,6 +230,10 @@ instance A.FromJSON ImageSettings where
     parseJSON = A.withObject "FromJSON ImageSettings" $ \o -> do
         t <- o A..: "backend"
         return ImageSettings {isBackend = t, isParams = o}
+
+
+--------------------------------------------------------------------------------
+type EvalSettingsMap = HMS.HashMap T.Text EvalSettings
 
 
 --------------------------------------------------------------------------------

@@ -1,9 +1,10 @@
 ---
 patat:
   eval:
-    command: bash
-    replace: true
-    fragment: true
+    eval:
+      command: bash
+      replace: true
+      fragment: true
 ...
 
 # Slide 1
