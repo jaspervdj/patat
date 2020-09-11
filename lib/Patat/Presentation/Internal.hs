@@ -16,6 +16,9 @@ module Patat.Presentation.Internal
 
     , ImageSettings (..)
 
+    , EvalSettingsMap
+    , EvalSettings (..)
+
     , Slide (..)
     , Instruction.Fragment (..)
     , Index
@@ -33,6 +36,7 @@ import           Control.Monad                  (mplus)
 import qualified Data.Aeson.Extended            as A
 import qualified Data.Aeson.TH.Extended         as A
 import qualified Data.Foldable                  as Foldable
+import qualified Data.HashMap.Strict            as HMS
 import           Data.List                      (intercalate)
 import           Data.Maybe                     (fromMaybe, listToMaybe)
 import qualified Data.Text                      as T
@@ -74,6 +78,7 @@ data PresentationSettings = PresentationSettings
     , psPandocExtensions :: !(Maybe ExtensionList)
     , psImages           :: !(Maybe ImageSettings)
     , psBreadcrumbs      :: !(Maybe Bool)
+    , psEval             :: !(Maybe EvalSettingsMap)
     } deriving (Show)
 
 
@@ -91,6 +96,7 @@ instance Semigroup PresentationSettings where
         , psPandocExtensions = psPandocExtensions l `mplus` psPandocExtensions r
         , psImages           = psImages           l `mplus` psImages           r
         , psBreadcrumbs      = psBreadcrumbs      l `mplus` psBreadcrumbs      r
+        , psEval             = psEval             l <>      psEval             r
         }
 
 
@@ -99,7 +105,7 @@ instance Monoid PresentationSettings where
     mappend = (<>)
     mempty  = PresentationSettings
                     Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-                    Nothing Nothing Nothing Nothing
+                    Nothing Nothing Nothing Nothing Nothing
 
 
 --------------------------------------------------------------------------------
@@ -116,6 +122,7 @@ defaultPresentationSettings = PresentationSettings
     , psPandocExtensions = Nothing
     , psImages           = Nothing
     , psBreadcrumbs      = Nothing
+    , psEval             = Nothing
     }
 
 
@@ -223,6 +230,26 @@ instance A.FromJSON ImageSettings where
     parseJSON = A.withObject "FromJSON ImageSettings" $ \o -> do
         t <- o A..: "backend"
         return ImageSettings {isBackend = t, isParams = o}
+
+
+--------------------------------------------------------------------------------
+type EvalSettingsMap = HMS.HashMap T.Text EvalSettings
+
+
+--------------------------------------------------------------------------------
+data EvalSettings = EvalSettings
+    { evalCommand  :: !T.Text
+    , evalReplace  :: !Bool
+    , evalFragment :: !Bool
+    } deriving (Show)
+
+
+--------------------------------------------------------------------------------
+instance A.FromJSON EvalSettings where
+    parseJSON = A.withObject "FromJSON EvalSettings" $ \o -> EvalSettings
+        <$> o A..: "command"
+        <*> o A..:? "replace" A..!= False
+        <*> o A..:? "fragment" A..!= True
 
 
 --------------------------------------------------------------------------------

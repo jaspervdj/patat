@@ -41,6 +41,8 @@ data Instruction a
     = Pause
     -- Append items.
     | Append [a]
+    -- Remove the last item.
+    | Delete
     -- Modify the last block with the provided instruction.
     | ModifyLast (Instruction a)
     deriving (Show)
@@ -48,6 +50,7 @@ data Instruction a
 isPause :: Instruction a -> Bool
 isPause Pause = True
 isPause (Append _) = False
+isPause Delete = False
 isPause (ModifyLast i) = isPause i
 
 numPauses :: Instructions a -> Int
@@ -68,6 +71,7 @@ renderFragment = \n (Instructions instrs) -> Fragment $ go [] n instrs
 goBlocks :: Instruction Pandoc.Block -> [Pandoc.Block] -> [Pandoc.Block]
 goBlocks Pause xs = xs
 goBlocks (Append ys) xs = xs ++ ys
+goBlocks Delete xs = sinit xs
 goBlocks (ModifyLast f) xs
     | null xs   = xs  -- Shouldn't happen unless instructions are malformed.
     | otherwise = modifyLast (goBlock f) xs
@@ -78,6 +82,11 @@ goBlock (Append ys) block = case block of
     -- We can only append to a few specific block types for now.
     Pandoc.BulletList xs -> Pandoc.BulletList $ xs ++ [ys]
     Pandoc.OrderedList attr xs -> Pandoc.OrderedList attr $ xs ++ [ys]
+    _ -> block
+goBlock Delete block = case block of
+    -- We can only append to a few specific block types for now.
+    Pandoc.BulletList xs -> Pandoc.BulletList $ sinit xs
+    Pandoc.OrderedList attr xs -> Pandoc.OrderedList attr $ sinit xs
     _ -> block
 goBlock (ModifyLast f) block = case block of
     -- We can only modify the last content of a few specific block types for
@@ -91,3 +100,6 @@ modifyLast :: (a -> a) -> [a] -> [a]
 modifyLast f (x : y : zs) = x : modifyLast f (y : zs)
 modifyLast f (x : [])     = [f x]
 modifyLast _ []           = []
+
+sinit :: [a] -> [a]
+sinit xs = if null xs then [] else init xs
