@@ -614,7 +614,7 @@ _evaluator_ by specifying this in the YAML metadata:
 An arbitrary amount of evaluators can be specified, and whenever a a class
 attribute on a code block matches the evaluator, it will be used.
 
-**NOTE** that executing arbitrary code is always dangerous, so double check the
+**Note that executing arbitrary code is always dangerous**, so double check the
 code of presentations downloaded from the internet before running them if they
 contain `eval` settings.
 
