@@ -605,6 +605,8 @@ _evaluator_ by specifying this in the YAML metadata:
           replace: false  # Optional
     ...
 
+    Here is an example of a code block that is evaluated:
+
     ```ruby
     puts "Hi"
     ```
@@ -615,9 +617,25 @@ attribute on a code block matches the evaluator, it will be used.
 Aside from the command, there are two more options:
 
  -  `fragment`: Introduce a pause (see [fragments](#fragmented-slides)) in
-    between showing the original code block and the output.
+    between showing the original code block and the output.  Defaults to `true`.
  -  `replace`: Remove the original code block and replace it with the output
-    rather than appending the output in a new code block.
+    rather than appending the output in a new code block.  Defaults to `false`.
+
+Setting `fragment: false` and `replace: true` offers a way to "filter" code
+blocks, which can be used to render ASCII graphics.
+
+    ---
+    patat:
+      eval:
+        figlet:
+          command: figlet
+          fragment: false
+          replace: true
+    ...
+
+    ```figlet
+    Fancy Font
+    ```
 
 This feature works by simply by:
 
@@ -625,7 +643,6 @@ This feature works by simply by:
 2.  Write the contents of the code block to the `stdin` of the process
 3.  Wait for the process to exit
 4.  Render the `stdout` of the process
-
 
 Trivia
 ------
