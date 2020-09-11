@@ -1,5 +1,11 @@
 # Changelog
 
+- 0.8.6.0 (2020-09-11)
+    * Allow evaluating code blocks (see README for more info)
+    * Refactor implementation of fragments
+    * Add breadcrumbs to title based on headers
+    * Error out when YAML parsing fails
+
 - 0.8.5.0 (2020-06-29)
     * Bump `pandoc` dependency to 2.9
     * Switch to `goldplate` for testing
