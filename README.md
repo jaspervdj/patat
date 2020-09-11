@@ -21,6 +21,7 @@ Features:
 - Syntax highlighting for nearly one hundred languages generated from [Kate]
   syntax files.
 - Experimental [images](#images) support.
+- Supports [evaluating code snippets and showing the result](#evaluating-code).
 - Written in [Haskell].
 
 ![screenshot](extra/screenshot.png?raw=true)
@@ -50,6 +51,7 @@ Table of Contents
     -   [Pandoc Extensions](#pandoc-extensions)
     -   [Images](#images)
     -   [Breadcrumbs](#breadcrumbs)
+    -   [Evaluating code](#evaluating-code)
 -   [Trivia](#trivia)
 
 Installation
@@ -588,6 +590,42 @@ This feature can be turned off by using:
 patat:
   breadcrumbs: false
 ```
+
+### Evaluating code
+
+`patat` can evaluate code blocks and show the result.  You can register an
+_evaluator_ by specifying this in the YAML metadata:
+
+    ---
+    patat:
+      eval:
+        ruby:
+          command: irb --noecho --noverbose
+          fragment: true  # Optional
+          replace: false  # Optional
+    ...
+
+    ```ruby
+    puts "Hi"
+    ```
+
+An arbitrary amount of evaluators can be specified, and whenever a a class
+attribute on a code block matches the evaluator, it will be used.
+
+Aside from the command, there are two more options:
+
+ -  `fragment`: Introduce a pause (see [fragments](#fragmented-slides)) in
+    between showing the original code block and the output.
+ -  `replace`: Remove the original code block and replace it with the output
+    rather than appending the output in a new code block.
+
+This feature works by simply by:
+
+1.  Spawn a process with the provided command
+2.  Write the contents of the code block to the `stdin` of the process
+3.  Wait for the process to exit
+4.  Render the `stdout` of the process
+
 
 Trivia
 ------
