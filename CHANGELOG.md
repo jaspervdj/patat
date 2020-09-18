@@ -1,5 +1,10 @@
 # Changelog
 
+- 0.8.6.1 (2020-09-18)
+    * Fix issue with laziness for evaluted code blocks, they should only be
+      evaluated when we actually want to show them
+    * Bump stack resolver to `lts-16.9`
+
 - 0.8.6.0 (2020-09-11)
     * Allow evaluating code blocks (see README for more info)
     * Refactor implementation of fragments
