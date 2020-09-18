@@ -29,7 +29,7 @@ jobs:
       name: Cache ~/.stack
       with:
         path: ~/.stack
-        key: ${{ runner.os }}-${{ matrix.ghc }}-v3
+        key: ${{ runner.os }}-${{ matrix.ghc }}-v4
 
     - name: Add ~/.local/bin to PATH
       run: echo "::add-path::$HOME/.local/bin"
