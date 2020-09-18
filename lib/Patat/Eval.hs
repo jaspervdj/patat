@@ -61,10 +61,10 @@ evalInstruction settings instr = case instr of
 --------------------------------------------------------------------------------
 evalBlock :: EvalSettingsMap -> Pandoc.Block -> IO [Instruction Pandoc.Block]
 evalBlock settings orig@(Pandoc.CodeBlock attr@(_, classes, _) txt)
-    | [s@EvalSettings {..}] <- lookupSettings classes settings =
-        unsafeInterleaveIO $ do
-        EvalResult {..} <- evalCode s txt
-        let out = case erExitCode of
+    | [s@EvalSettings {..}] <- lookupSettings classes settings = do
+        out <- unsafeInterleaveIO $ do
+            EvalResult {..} <-  evalCode s txt
+            pure $ case erExitCode of
                 ExitSuccess -> erStdout
                 ExitFailure i ->
                     evalCommand <> ": exit code " <> T.pack (show i) <> "\n" <>
