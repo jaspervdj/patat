@@ -13,6 +13,7 @@ jobs:
         ghc: ["8.8.3"]
 
     steps:
+    - run: - run: echo "ACTIONS_ALLOW_UNSECURE_COMMANDS=true" >> $GITHUB_ENV
     - name: Get the version
       id: get_version
       run: 'echo ::set-output name=version::${GITHUB_REF#refs/tags/}'
@@ -31,8 +32,7 @@ jobs:
         path: ~/.stack
         key: ${{ runner.os }}-${{ matrix.ghc }}-v4
 
-    - name: Add ~/.local/bin to PATH
-      run: echo "::add-path::$HOME/.local/bin"
+    - run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
     - name: Build
       run: make build
