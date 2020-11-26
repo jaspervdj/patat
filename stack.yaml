@@ -9,4 +9,7 @@ flags:
     patat-make-man: true
 
 extra-deps:
-- 'goldplate-0.1.1'
+- 'goldplate-0.1.2'
+- 'pandoc-2.11.2'
+- 'pandoc-types-1.22'
+- 'skylighting-0.10.1'
