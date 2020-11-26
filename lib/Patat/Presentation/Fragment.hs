@@ -56,18 +56,18 @@ fragmentBlock fs (Pandoc.BlockQuote [Pandoc.BulletList bs0]) =
 fragmentBlock fs (Pandoc.BlockQuote [Pandoc.OrderedList attr bs0]) =
     fragmentList fs (not $ fsIncrementalLists fs) (Pandoc.OrderedList attr) bs0
 
-fragmentBlock _ block@(Pandoc.BlockQuote _)     = [Append [block]]
+fragmentBlock _ block@(Pandoc.BlockQuote {})     = [Append [block]]
 
-fragmentBlock _ block@(Pandoc.Header _ _ _)     = [Append [block]]
-fragmentBlock _ block@(Pandoc.Plain _)          = [Append [block]]
-fragmentBlock _ block@(Pandoc.CodeBlock _ _)    = [Append [block]]
-fragmentBlock _ block@(Pandoc.RawBlock _ _)     = [Append [block]]
-fragmentBlock _ block@(Pandoc.DefinitionList _) = [Append [block]]
-fragmentBlock _ block@(Pandoc.Table _ _ _ _ _)  = [Append [block]]
-fragmentBlock _ block@(Pandoc.Div _ _)          = [Append [block]]
-fragmentBlock _ block@Pandoc.HorizontalRule     = [Append [block]]
-fragmentBlock _ block@Pandoc.Null               = [Append [block]]
-fragmentBlock _ block@(Pandoc.LineBlock _)      = [Append [block]]
+fragmentBlock _ block@(Pandoc.Header {})         = [Append [block]]
+fragmentBlock _ block@(Pandoc.Plain {})          = [Append [block]]
+fragmentBlock _ block@(Pandoc.CodeBlock {})      = [Append [block]]
+fragmentBlock _ block@(Pandoc.RawBlock {})       = [Append [block]]
+fragmentBlock _ block@(Pandoc.DefinitionList {}) = [Append [block]]
+fragmentBlock _ block@(Pandoc.Table {})          = [Append [block]]
+fragmentBlock _ block@(Pandoc.Div {})            = [Append [block]]
+fragmentBlock _ block@Pandoc.HorizontalRule      = [Append [block]]
+fragmentBlock _ block@Pandoc.Null                = [Append [block]]
+fragmentBlock _ block@(Pandoc.LineBlock {})      = [Append [block]]
 
 fragmentList
     :: FragmentSettings                    -- ^ Global settings

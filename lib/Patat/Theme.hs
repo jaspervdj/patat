@@ -47,6 +47,7 @@ data Theme = Theme
     , themeLineBlock          :: !(Maybe Style)
     , themeEmph               :: !(Maybe Style)
     , themeStrong             :: !(Maybe Style)
+    , themeUnderline          :: !(Maybe Style)
     , themeCode               :: !(Maybe Style)
     , themeLinkText           :: !(Maybe Style)
     , themeLinkTarget         :: !(Maybe Style)
@@ -76,6 +77,7 @@ instance Semigroup Theme where
         , themeLineBlock          = mplusOn   themeLineBlock
         , themeEmph               = mplusOn   themeEmph
         , themeStrong             = mplusOn   themeStrong
+        , themeUnderline          = mplusOn   themeUnderline
         , themeCode               = mplusOn   themeCode
         , themeLinkText           = mplusOn   themeLinkText
         , themeLinkTarget         = mplusOn   themeLinkTarget
@@ -97,7 +99,7 @@ instance Monoid Theme where
     mempty  = Theme
         Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
         Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-        Nothing Nothing Nothing Nothing Nothing
+        Nothing Nothing Nothing Nothing Nothing Nothing
 
 --------------------------------------------------------------------------------
 defaultTheme :: Theme
@@ -116,6 +118,7 @@ defaultTheme = Theme
     , themeLineBlock          = dull Ansi.Magenta
     , themeEmph               = dull Ansi.Green
     , themeStrong             = dull Ansi.Red `mappend` bold
+    , themeUnderline          = dull Ansi.Red `mappend` underline
     , themeCode               = dull Ansi.White `mappend` ondull Ansi.Black
     , themeLinkText           = dull Ansi.Green
     , themeLinkTarget         = dull Ansi.Cyan `mappend` underline

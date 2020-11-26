@@ -44,10 +44,10 @@ Library
     filepath             >= 1.4  && < 1.5,
     mtl                  >= 2.2  && < 2.3,
     optparse-applicative >= 0.12 && < 0.16,
-    pandoc               >= 2.9  && < 2.10,
-    pandoc-types         >= 1.20 && < 1.21,
+    pandoc               >= 2.11 && < 2.12,
+    pandoc-types         >= 1.22 && < 1.23,
     process              >= 1.6  && < 1.7,
-    skylighting          >= 0.1  && < 0.9,
+    skylighting          >= 0.10 && < 0.11,
     terminal-size        >= 0.3  && < 0.4,
     text                 >= 1.2  && < 1.3,
     time                 >= 1.4  && < 1.10,
@@ -109,13 +109,13 @@ Executable patat-make-man
     Buildable: False
 
   Build-depends:
-    base         >= 4.9 && < 5,
-    containers   >= 0.6 && < 0.7,
-    doctemplates >= 0.8 && < 0.9,
-    mtl          >= 2.2 && < 2.3,
-    pandoc       >= 2.9 && < 2.10,
-    text         >= 1.2 && < 1.3,
-    time         >= 1.6 && < 1.10
+    base         >= 4.9  && < 5,
+    containers   >= 0.6  && < 0.7,
+    doctemplates >= 0.8  && < 0.9,
+    mtl          >= 2.2  && < 2.3,
+    pandoc       >= 2.11 && < 2.12,
+    text         >= 1.2  && < 1.3,
+    time         >= 1.6  && < 1.10
 
 Test-suite patat-tests
   Main-is:          Main.hs

@@ -1,6 +1,5 @@
 --------------------------------------------------------------------------------
 {-# LANGUAGE CPP                        #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE RecordWildCards            #-}
 module Patat.Presentation.Display
@@ -32,6 +31,7 @@ import qualified System.Console.ANSI                  as Ansi
 import qualified System.Console.Terminal.Size         as Terminal
 import qualified System.IO                            as IO
 import qualified Text.Pandoc.Extended                 as Pandoc
+import qualified Text.Pandoc.Writers.Shared           as Pandoc
 
 
 --------------------------------------------------------------------------------
@@ -264,15 +264,18 @@ prettyBlock theme@Theme {..} (Pandoc.DefinitionList terms) =
         | definition <- definitions
         ]
 
-prettyBlock theme (Pandoc.Table caption aligns _ headers rows) =
+prettyBlock theme (Pandoc.Table _ caption specs thead tbodies tfoot) =
     PP.wrapAt Nothing $
     prettyTable theme Table
-        { tCaption = prettyInlines theme caption
+        { tCaption = prettyInlines theme caption'
         , tAligns  = map align aligns
         , tHeaders = map (prettyBlocks theme) headers
         , tRows    = map (map (prettyBlocks theme)) rows
         }
   where
+    (caption', aligns, _, headers, rows) = Pandoc.toLegacyTable
+        caption specs thead tbodies tfoot
+
     align Pandoc.AlignLeft    = PP.AlignLeft
     align Pandoc.AlignCenter  = PP.AlignCenter
     align Pandoc.AlignDefault = PP.AlignLeft
@@ -311,6 +314,10 @@ prettyInline theme@Theme {..} (Pandoc.Emph inlines) =
 
 prettyInline theme@Theme {..} (Pandoc.Strong inlines) =
     themed themeStrong $
+    prettyInlines theme inlines
+
+prettyInline theme@Theme {..} (Pandoc.Underline inlines) =
+    themed themeUnderline $
     prettyInlines theme inlines
 
 prettyInline Theme {..} (Pandoc.Code _ txt) =

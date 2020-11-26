@@ -453,7 +453,7 @@ The properties that can be given a list of styles are:
 `blockQuote`, `borders`, `bulletList`, `codeBlock`, `code`, `definitionList`,
 `definitionTerm`, `emph`, `header`, `imageTarget`, `imageText`, `linkTarget`,
 `linkText`, `math`, `orderedList`, `quoted`, `strikeout`, `strong`,
-`tableHeader`, `tableSeparator`
+`tableHeader`, `tableSeparator`, `underline`
 
 The accepted styles are:
 
