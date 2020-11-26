@@ -20,6 +20,7 @@ extra-deps:
 - 'jira-wiki-markup-1.3.2'
 - 'pandoc-2.11.2'
 - 'pandoc-types-1.22'
+- 'regex-pcre-builtin-0.95.1.3.8.43'
 - 'rfc5051-0.2'
 - 'skylighting-0.10.1'
 - 'skylighting-core-0.10.1'
