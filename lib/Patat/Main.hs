@@ -14,6 +14,7 @@ import qualified Control.Concurrent.Chan      as Chan
 import           Control.Exception            (bracket)
 import           Control.Monad                (forever, unless, when)
 import qualified Data.Aeson.Extended          as A
+import           Data.Functor                 (($>))
 import qualified Data.Text                    as T
 import           Data.Time                    (UTCTime)
 import           Data.Version                 (showVersion)
@@ -21,6 +22,7 @@ import qualified Options.Applicative          as OA
 import           Patat.AutoAdvance
 import qualified Patat.Images                 as Images
 import           Patat.Presentation
+import qualified Patat.PrettyPrint            as PP
 import qualified Paths_patat
 import           Prelude
 import qualified System.Console.ANSI          as Ansi
@@ -29,7 +31,7 @@ import           System.Directory             (doesFileExist,
 import           System.Exit                  (exitFailure, exitSuccess)
 import qualified System.IO                    as IO
 import qualified Text.Pandoc                  as Pandoc
-import qualified Text.PrettyPrint.ANSI.Leijen as PP
+import qualified Text.PrettyPrint.ANSI.Leijen as PPL
 
 
 --------------------------------------------------------------------------------
@@ -75,7 +77,7 @@ parserInfo = OA.info (OA.helper <*> parseOptions) $
     OA.header ("patat v" <> showVersion Paths_patat.version) <>
     OA.progDescDoc (Just desc)
   where
-    desc = PP.vcat
+    desc = PPL.vcat
         [ "Terminal-based presentations using Pandoc"
         , ""
         , "Controls:"
@@ -157,9 +159,25 @@ main = do
 
         let loop :: Presentation -> Maybe String -> IO ()
             loop pres mbError = do
-                cleanup <- case mbError of
-                    Nothing  -> displayPresentation images pres
-                    Just err -> displayPresentationError pres err
+                size <- getDisplaySize pres
+                let display = case mbError of
+                        Nothing  -> displayPresentation size pres
+                        Just err -> DisplayDoc $
+                            displayPresentationError size pres err
+
+                Ansi.clearScreen
+                Ansi.setCursorPosition 0 0
+                cleanup <- case display of
+                    DisplayDoc doc -> PP.putDoc doc $> mempty
+                    DisplayImage path -> case images of
+                        Nothing -> do
+                            PP.putDoc $ displayPresentationError
+                                 size pres "image backend not initialized"
+                            pure mempty
+                        Just img -> do
+                            putStrLn ""
+                            IO.hFlush IO.stdout
+                            Images.drawImage img path
 
                 c      <- Chan.readChan commandChan
                 update <- updatePresentation c pres

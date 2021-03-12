@@ -37,6 +37,10 @@ module Patat.PrettyPrint
     , Alignment (..)
     , align
     , paste
+
+    -- * Control codes
+    , clearScreen
+    , goToLine
     ) where
 
 
@@ -54,10 +58,19 @@ import qualified System.IO            as IO
 
 
 --------------------------------------------------------------------------------
+-- | Control actions for the terminal.
+data Control
+    = ClearScreenControl
+    | GoToLineControl Int
+    deriving (Eq)
+
+
+--------------------------------------------------------------------------------
 -- | A simple chunk of text.  All ANSI codes are "reset" after printing.
 data Chunk
     = StringChunk [Ansi.SGR] String
     | NewlineChunk
+    | ControlChunk Control
     deriving (Eq)
 
 
@@ -67,17 +80,21 @@ type Chunks = [Chunk]
 
 --------------------------------------------------------------------------------
 hPutChunk :: IO.Handle -> Chunk -> IO ()
-hPutChunk h NewlineChunk            = IO.hPutStrLn h ""
+hPutChunk h NewlineChunk = IO.hPutStrLn h ""
 hPutChunk h (StringChunk codes str) = do
     Ansi.hSetSGR h (reverse codes)
     IO.hPutStr h str
     Ansi.hSetSGR h [Ansi.Reset]
+hPutChunk h (ControlChunk ctrl) = case ctrl of
+    ClearScreenControl -> Ansi.hClearScreen h
+    GoToLineControl l -> Ansi.hSetCursorPosition h l 0
 
 
 --------------------------------------------------------------------------------
 chunkToString :: Chunk -> String
 chunkToString NewlineChunk        = "\n"
 chunkToString (StringChunk _ str) = str
+chunkToString (ControlChunk _)    = ""
 
 
 --------------------------------------------------------------------------------
@@ -119,12 +136,14 @@ data DocE
         , indentOtherLines :: LineBuffer
         , indentDoc        :: Doc
         }
+    | Control Control
 
 
 --------------------------------------------------------------------------------
 chunkToDocE :: Chunk -> DocE
 chunkToDocE NewlineChunk            = Hardline
 chunkToDocE (StringChunk codes str) = Ansi (\_ -> codes) (Doc [String str])
+chunkToDocE (ControlChunk ctrl)     = Control ctrl
 
 
 --------------------------------------------------------------------------------
@@ -228,6 +247,11 @@ docToChunks doc0 =
             go (unDoc indentDoc)
         go docs
 
+    go (Control ctrl : docs) = do
+        tell [ControlChunk ctrl]
+        go docs
+
+
     makeChunk :: String -> DocM Chunk
     makeChunk str = do
         codes <- asks deCodes
@@ -266,6 +290,7 @@ docToChunks doc0 =
     nextWordLength (WrapAt {..} : xs) = nextWordLength (unDoc wrapDoc   ++ xs)
     nextWordLength (Ansi   {..} : xs) = nextWordLength (unDoc ansiDoc   ++ xs)
     nextWordLength (Indent {..} : xs) = nextWordLength (unDoc indentDoc ++ xs)
+    nextWordLength (Control _ : _)    = Nothing
 
 
 --------------------------------------------------------------------------------
@@ -411,3 +436,13 @@ paste docs0 =
         rows0   = L.transpose cols                        :: [[Chunks]]
         rows1   = map (map (Doc . map chunkToDocE)) rows0 :: [[Doc]] in
     vcat $ map mconcat rows1
+
+
+--------------------------------------------------------------------------------
+clearScreen :: Doc
+clearScreen = mkDoc $ Control ClearScreenControl
+
+
+--------------------------------------------------------------------------------
+goToLine :: Int -> Doc
+goToLine = mkDoc . Control . GoToLineControl

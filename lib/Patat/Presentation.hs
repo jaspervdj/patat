@@ -4,6 +4,11 @@ module Patat.Presentation
 
     , Presentation (..)
     , readPresentation
+
+    , Size
+    , getDisplaySize
+
+    , Display (..)
     , displayPresentation
     , displayPresentationError
     , dumpPresentation

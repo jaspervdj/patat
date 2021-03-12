@@ -3,22 +3,24 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 module Patat.Presentation.Display
-    ( displayPresentation
+    ( Size
+    , getDisplaySize
+
+    , Display (..)
+    , displayPresentation
     , displayPresentationError
     , dumpPresentation
     ) where
 
 
 --------------------------------------------------------------------------------
-import           Control.Monad                        (mplus, unless)
+import           Control.Monad                        (mplus)
 import qualified Data.Aeson.Extended                  as A
 import           Data.Char.WCWidth.Extended           (wcstrwidth)
 import           Data.Data.Extended                   (grecQ)
 import qualified Data.List                            as L
 import           Data.Maybe                           (fromMaybe, listToMaybe)
 import qualified Data.Text                            as T
-import           Patat.Cleanup
-import qualified Patat.Images                         as Images
 import           Patat.Presentation.Display.CodeBlock
 import           Patat.Presentation.Display.Table
 import qualified Patat.Presentation.Instruction       as Instruction
@@ -28,108 +30,102 @@ import qualified Patat.PrettyPrint                    as PP
 import           Patat.Theme                          (Theme (..))
 import qualified Patat.Theme                          as Theme
 import           Prelude
-import qualified System.Console.ANSI                  as Ansi
 import qualified System.Console.Terminal.Size         as Terminal
-import qualified System.IO                            as IO
 import qualified Text.Pandoc.Extended                 as Pandoc
 import qualified Text.Pandoc.Writers.Shared           as Pandoc
 
 
 --------------------------------------------------------------------------------
-data CanvasSize = CanvasSize {csRows :: Int, csCols :: Int} deriving (Show)
+data Size = Size {sRows :: Int, sCols :: Int} deriving (Show)
+
+
+--------------------------------------------------------------------------------
+getDisplaySize :: Presentation -> IO Size
+getDisplaySize Presentation {..} = do
+    mbWindow <- Terminal.size
+    let sRows = fromMaybe 24 $
+            (A.unFlexibleNum <$> psRows pSettings) `mplus`
+            (Terminal.height <$> mbWindow)
+        sCols = fromMaybe 72 $
+            (A.unFlexibleNum <$> psColumns pSettings) `mplus`
+            (Terminal.width  <$> mbWindow)
+    pure $ Size {..}
+
+
+--------------------------------------------------------------------------------
+data Display = DisplayDoc PP.Doc | DisplayImage FilePath deriving (Show)
 
 
 --------------------------------------------------------------------------------
 -- | Display something within the presentation borders that draw the title and
 -- the active slide number and so on.
 displayWithBorders
-    :: Presentation -> (CanvasSize -> Theme -> PP.Doc) -> IO Cleanup
-displayWithBorders Presentation {..} f = do
-    Ansi.clearScreen
-    Ansi.setCursorPosition 0 0
-
+    :: Size -> Presentation -> (Size -> Theme -> PP.Doc) -> PP.Doc
+displayWithBorders (Size rows columns) Presentation {..} f =
+    (if null title
+        then mempty
+        else
+            let titleRemainder = columns - titleWidth - titleOffset
+                wrappedTitle = PP.spaces titleOffset <> PP.string title <> PP.spaces titleRemainder in
+        borders wrappedTitle <> PP.hardline <> PP.hardline) <>
+    formatWith settings (f canvasSize theme) <> PP.hardline <>
+    PP.goToLine (rows - 2) <>
+    borders (PP.space <> PP.string author <> middleSpaces <> PP.string active <> PP.space) <>
+    PP.hardline
+  where
     -- Get terminal width/title
-    mbWindow <- Terminal.size
-    let columns = fromMaybe 72 $
-            (A.unFlexibleNum <$> psColumns pSettings) `mplus`
-            (Terminal.width  <$> mbWindow)
-        rows    = fromMaybe 24 $
-            (A.unFlexibleNum <$> psRows pSettings) `mplus`
-            (Terminal.height <$> mbWindow)
+    (sidx, _)   = pActiveFragment
+    settings    = pSettings {psColumns = Just $ A.FlexibleNum columns}
+    theme       = fromMaybe Theme.defaultTheme (psTheme settings)
 
-    let (sidx, _)   = pActiveFragment
-        settings    = pSettings {psColumns = Just $ A.FlexibleNum columns}
-        theme       = fromMaybe Theme.defaultTheme (psTheme settings)
+    -- Compute title.
+    breadcrumbs = fromMaybe [] . listToMaybe $ drop sidx pBreadcrumbs
+    plainTitle  = PP.toString $ prettyInlines theme pTitle
+    breadTitle  = mappend plainTitle $ mconcat
+        [ s
+        | b <- map (prettyInlines theme . snd) breadcrumbs
+        , s <- [" > ", PP.toString b]
+        ]
+    title
+        | not . fromMaybe True $ psBreadcrumbs settings = plainTitle
+        | wcstrwidth breadTitle > columns               = plainTitle
+        | otherwise                                     = breadTitle
 
-    let breadcrumbs = fromMaybe [] . listToMaybe $ drop sidx pBreadcrumbs
-        plainTitle  = PP.toString $ prettyInlines theme pTitle
-        breadTitle  = mappend plainTitle $ mconcat
-            [ s
-            | b <- map (prettyInlines theme . snd) breadcrumbs
-            , s <- [" > ", PP.toString b]
-            ]
-        title
-            | not . fromMaybe True $ psBreadcrumbs settings = plainTitle
-            | wcstrwidth breadTitle > columns               = plainTitle
-            | otherwise                                     = breadTitle
+    -- Dimensions of title.
+    titleWidth  = wcstrwidth title
+    titleOffset = (columns - titleWidth) `div` 2
+    borders     = themed (themeBorders theme)
 
-        titleWidth  = wcstrwidth title
-        titleOffset = (columns - titleWidth) `div` 2
-        borders     = themed (themeBorders theme)
+    -- Room left for content
+    canvasSize = Size (rows - 2) columns
 
-    unless (null title) $ do
-        let titleRemainder = columns - titleWidth - titleOffset
-            wrappedTitle = PP.spaces titleOffset <> PP.string title <> PP.spaces titleRemainder
-        PP.putDoc $ borders wrappedTitle
-        putStrLn ""
-        putStrLn ""
-
-    let canvasSize = CanvasSize (rows - 2) columns
-    PP.putDoc $ formatWith settings $ f canvasSize theme
-    putStrLn ""
-
-    let active       = show (sidx + 1) ++ " / " ++ show (length pSlides)
-        activeWidth  = wcstrwidth active
-        author       = PP.toString (prettyInlines theme pAuthor)
-        authorWidth  = wcstrwidth author
-        middleSpaces = PP.spaces $ columns - activeWidth - authorWidth - 2
-
-    Ansi.setCursorPosition (rows - 1) 0
-    PP.putDoc $ borders $ PP.space <> PP.string author <> middleSpaces <> PP.string active <> PP.space
-    IO.hFlush IO.stdout
-
-    return mempty
+    -- Compute footer.
+    active       = show (sidx + 1) ++ " / " ++ show (length pSlides)
+    activeWidth  = wcstrwidth active
+    author       = PP.toString (prettyInlines theme pAuthor)
+    authorWidth  = wcstrwidth author
+    middleSpaces = PP.spaces $ columns - activeWidth - authorWidth - 2
 
 
 --------------------------------------------------------------------------------
-displayImage :: Images.Handle -> FilePath -> IO Cleanup
-displayImage images path = do
-    Ansi.clearScreen
-    Ansi.setCursorPosition 0 0
-    putStrLn ""
-    IO.hFlush IO.stdout
-    Images.drawImage images path
-
-
---------------------------------------------------------------------------------
-displayPresentation :: Maybe Images.Handle -> Presentation -> IO Cleanup
-displayPresentation mbImages pres@Presentation {..} =
+displayPresentation :: Size -> Presentation -> Display
+displayPresentation size pres@Presentation {..} =
      case getActiveFragment pres of
-        Nothing                       -> displayWithBorders pres mempty
+        Nothing -> DisplayDoc $ displayWithBorders size pres mempty
         Just (ActiveContent fragment)
-                | Just images <- mbImages
+                | Just _ <- psImages pSettings
                 , Just image <- onlyImage fragment ->
-            displayImage images $ T.unpack image
-        Just (ActiveContent fragment) ->
-            displayWithBorders pres $ \_canvasSize theme ->
-            prettyFragment theme fragment
-        Just (ActiveTitle   block)    ->
-            displayWithBorders pres $ \canvasSize theme ->
+            DisplayImage $ T.unpack image
+        Just (ActiveContent fragment) -> DisplayDoc $
+            displayWithBorders size pres $ \_canvasSize theme ->
+                prettyFragment theme fragment
+        Just (ActiveTitle block) -> DisplayDoc $
+            displayWithBorders size pres $ \canvasSize theme ->
             let pblock          = prettyBlock theme block
                 (prows, pcols)  = PP.dimensions pblock
                 (mLeft, mRight) = marginsOf pSettings
-                offsetRow       = (csRows canvasSize `div` 2) - (prows `div` 2)
-                offsetCol       = ((csCols canvasSize - mLeft - mRight) `div` 2) - (pcols `div` 2)
+                offsetRow       = (sRows canvasSize `div` 2) - (prows `div` 2)
+                offsetCol       = ((sCols canvasSize - mLeft - mRight) `div` 2) - (pcols `div` 2)
                 spaces          = PP.NotTrimmable $ PP.spaces offsetCol in
             mconcat (replicate (offsetRow - 3) PP.hardline) <$$>
             PP.indent spaces spaces pblock
@@ -151,11 +147,12 @@ displayPresentation mbImages pres@Presentation {..} =
 --------------------------------------------------------------------------------
 -- | Displays an error in the place of the presentation.  This is useful if we
 -- want to display an error but keep the presentation running.
-displayPresentationError :: Presentation -> String -> IO Cleanup
-displayPresentationError pres err = displayWithBorders pres $ \_ Theme {..} ->
-    themed themeStrong "Error occurred in the presentation:" <$$>
-    "" <$$>
-    (PP.string err)
+displayPresentationError :: Size -> Presentation -> String -> PP.Doc
+displayPresentationError size pres err =
+    displayWithBorders size pres $ \_ Theme {..} ->
+        themed themeStrong "Error occurred in the presentation:" <$$>
+        "" <$$>
+        (PP.string err)
 
 
 --------------------------------------------------------------------------------
