@@ -82,6 +82,13 @@ packages:
   original:
     hackage: pandoc-types-1.22
 - completed:
+    hackage: regex-pcre-builtin-0.95.1.3.8.43@sha256:d5290eb27df5139b28b7d037389354ed825edd0124a76fdb37fa787ee3781962,3088
+    pantry-tree:
+      size: 2587
+      sha256: b09a91f95e31205c76b49c67edf08d619c81cb7081bebc63b9700360f52a2cd0
+  original:
+    hackage: regex-pcre-builtin-0.95.1.3.8.43
+- completed:
     hackage: rfc5051-0.2@sha256:da5d77731f2ac6fe313a67919419b0833e09cd7f1a81869ed82a54dbf8962bf2,1678
     pantry-tree:
       size: 446
@@ -109,13 +116,6 @@ packages:
       sha256: 01d11daeb1d8cabd1358eac7b28d4daa2f6b9336720c439e7550bc1d820a7a7c
   original:
     hackage: texmath-0.12.0.3
-- completed:
-    hackage: regex-pcre-builtin-0.95.1.3.8.43@sha256:d5290eb27df5139b28b7d037389354ed825edd0124a76fdb37fa787ee3781962,3088
-    pantry-tree:
-      size: 2587
-      sha256: b09a91f95e31205c76b49c67edf08d619c81cb7081bebc63b9700360f52a2cd0
-  original:
-    hackage: regex-pcre-builtin-0.95.1.3.8.43
 snapshots:
 - completed:
     size: 532380

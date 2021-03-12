@@ -1,4 +1,5 @@
 --------------------------------------------------------------------------------
+{-# LANGUAGE LambdaCase      #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Patat.Images.W3m
     ( backend
@@ -6,7 +7,7 @@ module Patat.Images.W3m
 
 
 --------------------------------------------------------------------------------
-import           Control.Exception      (throwIO)
+import           Control.Exception      (IOException, throwIO, try)
 import           Control.Monad          (unless, void)
 import qualified Data.Aeson.TH.Extended as A
 import           Data.List              (intercalate)
@@ -44,14 +45,21 @@ newtype W3m = W3m FilePath deriving (Show)
 
 --------------------------------------------------------------------------------
 findW3m :: Maybe FilePath -> IO W3m
-findW3m mbPath
-    | Just path <- mbPath = do
+findW3m = \case
+    -- Use the path specified by the user.
+    Just path -> do
         exe <- isExecutable path
         if exe
-            then return (W3m path)
+            then pure $ W3m path
             else throwIO $
                     Internal.BackendNotSupported $ path ++ " is not executable"
-    | otherwise = W3m <$> find paths
+
+    Nothing -> do
+        let path = W3m "w3mimgdisplay"
+        errOrSize <- try $ getTerminalSize path
+        case errOrSize :: Either IOException (Int, Int) of
+            Right _ -> pure path          -- Found it.
+            Left _ -> W3m <$> find paths  -- Look in some hardcoded paths.
   where
     find []       = throwIO $ Internal.BackendNotSupported
         "w3mimgdisplay executable not found"
