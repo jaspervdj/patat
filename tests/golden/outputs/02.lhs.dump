@@ -1,3 +1,5 @@
+[33m                                 02.lhs                                 [0m
+
 [mThis is how you define a [0m[40;37m String [0m[m in Haskell:[0m
 
 [m   [0m[40;37m                       [0m
@@ -6,3 +8,5 @@
 [m   [0m[40;37m                       [0m
 
 [mCool, right?[0m
+
+[33m                                                                  1 / 1 [0m

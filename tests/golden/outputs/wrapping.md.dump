@@ -1,3 +1,5 @@
+[33m              wrapping.md               [0m
+
 [mThis is a long sentence over multiple[0m
 [mlines which can be re-wrapped.[0m
 
@@ -18,3 +20,5 @@
 
 [mThis line is long, and then ends with[0m
 [40;37m code [0m
+
+[33m                                  1 / 1 [0m

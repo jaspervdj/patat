@@ -19,7 +19,8 @@ import qualified Data.Aeson.Extended                  as A
 import           Data.Char.WCWidth.Extended           (wcstrwidth)
 import           Data.Data.Extended                   (grecQ)
 import qualified Data.List                            as L
-import           Data.Maybe                           (fromMaybe, listToMaybe)
+import           Data.Maybe                           (fromMaybe, listToMaybe,
+                                                       maybeToList)
 import qualified Data.Text                            as T
 import           Patat.Presentation.Display.CodeBlock
 import           Patat.Presentation.Display.Table
@@ -157,19 +158,19 @@ displayPresentationError size pres err =
 
 --------------------------------------------------------------------------------
 dumpPresentation :: Presentation -> IO ()
-dumpPresentation pres =
-    let settings = pSettings pres
-        theme    = fromMaybe Theme.defaultTheme (psTheme $ settings) in
-    PP.putDoc $ formatWith settings $
-        PP.vcat $ L.intersperse "----------" $ do
-            slide <- pSlides pres
-            return $ case slide of
-                TitleSlide   l inlines -> "~~~title" <$$>
-                    prettyBlock theme (Pandoc.Header l Pandoc.nullAttr inlines)
-                ContentSlide instrs -> PP.vcat $ L.intersperse "~~~frag" $ do
-                    n <- [0 .. Instruction.numFragments instrs - 1]
-                    return $ prettyFragment theme $
-                        Instruction.renderFragment n instrs
+dumpPresentation pres@Presentation {..} =
+    let sRows = fromMaybe 24 $ A.unFlexibleNum <$> psRows pSettings
+        sCols = fromMaybe 72 $ A.unFlexibleNum <$> psColumns pSettings
+        size  = Size {..}
+        theme = fromMaybe Theme.defaultTheme (psTheme pSettings) in
+    PP.putDoc $ PP.removeControls $ formatWith pSettings $
+    PP.vcat $ L.intersperse "----------" $ do
+        i <- [0 .. length pSlides - 1]
+        slide <- maybeToList $ getSlide i pres
+        j <- [0 .. numFragments slide - 1]
+        case displayPresentation size pres {pActiveFragment = (i, j)} of
+            DisplayDoc doc -> [doc]
+            DisplayImage _ -> []
 
 
 --------------------------------------------------------------------------------

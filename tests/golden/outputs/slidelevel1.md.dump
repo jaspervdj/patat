@@ -1,3 +1,5 @@
+[33m                             slidelevel1.md                             [0m
+
 [34m# This starts a new slide[0m
 
 [34m## But this does not[0m
@@ -8,7 +10,11 @@
 
 [mAnd more content (yep)[0m
 
+[33m                                                                  1 / 2 [0m
+
 [m----------[0m
+[33m                             slidelevel1.md                             [0m
+
 [34m# This should start a new slide[0m
 
 [34m## With some content[0m
@@ -20,3 +26,5 @@
 [34m##### A dark secret...[0m
 
 [mjet fuel can't melt steel beams[0m
+
+[33m                                                                  2 / 2 [0m

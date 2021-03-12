@@ -1,3 +1,5 @@
+[33m                               tables.md                                [0m
+
 [34m# Normal simple table[0m
 
 [m  Right  Left  Center  Default[0m
@@ -8,7 +10,11 @@
 
 [m  Table: Demonstration of simple table syntax.[0m
 
+[33m                                                                  1 / 4 [0m
+
 [m----------[0m
+[33m                               tables.md                                [0m
+
 [34m# Headerless table[0m
 
 [m  [0m[35m---[0m[m  [0m[35m---[0m[m  [0m[35m---[0m[m  [0m[35m---[0m
@@ -17,7 +23,11 @@
 [m    1  1     1    1 [0m
 [m  [0m[35m---[0m[m  [0m[35m---[0m[m  [0m[35m---[0m[m  [0m[35m---[0m
 
+[33m                                                                  2 / 4 [0m
+
 [m----------[0m
+[33m                               tables.md                                [0m
+
 [34m# Multiline[0m
 
 [m  Centered  Default    Right  Left                    [0m
@@ -33,7 +43,11 @@
 [m  Table: Here's the caption. It, too, may span[0m
 [m  multiple lines.[0m
 
+[33m                                                                  3 / 4 [0m
+
 [m----------[0m
+[33m                               tables.md                                [0m
+
 [34m# Headerless multiline[0m
 
 [m  [0m[35m------[0m[m  [0m[35m---[0m[m  [0m[35m----[0m[m  [0m[35m------------------------[0m
@@ -46,3 +60,5 @@
 [m  [0m[35m------[0m[m  [0m[35m---[0m[m  [0m[35m----[0m[m  [0m[35m------------------------[0m
 
 [m  Table: Here's a multiline table without headers.[0m
+
+[33m                                                                  4 / 4 [0m

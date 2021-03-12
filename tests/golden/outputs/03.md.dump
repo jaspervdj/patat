@@ -1,9 +1,15 @@
+[33m                                 03.md                                  [0m
+
 [mInline markups:[0m
 
 [35m  - [0m[m~~[0m[41mstriked out[0m[m~~[0m
 [35m  - [0m[m<[0m[4;36mhttp://example.com[0m[m>[0m
 
+[33m                                                                  1 / 5 [0m
+
 [m----------[0m
+[33m                                 03.md                                  [0m
+
 [32m> [0m[mSome quote[0m
 
 [32m> [0m[mQuote with embedded list:[0m
@@ -11,7 +17,11 @@
 [32m> [0m[35m  - [0m[mHello[0m
 [32m> [0m[35m  - [0m[mWorld[0m
 
+[33m                                                                  2 / 5 [0m
+
 [m----------[0m
+[33m                                 03.md                                  [0m
+
 [35m  - [0m[mList with an embedded quote:[0m
 
 [m    [0m[32m> [0m[mTu quoque[0m
@@ -21,7 +31,11 @@
 [35m  - [0m[mSecond item in that list.[0m
 
 
+[33m                                                                  3 / 5 [0m
+
 [m----------[0m
+[33m                                 03.md                                  [0m
+
 [mCode with empty line:[0m
 
 [m   [0m[40;37m              [0m
@@ -30,7 +44,11 @@
 [m   [0m[40;37m puts "amaze" [0m
 [m   [0m[40;37m              [0m
 
+[33m                                                                  4 / 5 [0m
+
 [m----------[0m
+[33m                                 03.md                                  [0m
+
 [mCode in ordered list:[0m
 
 [35m1.  [0m[mDo you know the coolest codes?[0m
@@ -46,3 +64,5 @@
 
 [35m2.  [0m[mAlso [0m[40;37m fib [0m[m is pretty cool yeah[0m
 
+
+[33m                                                                  5 / 5 [0m

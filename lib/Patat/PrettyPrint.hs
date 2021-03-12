@@ -39,6 +39,7 @@ module Patat.PrettyPrint
     , paste
 
     -- * Control codes
+    , removeControls
     , clearScreen
     , goToLine
     ) where
@@ -117,7 +118,7 @@ chunkLines chunks = case break (== NewlineChunk) chunks of
 
 
 --------------------------------------------------------------------------------
-data DocE
+data DocE d
     = String String
     | Softspace
     | Hardspace
@@ -125,29 +126,30 @@ data DocE
     | Hardline
     | WrapAt
         { wrapAtCol :: Maybe Int
-        , wrapDoc   :: Doc
+        , wrapDoc   :: d
         }
     | Ansi
         { ansiCode :: [Ansi.SGR] -> [Ansi.SGR]  -- ^ Modifies current codes.
-        , ansiDoc  :: Doc
+        , ansiDoc  :: d
         }
     | Indent
         { indentFirstLine  :: LineBuffer
         , indentOtherLines :: LineBuffer
-        , indentDoc        :: Doc
+        , indentDoc        :: d
         }
     | Control Control
+    deriving (Functor)
 
 
 --------------------------------------------------------------------------------
-chunkToDocE :: Chunk -> DocE
+chunkToDocE :: Chunk -> DocE Doc
 chunkToDocE NewlineChunk            = Hardline
 chunkToDocE (StringChunk codes str) = Ansi (\_ -> codes) (Doc [String str])
 chunkToDocE (ControlChunk ctrl)     = Control ctrl
 
 
 --------------------------------------------------------------------------------
-newtype Doc = Doc {unDoc :: [DocE]}
+newtype Doc = Doc {unDoc :: [DocE Doc]}
     deriving (Monoid, Semigroup)
 
 
@@ -203,7 +205,7 @@ docToChunks doc0 =
         ((), b, cs) = runRWS (go $ unDoc doc0) env0 mempty in
     optimizeChunks (cs <> bufferToChunks b)
   where
-    go :: [DocE] -> DocM ()
+    go :: [DocE Doc] -> DocM ()
 
     go [] = return ()
 
@@ -258,7 +260,7 @@ docToChunks doc0 =
         return $ StringChunk codes str
 
     -- Convert 'Softspace' or 'Softline' to 'Hardspace' or 'Hardline'
-    softConversion :: DocE -> [DocE] -> DocM DocE
+    softConversion :: DocE Doc -> [DocE Doc] -> DocM (DocE Doc)
     softConversion soft docs = do
         mbWrapCol <- asks deWrap
         case mbWrapCol of
@@ -278,7 +280,7 @@ docToChunks doc0 =
             Softline  -> Hardline
             _         -> soft
 
-    nextWordLength :: [DocE] -> Maybe Int
+    nextWordLength :: [DocE Doc] -> Maybe Int
     nextWordLength []                 = Nothing
     nextWordLength (String x : xs)
         | L.null x                    = nextWordLength xs
@@ -322,7 +324,7 @@ putDoc = hPutDoc IO.stdout
 
 
 --------------------------------------------------------------------------------
-mkDoc :: DocE -> Doc
+mkDoc :: DocE Doc -> Doc
 mkDoc e = Doc [e]
 
 
@@ -404,7 +406,7 @@ data Alignment = AlignLeft | AlignCenter | AlignRight deriving (Eq, Ord, Show)
 --------------------------------------------------------------------------------
 align :: Int -> Alignment -> Doc -> Doc
 align width alignment doc0 =
-    let chunks0 = docToChunks doc0
+    let chunks0 = docToChunks $ removeControls doc0
         lines_  = chunkLines chunks0 in
     vcat
         [ Doc (map chunkToDocE (alignLine line))
@@ -431,11 +433,19 @@ align width alignment doc0 =
 -- | Like the unix program 'paste'.
 paste :: [Doc] -> Doc
 paste docs0 =
-    let chunkss = map docToChunks docs0                   :: [Chunks]
-        cols    = map chunkLines chunkss                  :: [[Chunks]]
-        rows0   = L.transpose cols                        :: [[Chunks]]
-        rows1   = map (map (Doc . map chunkToDocE)) rows0 :: [[Doc]] in
+    let chunkss = map (docToChunks . removeControls) docs0 :: [Chunks]
+        cols    = map chunkLines chunkss                   :: [[Chunks]]
+        rows0   = L.transpose cols                         :: [[Chunks]]
+        rows1   = map (map (Doc . map chunkToDocE)) rows0  :: [[Doc]] in
     vcat $ map mconcat rows1
+
+
+--------------------------------------------------------------------------------
+removeControls :: Doc -> Doc
+removeControls = Doc . filter isNotControl . map (fmap removeControls) . unDoc
+  where
+    isNotControl (Control _) = False
+    isNotControl _           = True
 
 
 --------------------------------------------------------------------------------
