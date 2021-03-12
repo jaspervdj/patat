@@ -566,6 +566,9 @@ the terminal window.
 -   `backend: iterm2`: uses [iTerm2](https://iterm2.com/)'s special escape
     sequence to render the image.  This even works with animated GIFs!
 
+-   `backend: kitty`: uses
+    [Kitty's icat command](https://sw.kovidgoyal.net/kitty/kittens/icat.html).
+
 -   `backend: w3m`: uses the `w3mimgdisplay` executable to draw directly onto
     the window.  This has been tested in `urxvt` and `xterm`, but is known to
     produce weird results in `tmux`.

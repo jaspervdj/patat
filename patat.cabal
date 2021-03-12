@@ -68,8 +68,9 @@ Library
     Patat.Eval
     Patat.Images
     Patat.Images.Internal
-    Patat.Images.W3m
     Patat.Images.ITerm2
+    Patat.Images.Kitty
+    Patat.Images.W3m
     Patat.Main
     Patat.Presentation
     Patat.Presentation.Display

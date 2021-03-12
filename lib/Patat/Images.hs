@@ -15,6 +15,7 @@ import qualified Data.Text                   as T
 import           Patat.Cleanup
 import           Patat.Images.Internal
 import qualified Patat.Images.ITerm2         as ITerm2
+import qualified Patat.Images.Kitty          as Kitty
 import qualified Patat.Images.W3m            as W3m
 import           Patat.Presentation.Internal
 
@@ -52,6 +53,7 @@ auto = go [] backends
 backends :: [(T.Text, Backend)]
 backends =
     [ ("iterm2", ITerm2.backend)
+    , ("kitty",  Kitty.backend)
     , ("w3m",    W3m.backend)
     ]
 
