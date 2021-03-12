@@ -53,6 +53,7 @@ Library
     time                 >= 1.4  && < 1.10,
     unordered-containers >= 0.2  && < 0.3,
     yaml                 >= 0.8  && < 0.12,
+    wcwidth              >= 0.0  && < 0.1,
     -- We don't even depend on these packages but they can break cabal install
     -- because of the conflicting 'Network.URI' module.
     network-uri >= 2.6,
@@ -87,6 +88,7 @@ Library
   Other-modules:
     Data.Aeson.Extended
     Data.Aeson.TH.Extended
+    Data.Char.WCWidth.Extended
     Data.Data.Extended
     Paths_patat
     Text.Pandoc.Extended

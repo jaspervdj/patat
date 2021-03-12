@@ -1,7 +1,7 @@
 --------------------------------------------------------------------------------
-{-# LANGUAGE CPP                        #-}
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE CPP               #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 module Patat.Presentation.Display
     ( displayPresentation
     , displayPresentationError
@@ -12,6 +12,7 @@ module Patat.Presentation.Display
 --------------------------------------------------------------------------------
 import           Control.Monad                        (mplus, unless)
 import qualified Data.Aeson.Extended                  as A
+import           Data.Char.WCWidth.Extended           (wcstrwidth)
 import           Data.Data.Extended                   (grecQ)
 import qualified Data.List                            as L
 import           Data.Maybe                           (fromMaybe, listToMaybe)
@@ -69,10 +70,10 @@ displayWithBorders Presentation {..} f = do
             ]
         title
             | not . fromMaybe True $ psBreadcrumbs settings = plainTitle
-            | length breadTitle > columns                   = plainTitle
+            | wcstrwidth breadTitle > columns               = plainTitle
             | otherwise                                     = breadTitle
 
-        titleWidth  = length title
+        titleWidth  = wcstrwidth title
         titleOffset = (columns - titleWidth) `div` 2
         borders     = themed (themeBorders theme)
 
@@ -88,9 +89,9 @@ displayWithBorders Presentation {..} f = do
     putStrLn ""
 
     let active       = show (sidx + 1) ++ " / " ++ show (length pSlides)
-        activeWidth  = length active
+        activeWidth  = wcstrwidth active
         author       = PP.toString (prettyInlines theme pAuthor)
-        authorWidth  = length author
+        authorWidth  = wcstrwidth author
         middleSpaces = PP.spaces $ columns - activeWidth - authorWidth - 2
 
     Ansi.setCursorPosition (rows - 1) 0
