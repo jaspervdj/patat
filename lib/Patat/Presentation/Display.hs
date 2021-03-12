@@ -24,7 +24,6 @@ import           Data.Maybe                           (fromMaybe, listToMaybe,
 import qualified Data.Text                            as T
 import           Patat.Presentation.Display.CodeBlock
 import           Patat.Presentation.Display.Table
-import qualified Patat.Presentation.Instruction       as Instruction
 import           Patat.Presentation.Internal
 import           Patat.PrettyPrint                    ((<$$>), (<+>))
 import qualified Patat.PrettyPrint                    as PP
@@ -161,8 +160,7 @@ dumpPresentation :: Presentation -> IO ()
 dumpPresentation pres@Presentation {..} =
     let sRows = fromMaybe 24 $ A.unFlexibleNum <$> psRows pSettings
         sCols = fromMaybe 72 $ A.unFlexibleNum <$> psColumns pSettings
-        size  = Size {..}
-        theme = fromMaybe Theme.defaultTheme (psTheme pSettings) in
+        size  = Size {..} in
     PP.putDoc $ PP.removeControls $ formatWith pSettings $
     PP.vcat $ L.intersperse "----------" $ do
         i <- [0 .. length pSlides - 1]

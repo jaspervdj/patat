@@ -1,0 +1,22 @@
+[33m                                cjk02.md                                [0m
+
+[34m# A table with CJK characters[0m
+
+[mAlignment should be: right, left, center, right.[0m
+
+[m  Number  Sino-Japanese reading               Kanji  Native Japanese reading[0m
+[m  [0m[35m------[0m[m  [0m[35m----------------------------------[0m[m  [0m[35m-----[0m[m  [0m[35m-----------------------[0m
+[m       1  いち (ichi)                           一          ひとつ (hitotsu)[0m
+[m       2  に (ni)                               二          ふたつ (futatsu)[0m
+[m       3  さん (san)                            三           みっつ (mittsu)[0m
+[m       4  し、よん (shi, yon)                   四           よっつ (yottsu)[0m
+[m       5  ご (go)                               五          いつつ (itsutsu)[0m
+[m       6  ろく (roku)                           六           むっつ (muttsu)[0m
+[m       7  しち、なな (shichi, nana)             七          ななつ (nanatsu)[0m
+[m       8  はち (hachi)                          八           やっつ (yattsu)[0m
+[m       9  く、きゅう (ku, kyuu)                 九      ここのつ (kokonotsu)[0m
+[m      10  じゅう (juu)                          十                とう (tou)[0m
+[m       0  れい、ゼロ、マル (rei, zero, maru)    零                          [0m
+[m                         [0m
+
+[33m                                                                  1 / 1 [0m

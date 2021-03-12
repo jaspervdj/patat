@@ -46,16 +46,17 @@ module Patat.PrettyPrint
 
 
 --------------------------------------------------------------------------------
-import           Control.Monad.Reader (asks, local)
-import           Control.Monad.RWS    (RWS, runRWS)
-import           Control.Monad.State  (get, gets, modify)
-import           Control.Monad.Writer (tell)
-import qualified Data.List            as L
-import           Data.String          (IsString (..))
-import qualified Data.Text            as T
-import           Prelude              hiding (null)
-import qualified System.Console.ANSI  as Ansi
-import qualified System.IO            as IO
+import           Control.Monad.Reader       (asks, local)
+import           Control.Monad.RWS          (RWS, runRWS)
+import           Control.Monad.State        (get, gets, modify)
+import           Control.Monad.Writer       (tell)
+import           Data.Char.WCWidth.Extended (wcstrwidth)
+import qualified Data.List                  as L
+import           Data.String                (IsString (..))
+import qualified Data.Text                  as T
+import           Prelude                    hiding (null)
+import qualified System.Console.ANSI        as Ansi
+import qualified System.IO                  as IO
 
 
 --------------------------------------------------------------------------------
@@ -88,7 +89,7 @@ hPutChunk h (StringChunk codes str) = do
     Ansi.hSetSGR h [Ansi.Reset]
 hPutChunk h (ControlChunk ctrl) = case ctrl of
     ClearScreenControl -> Ansi.hClearScreen h
-    GoToLineControl l -> Ansi.hSetCursorPosition h l 0
+    GoToLineControl l  -> Ansi.hSetCursorPosition h l 0
 
 
 --------------------------------------------------------------------------------
@@ -268,7 +269,7 @@ docToChunks doc0 =
             Just maxCol -> do
                 -- Slow.
                 currentLine <- gets (concatMap chunkToString . bufferToChunks)
-                let currentCol = length currentLine
+                let currentCol = wcstrwidth currentLine
                 case nextWordLength docs of
                     Nothing                            -> return hard
                     Just l
@@ -284,7 +285,7 @@ docToChunks doc0 =
     nextWordLength []                 = Nothing
     nextWordLength (String x : xs)
         | L.null x                    = nextWordLength xs
-        | otherwise                   = Just (length x)
+        | otherwise                   = Just (wcstrwidth x)
     nextWordLength (Softspace : xs)   = nextWordLength xs
     nextWordLength (Hardspace : xs)   = nextWordLength xs
     nextWordLength (Softline : xs)    = nextWordLength xs
@@ -305,7 +306,7 @@ toString = concat . map chunkToString . docToChunks
 dimensions :: Doc -> (Int, Int)
 dimensions doc =
     let ls = lines (toString doc) in
-    (length ls, foldr max 0 (map length ls))
+    (length ls, foldr max 0 (map wcstrwidth ls))
 
 
 --------------------------------------------------------------------------------
@@ -414,7 +415,7 @@ align width alignment doc0 =
         ]
   where
     lineWidth :: [Chunk] -> Int
-    lineWidth = sum . map (length . chunkToString)
+    lineWidth = sum . map (wcstrwidth . chunkToString)
 
     alignLine :: [Chunk] -> [Chunk]
     alignLine line =
