@@ -1,5 +1,13 @@
 # Changelog
 
+- 0.8.7.0 (2021-03-12)
+    * Fix alignment and display of CJK characters in presentation title, author
+      and tables
+    * Add support for showing images in Kitty terminal
+    * Search in `$PATH` for `w3mimgdisplay`
+    * Bump `pandoc` dependency to 2.11
+    * Refactor `Patat.Presentation.Display` module to make it pure
+
 - 0.8.6.1 (2020-09-18)
     * Fix issue with laziness for evaluted code blocks, they should only be
       evaluated when we actually want to show them
