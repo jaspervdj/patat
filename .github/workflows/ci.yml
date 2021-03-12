@@ -32,7 +32,7 @@ jobs:
       name: Cache ~/.stack
       with:
         path: ~/.stack
-        key: ${{ runner.os }}-${{ matrix.ghc }}-v4
+        key: ${{ runner.os }}-${{ matrix.ghc }}-v5
 
     - name: Build
       run: make build
