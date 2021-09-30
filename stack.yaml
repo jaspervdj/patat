@@ -1,4 +1,4 @@
-resolver: 'lts-16.9'
+resolver: 'lts-17.9'
 save-hackage-creds: false
 
 packages:
@@ -8,23 +8,7 @@ flags:
   patat:
     patat-make-man: true
 
-extra-deps:
-- 'citeproc-0.2'
-- 'commonmark-0.1.1.2'
-- 'commonmark-extensions-0.2.0.4'
-- 'commonmark-pandoc-0.2.0.1'
-- 'goldplate-0.1.2'
-- 'hslua-1.3.0'
-- 'hslua-module-system-0.2.2.1'
-- 'hslua-module-text-0.3.0.1'
-- 'jira-wiki-markup-1.3.2'
-- 'pandoc-2.11.2'
-- 'pandoc-types-1.22'
-- 'regex-pcre-builtin-0.95.1.3.8.43'
-- 'rfc5051-0.2'
-- 'skylighting-0.10.1'
-- 'skylighting-core-0.10.1'
-- 'texmath-0.12.0.3'
+extra-deps: []
 
 nix:
   packages:

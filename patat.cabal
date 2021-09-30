@@ -31,12 +31,12 @@ Library
   Default-language:  Haskell2010
 
   Build-depends:
-    aeson                >= 0.9  && < 1.5,
+    aeson                >= 0.9  && < 1.6,
     ansi-terminal        >= 0.6  && < 0.11,
     ansi-wl-pprint       >= 0.6  && < 0.7,
     async                >= 2.2  && < 2.3,
     base                 >= 4.9  && < 5,
-    base64-bytestring    >= 1.0  && < 1.1,
+    base64-bytestring    >= 1.0  && < 1.2,
     bytestring           >= 0.10 && < 0.11,
     colour               >= 2.3  && < 2.4,
     containers           >= 0.5  && < 0.7,
@@ -114,7 +114,7 @@ Executable patat-make-man
   Build-depends:
     base         >= 4.9  && < 5,
     containers   >= 0.6  && < 0.7,
-    doctemplates >= 0.8  && < 0.9,
+    doctemplates >= 0.8  && < 0.10,
     mtl          >= 2.2  && < 2.3,
     pandoc       >= 2.11 && < 2.12,
     text         >= 1.2  && < 1.3,
