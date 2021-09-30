@@ -37,7 +37,7 @@ COMPRESS_BIN_DEPS=$(UPX_BINARY)
 COMPRESS_BIN=upx
 endif
 
-STACK=stack --system-ghc
+STACK=stack
 
 # Default target.
 .PHONY: build
