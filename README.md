@@ -36,6 +36,7 @@ Table of Contents
 -   [Table of Contents](#table-of-contents)
 -   [Installation](#installation)
     -   [Pre-built-packages](#pre-built-packages)
+    -   [Homebrew](#homebrew)
     -   [From source](#from-source)
 -   [Running](#running)
 -   [Options](#options)
@@ -67,6 +68,21 @@ Installation
 
 You can also find generic Linux and Mac OS binaries here:
 <https://github.com/jaspervdj/patat/releases>.
+
+### Homebrew
+
+Homebrew packages are offered by a third-party repository:
+
+1. Install [Homebrew] for your platform.
+2. Run `brew tap nicholasdille/tap`.
+3. Run `brew install patat-bin` to receive the official binaries or
+   `brew install patat` for pre-built ("bottled") binaries.
+
+[Homebrew]: https://brew.sh/
+
+For issues and feedback please refer to [nicholasdille/homebrew-tap].
+
+[nicholasdille/homebrew-tap]: https://github.com/nicholasdille/homebrew-tap
 
 ### From source
 
