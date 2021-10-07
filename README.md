@@ -75,8 +75,8 @@ Homebrew packages are offered by a third-party repository:
 
 1. Install [Homebrew] for your platform.
 2. Run `brew tap nicholasdille/tap`.
-3. Run `brew install patat` to receive the official binaries or
-   `brew install patat-bin` for pre-built ("bottled") binaries.
+3. Run `brew install patat-bin` to receive the official binaries or
+   `brew install patat` for pre-built ("bottled") binaries.
 
 [Homebrew]: https://brew.sh/
 
