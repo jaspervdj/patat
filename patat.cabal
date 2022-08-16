@@ -43,7 +43,7 @@ Library
     directory            >= 1.2  && < 1.4,
     filepath             >= 1.4  && < 1.5,
     mtl                  >= 2.2  && < 2.3,
-    optparse-applicative >= 0.12 && < 0.17,
+    optparse-applicative >= 0.16 && < 0.17,
     pandoc               >= 2.11 && < 2.18,
     pandoc-types         >= 1.22 && < 1.23,
     process              >= 1.6  && < 1.7,

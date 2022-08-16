@@ -16,8 +16,8 @@ import           Control.Monad.Except           (ExceptT (..), runExceptT,
                                                  throwError)
 import           Control.Monad.Trans            (liftIO)
 import qualified Data.Aeson                     as A
+import qualified Data.Aeson.KeyMap              as AKM
 import           Data.Bifunctor                 (first)
-import qualified Data.HashMap.Strict            as HMS
 import           Data.Maybe                     (fromMaybe)
 import qualified Data.Text                      as T
 import qualified Data.Text.Encoding             as T
@@ -121,7 +121,7 @@ readMetaSettings :: T.Text -> Either String PresentationSettings
 readMetaSettings src = case parseMetadataBlock src of
     Nothing -> Right mempty
     Just (Left err) -> Left err
-    Just (Right (A.Object obj)) | Just val <- HMS.lookup "patat" obj ->
+    Just (Right (A.Object obj)) | Just val <- AKM.lookup "patat" obj ->
        resultToEither $! A.fromJSON val
     Just (Right _) -> Right mempty
   where
