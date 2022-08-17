@@ -64,7 +64,14 @@ readExtension
     :: ExtensionList -> String
     -> Maybe (T.Text -> Either Pandoc.PandocError Pandoc.Pandoc)
 readExtension (ExtensionList extensions) fileExt = case fileExt of
+    ".markdown"  -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
     ".md"  -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
+    ".mdown"  -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
+    ".mdtext"  -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
+    ".mdtxt"  -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
+    ".mdwn"  -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
+    ".mkd"  -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
+    ".mkdn"  -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
     ".lhs" -> Just $ Pandoc.runPure . Pandoc.readMarkdown lhsOpts
     ""     -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
     ".org" -> Just $ Pandoc.runPure . Pandoc.readOrg      readerOpts
