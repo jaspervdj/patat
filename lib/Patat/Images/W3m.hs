@@ -19,14 +19,18 @@ import           Text.Read              (readMaybe)
 
 
 --------------------------------------------------------------------------------
-backend :: Internal.Backend
-backend = Internal.Backend new
-
-
---------------------------------------------------------------------------------
 data Config = Config
     { cPath :: Maybe FilePath
     } deriving (Show)
+
+
+--------------------------------------------------------------------------------
+$(A.deriveFromJSON A.dropPrefixOptions ''Config)
+
+
+--------------------------------------------------------------------------------
+backend :: Internal.Backend
+backend = Internal.Backend new
 
 
 --------------------------------------------------------------------------------
@@ -153,7 +157,3 @@ drawImage w3m@(W3m w3mPath) path = do
             y = (th - ih2) `div` 2 in
 
          (x, y, iw2, ih2)
-
-
---------------------------------------------------------------------------------
-$(A.deriveFromJSON A.dropPrefixOptions ''Config)

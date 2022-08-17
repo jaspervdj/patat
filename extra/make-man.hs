@@ -49,7 +49,7 @@ toSections level = go
         let doc = Pandoc.Pandoc Pandoc.nullMeta [Pandoc.Plain inlines]
             txt = case Pandoc.runPure (Pandoc.writeMarkdown Pandoc.def doc) of
                     Left err -> throw err  -- Bad!
-                    Right x  -> x
+                    Right x  -> T.strip x
         return (l, txt)
     toSectionHeader _ = Nothing
 

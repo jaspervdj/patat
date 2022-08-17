@@ -31,23 +31,23 @@ Library
   Default-language:  Haskell2010
 
   Build-depends:
-    aeson                >= 0.9  && < 1.6,
-    ansi-terminal        >= 0.6  && < 0.11,
+    aeson                >= 2.0  && < 2.1,
+    ansi-terminal        >= 0.6  && < 0.12,
     ansi-wl-pprint       >= 0.6  && < 0.7,
     async                >= 2.2  && < 2.3,
     base                 >= 4.9  && < 5,
-    base64-bytestring    >= 1.0  && < 1.2,
+    base64-bytestring    >= 1.0  && < 1.3,
     bytestring           >= 0.10 && < 0.11,
     colour               >= 2.3  && < 2.4,
     containers           >= 0.5  && < 0.7,
     directory            >= 1.2  && < 1.4,
     filepath             >= 1.4  && < 1.5,
     mtl                  >= 2.2  && < 2.3,
-    optparse-applicative >= 0.12 && < 0.16,
-    pandoc               >= 2.11 && < 2.12,
+    optparse-applicative >= 0.16 && < 0.17,
+    pandoc               >= 2.11 && < 2.18,
     pandoc-types         >= 1.22 && < 1.23,
     process              >= 1.6  && < 1.7,
-    skylighting          >= 0.10 && < 0.11,
+    skylighting          >= 0.10 && < 0.13,
     terminal-size        >= 0.3  && < 0.4,
     text                 >= 1.2  && < 1.3,
     time                 >= 1.4  && < 1.10,
@@ -114,9 +114,9 @@ Executable patat-make-man
   Build-depends:
     base         >= 4.9  && < 5,
     containers   >= 0.6  && < 0.7,
-    doctemplates >= 0.8  && < 0.10,
+    doctemplates >= 0.8  && < 0.11,
     mtl          >= 2.2  && < 2.3,
-    pandoc       >= 2.11 && < 2.12,
+    pandoc       >= 2.11 && < 2.18,
     text         >= 1.2  && < 1.3,
     time         >= 1.6  && < 1.10
 
@@ -135,8 +135,8 @@ Test-suite patat-tests
     patat,
     base             >= 4.8  && < 5,
     directory        >= 1.2  && < 1.4,
-    tasty            >= 1.2  && < 1.3,
+    tasty            >= 1.2  && < 1.5,
     tasty-hunit      >= 0.10 && < 0.11,
     tasty-quickcheck >= 0.10 && < 0.11,
     text             >= 1.2  && < 1.3,
-    QuickCheck       >= 2.8  && < 2.14
+    QuickCheck       >= 2.8  && < 2.15

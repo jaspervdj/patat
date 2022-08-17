@@ -295,5 +295,5 @@ getActiveFragment presentation = do
 
 
 --------------------------------------------------------------------------------
-$(A.deriveFromJSON A.dropPrefixOptions ''PresentationSettings)
 $(A.deriveFromJSON A.dropPrefixOptions ''Margins)
+$(A.deriveFromJSON A.dropPrefixOptions ''PresentationSettings)
