@@ -1,4 +1,4 @@
-resolver: 'lts-19.17'
+resolver: 'lts-19.20'
 save-hackage-creds: false
 
 packages:
@@ -8,7 +8,26 @@ flags:
   patat:
     patat-make-man: true
 
-extra-deps: []
+extra-deps:
+- 'citeproc-0.8.0.1'
+- 'doclayout-0.4'
+- 'doctemplates-0.10.0.2'
+- 'gridtables-0.0.3.0'
+- 'hslua-2.2.1'
+- 'hslua-aeson-2.2.1'
+- 'hslua-classes-2.2.0'
+- 'hslua-core-2.2.1'
+- 'hslua-marshalling-2.2.1'
+- 'hslua-objectorientation-2.2.1'
+- 'hslua-packaging-2.2.1'
+- 'lua-2.2.1'
+- 'pandoc-2.19.1'
+- 'skylighting-0.13'
+- 'skylighting-core-0.13'
+- 'skylighting-format-ansi-0.1'
+- 'skylighting-format-blaze-html-0.1'
+- 'skylighting-format-latex-0.1'
+- 'texmath-0.12.5.2'
 
 nix:
   packages:
