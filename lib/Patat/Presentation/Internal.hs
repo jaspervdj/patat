@@ -79,6 +79,7 @@ data PresentationSettings = PresentationSettings
     , psImages           :: !(Maybe ImageSettings)
     , psBreadcrumbs      :: !(Maybe Bool)
     , psEval             :: !(Maybe EvalSettingsMap)
+    , psSlideNumber      :: !(Maybe Bool)
     } deriving (Show)
 
 
@@ -97,6 +98,7 @@ instance Semigroup PresentationSettings where
         , psImages           = psImages           l `mplus` psImages           r
         , psBreadcrumbs      = psBreadcrumbs      l `mplus` psBreadcrumbs      r
         , psEval             = psEval             l <>      psEval             r
+        , psSlideNumber      = psSlideNumber      l `mplus` psSlideNumber      r
         }
 
 
@@ -105,7 +107,7 @@ instance Monoid PresentationSettings where
     mappend = (<>)
     mempty  = PresentationSettings
                     Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-                    Nothing Nothing Nothing Nothing Nothing
+                    Nothing Nothing Nothing Nothing Nothing Nothing
 
 
 --------------------------------------------------------------------------------
@@ -123,6 +125,7 @@ defaultPresentationSettings = PresentationSettings
     , psImages           = Nothing
     , psBreadcrumbs      = Nothing
     , psEval             = Nothing
+    , psSlideNumber      = Nothing
     }
 
 

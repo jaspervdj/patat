@@ -610,6 +610,17 @@ patat:
   breadcrumbs: false
 ```
 
+### Slide numbers
+
+By default, `patat` will display slide number in bottom-right corner
+
+This feature can be turned off by using:
+
+```yaml
+patat:
+  slideNumber: false
+```
+
 ### Evaluating code
 
 `patat` can evaluate code blocks and show the result.  You can register an
