@@ -573,9 +573,9 @@ patat:
 ![](matterhorn.jpg)
 ```
 
-If `images` is enabled (not by default), `patat` will draw slides that consist
-only of a single image just by drawing the image, centered and resized to fit
-the terminal window.
+`patat` can display full-size images on slides. For this to work `images` must be enabled in the configuration and the slide needs to contain only a single image and no other content. The image will be centered and resized to fit the terminal window.
+
+`images` is off by default in the configuration.
 
 `patat` supports the following image drawing backends:
 
