@@ -100,7 +100,9 @@ displayWithBorders (Size rows columns) Presentation {..} f =
     canvasSize = Size (rows - 2) columns
 
     -- Compute footer.
-    active       = show (sidx + 1) ++ " / " ++ show (length pSlides)
+    active
+        | fromMaybe True $ psSlideNumber settings = show (sidx + 1) ++ " / " ++ show (length pSlides)
+        | otherwise                               = ""
     activeWidth  = wcstrwidth active
     author       = PP.toString (prettyInlines theme pAuthor)
     authorWidth  = wcstrwidth author
