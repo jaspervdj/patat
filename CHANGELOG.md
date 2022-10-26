@@ -1,5 +1,17 @@
 # Changelog
 
+- 0.8.8.0 (2022-10-26)
+    * Allow hiding slide number (contribution by Paweł Dybiec)
+    * Support additional markdown extensions (contribution by Spreadcat)
+    * Dependency updates:
+        - `aeson` to 2.0
+        - `ansi-terminal` to 0.11
+        - `base64-bytestring` to 1.2
+        - `bytestring` to 0.11
+        - `optparse-applicative` to 1.16
+        - `pandoc` to 2.19
+        - `skylighting` to 0.13
+
 - 0.8.7.0 (2021-03-12)
     * Fix alignment and display of CJK characters in presentation title, author
       and tables
