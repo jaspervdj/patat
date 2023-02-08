@@ -43,14 +43,14 @@ Library
     directory            >= 1.2  && < 1.4,
     filepath             >= 1.4  && < 1.5,
     mtl                  >= 2.2  && < 2.3,
-    optparse-applicative >= 0.16 && < 0.17,
+    optparse-applicative >= 0.16 && < 0.18,
     pandoc               >= 2.11 && < 2.20,
     pandoc-types         >= 1.22 && < 1.23,
     process              >= 1.6  && < 1.7,
     skylighting          >= 0.10 && < 0.14,
     terminal-size        >= 0.3  && < 0.4,
     text                 >= 1.2  && < 1.3,
-    time                 >= 1.4  && < 1.10,
+    time                 >= 1.4  && < 1.12,
     unordered-containers >= 0.2  && < 0.3,
     yaml                 >= 0.8  && < 0.12,
     wcwidth              >= 0.0  && < 0.1,
@@ -118,7 +118,7 @@ Executable patat-make-man
     mtl          >= 2.2  && < 2.3,
     pandoc       >= 2.11 && < 2.20,
     text         >= 1.2  && < 1.3,
-    time         >= 1.6  && < 1.10
+    time         >= 1.6  && < 1.12
 
 Test-suite patat-tests
   Main-is:          Main.hs
