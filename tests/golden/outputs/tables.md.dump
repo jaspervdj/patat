@@ -2,7 +2,7 @@
 
 [34m# Normal simple table[0m
 
-[m  Right  Left  Center  Default[0m
+[m  [0m[1;35mRight[0m[m  [0m[1;35mLeft[0m[m  [0m[1;35mCenter[0m[m  [0m[1;35mDefault[0m
 [m  [0m[35m-----[0m[m  [0m[35m----[0m[m  [0m[35m------[0m[m  [0m[35m-------[0m
 [m     12  12      12    12     [0m
 [m    123  123     123   123    [0m
@@ -30,8 +30,8 @@
 
 [34m# Multiline[0m
 
-[m  Centered  Default    Right  Left                    [0m
-[m   Header   Aligned  Aligned  Aligned                 [0m
+[m  [0m[1;35mCentered[0m[m  [0m[1;35mDefault[0m[m  [0m[1;35m  Right[0m[m  [0m[1;35mLeft                    [0m
+[m  [0m[1;35m Header [0m[m  [0m[1;35mAligned[0m[m  [0m[1;35mAligned[0m[m  [0m[1;35mAligned                 [0m
 [m  [0m[35m--------[0m[m  [0m[35m-------[0m[m  [0m[35m-------[0m[m  [0m[35m------------------------[0m
 [m    First   row         12.0  Example of a row that   [0m
 [m                              spans multiple lines.   [0m

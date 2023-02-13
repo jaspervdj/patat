@@ -7,7 +7,7 @@
 [msingle line which should also be[0m
 [mre-wrapped.[0m
 
-[m  This is  a table  and tables  should not  be wrapped[0m
+[m  [0m[1;35mThis is[0m[m  [0m[1;35ma table[0m[m  [0m[1;35mand tables[0m[m  [0m[1;35mshould not[0m[m  [0m[1;35mbe wrapped[0m
 [m  [0m[35m-------[0m[m  [0m[35m-------[0m[m  [0m[35m----------[0m[m  [0m[35m----------[0m[m  [0m[35m----------[0m
 [m  1        2        3           4           5         [0m
 [m  6        7        8           9           10        [0m

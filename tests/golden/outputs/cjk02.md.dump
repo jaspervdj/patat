@@ -4,7 +4,7 @@
 
 [mAlignment should be: right, left, center, right.[0m
 
-[m  Number  Sino-Japanese reading               Kanji  Native Japanese reading[0m
+[m  [0m[1;35mNumber[0m[m  [0m[1;35mSino-Japanese reading             [0m[m  [0m[1;35mKanji[0m[m  [0m[1;35mNative Japanese reading[0m
 [m  [0m[35m------[0m[m  [0m[35m----------------------------------[0m[m  [0m[35m-----[0m[m  [0m[35m-----------------------[0m
 [m       1  いち (ichi)                           一          ひとつ (hitotsu)[0m
 [m       2  に (ni)                               二          ふたつ (futatsu)[0m
