@@ -144,9 +144,9 @@ data DocE d
 
 --------------------------------------------------------------------------------
 chunkToDocE :: Chunk -> DocE Doc
-chunkToDocE NewlineChunk            = Hardline
-chunkToDocE (StringChunk codes str) = Ansi (\_ -> codes) (Doc [String str])
-chunkToDocE (ControlChunk ctrl)     = Control ctrl
+chunkToDocE NewlineChunk         = Hardline
+chunkToDocE (StringChunk c1 str) = Ansi (\c0 -> c1 ++ c0) (Doc [String str])
+chunkToDocE (ControlChunk ctrl)  = Control ctrl
 
 
 --------------------------------------------------------------------------------
