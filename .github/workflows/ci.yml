@@ -9,14 +9,18 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macOS-latest]
-        ghc: ["8.10.4"]
+        ghc: ["9.2.5"]
 
     steps:
     - run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
+    - name: 'Set up system dependencies'
+      if: matrix.os == 'macOS-latest'
+      run: 'brew install pkg-config'
+
     - name: Get the version
       id: get_version
-      run: 'echo ::set-output name=version::${GITHUB_REF#refs/tags/}'
+      run: 'echo version=${GITHUB_REF#refs/tags/} >>$GITHUB_OUTPUT'
 
     - uses: actions/checkout@v2
 
@@ -63,7 +67,7 @@ jobs:
     steps:
     - name: Get the version
       id: get_version
-      run: 'echo ::set-output name=version::${GITHUB_REF#refs/tags/}'
+      run: 'echo version=${GITHUB_REF#refs/tags/} >>$GITHUB_OUTPUT'
 
     - uses: actions/download-artifact@v2
       with:
