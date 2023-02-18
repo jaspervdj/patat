@@ -248,7 +248,7 @@ prettyBlock _theme Pandoc.HorizontalRule = "---"
 
 prettyBlock theme@Theme {..} (Pandoc.BlockQuote bs) =
     let quote = PP.NotTrimmable (themed themeBlockQuote "> ") in
-    PP.indent quote quote (prettyBlocks theme bs)
+    PP.indent quote quote (themed themeBlockQuote $ prettyBlocks theme bs)
 
 prettyBlock theme@Theme {..} (Pandoc.DefinitionList terms) =
     PP.vcat $ map prettyDefinition terms
