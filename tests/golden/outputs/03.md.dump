@@ -10,12 +10,12 @@
 [m----------[0m
 [33m                                 03.md                                  [0m
 
-[32m> [0m[mSome quote[0m
+[32m> Some quote[0m
 
-[32m> [0m[mQuote with embedded list:[0m
+[32m> Quote with embedded list:[0m
 [32m> [0m
-[32m> [0m[35m  - [0m[mHello[0m
-[32m> [0m[35m  - [0m[mWorld[0m
+[32m> [0m[35m  - [0m[32mHello[0m
+[32m> [0m[35m  - [0m[32mWorld[0m
 
 [33m                                                                  2 / 5 [0m
 
@@ -24,7 +24,7 @@
 
 [35m  - [0m[mList with an embedded quote:[0m
 
-[m    [0m[32m> [0m[mTu quoque[0m
+[m    [0m[32m> Tu quoque[0m
 
 [m    Wow rad stuff.[0m
 
