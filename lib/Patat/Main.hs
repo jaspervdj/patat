@@ -12,7 +12,7 @@ import           Control.Concurrent           (forkIO, killThread, threadDelay)
 import           Control.Concurrent.Chan      (Chan)
 import qualified Control.Concurrent.Chan      as Chan
 import           Control.Exception            (bracket)
-import           Control.Monad                (forever, unless, when)
+import           Control.Monad                (forever, unless, when, forM_)
 import qualified Data.Aeson.Extended          as A
 import           Data.Functor                 (($>))
 import qualified Data.Text                    as T
@@ -36,7 +36,7 @@ import qualified Text.PrettyPrint.ANSI.Leijen as PPL
 
 --------------------------------------------------------------------------------
 data Options = Options
-    { oFilePath :: !(Maybe FilePath)
+    { oFilePath :: !([FilePath])
     , oForce    :: !Bool
     , oDump     :: !Bool
     , oWatch    :: !Bool
@@ -47,9 +47,9 @@ data Options = Options
 --------------------------------------------------------------------------------
 parseOptions :: OA.Parser Options
 parseOptions = Options
-    <$> (OA.optional $ OA.strArgument $
-            OA.metavar "FILENAME" <>
-            OA.help    "Input file")
+    <$> (OA.many $ OA.strArgument $
+            OA.metavar "FILENAMES" <>
+            OA.help    "Input files")
     <*> (OA.switch $
             OA.long    "force" <>
             OA.short   'f' <>
@@ -114,6 +114,57 @@ assertAnsiFeatures = do
         , "If you still want to run the presentation, use `--force`."
         ]
 
+--------------------------------------------------------------------------------
+present :: Bool -> Presentation -> IO ()
+present watchChanges presentation =
+  traverse Images.new (psImages $ pSettings presentation) >>= \images ->
+    interactively readPresentationCommand $ \commandChan0 -> do
+      -- If an auto delay is set, use 'autoAdvance' to create a new one.
+      commandChan <- case psAutoAdvanceDelay (pSettings presentation) of
+        Nothing -> return commandChan0
+        Just (A.FlexibleNum delay) -> autoAdvance delay commandChan0
+
+      -- Spawn a thread that adds 'Reload' commands based on the file time.
+      mtime0 <- getModificationTime (pFilePath presentation)
+      when watchChanges $ do
+        _ <- forkIO $ watcher commandChan (pFilePath presentation) mtime0
+        return ()
+
+      let loop :: Presentation -> Maybe String -> IO ()
+          loop pres mbError = do
+            size <- getDisplaySize pres
+            let display = case mbError of
+                  Nothing -> displayPresentation size pres
+                  Just err ->
+                    DisplayDoc $
+                      displayPresentationError size pres err
+
+            Ansi.clearScreen
+            Ansi.setCursorPosition 0 0
+            cleanup <- case display of
+              DisplayDoc doc -> PP.putDoc doc $> mempty
+              DisplayImage path -> case images of
+                Nothing -> do
+                  PP.putDoc $
+                    displayPresentationError
+                      size
+                      pres
+                      "image backend not initialized"
+                  pure mempty
+                Just img -> do
+                  putStrLn ""
+                  IO.hFlush IO.stdout
+                  Images.drawImage img path
+
+            c <- Chan.readChan commandChan
+            update <- updatePresentation c pres
+            cleanup
+            case update of
+              ExitedPresentation -> return ()
+              UpdatedPresentation pres' -> loop pres' Nothing
+              ErroredPresentation err -> loop pres (Just err)
+
+      loop presentation Nothing
 
 --------------------------------------------------------------------------------
 main :: IO ()
@@ -125,71 +176,21 @@ main = do
         putStrLn $ "Using pandoc: " ++ T.unpack Pandoc.pandocVersion
         exitSuccess
 
-    filePath <- case oFilePath options of
-        Just fp -> return fp
-        Nothing -> OA.handleParseResult $ OA.Failure $
-            OA.parserFailure parserPrefs parserInfo
-            (OA.ShowHelpText Nothing) mempty
-
-    errOrPres <- readPresentation filePath
-    pres      <- either (errorAndExit . return) return errOrPres
-
     unless (oForce options) assertAnsiFeatures
 
-    -- (Maybe) initialize images backend.
-    images <- traverse Images.new (psImages $ pSettings pres)
-
-    if oDump options
-        then dumpPresentation pres
-        else interactiveLoop options images pres
-  where
-    interactiveLoop :: Options -> Maybe Images.Handle -> Presentation -> IO ()
-    interactiveLoop options images pres0 =
-        interactively readPresentationCommand $ \commandChan0 -> do
-
-        -- If an auto delay is set, use 'autoAdvance' to create a new one.
-        commandChan <- case psAutoAdvanceDelay (pSettings pres0) of
-            Nothing                    -> return commandChan0
-            Just (A.FlexibleNum delay) -> autoAdvance delay commandChan0
-
-        -- Spawn a thread that adds 'Reload' commands based on the file time.
-        mtime0 <- getModificationTime (pFilePath pres0)
-        when (oWatch options) $ do
-            _ <- forkIO $ watcher commandChan (pFilePath pres0) mtime0
-            return ()
-
-        let loop :: Presentation -> Maybe String -> IO ()
-            loop pres mbError = do
-                size <- getDisplaySize pres
-                let display = case mbError of
-                        Nothing  -> displayPresentation size pres
-                        Just err -> DisplayDoc $
-                            displayPresentationError size pres err
-
-                Ansi.clearScreen
-                Ansi.setCursorPosition 0 0
-                cleanup <- case display of
-                    DisplayDoc doc -> PP.putDoc doc $> mempty
-                    DisplayImage path -> case images of
-                        Nothing -> do
-                            PP.putDoc $ displayPresentationError
-                                 size pres "image backend not initialized"
-                            pure mempty
-                        Just img -> do
-                            putStrLn ""
-                            IO.hFlush IO.stdout
-                            Images.drawImage img path
-
-                c      <- Chan.readChan commandChan
-                update <- updatePresentation c pres
-                cleanup
-                case update of
-                    ExitedPresentation        -> return ()
-                    UpdatedPresentation pres' -> loop pres' Nothing
-                    ErroredPresentation err   -> loop pres (Just err)
-
-        loop pres0 Nothing
-
+    filePaths <- case oFilePath options of
+        [] -> OA.handleParseResult $ OA.Failure $
+            OA.parserFailure parserPrefs parserInfo
+            (OA.ShowHelpText Nothing) mempty
+        fp -> return fp
+    forM_ filePaths (tryPresent options)
+    where 
+      tryPresent options filePath = do
+        errOrPres <- readPresentation filePath
+        pres      <- either (errorAndExit . return) return errOrPres
+        if oDump options
+            then dumpPresentation pres
+            else present (oWatch options) pres
 
 --------------------------------------------------------------------------------
 -- | Utility for dealing with pecularities of stdin & interactive applications
