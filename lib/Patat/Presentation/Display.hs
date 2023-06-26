@@ -132,17 +132,13 @@ displayPresentation size pres@Presentation {..} =
             PP.indent spaces spaces pblock
 
   where
-    -- Check if the fragment consists of just a single image, or a header and
-    -- some image.
-    onlyImage (Fragment blocks)
-            | [Pandoc.Para para] <- filter isVisibleBlock blocks
-            , [Pandoc.Image _ _ (target, _)] <- para =
-        Just target
-    onlyImage (Fragment blocks)
-            | [Pandoc.Header _ _ _, Pandoc.Para para] <- filter isVisibleBlock blocks
-            , [Pandoc.Image _ _ (target, _)] <- para =
-        Just target
-    onlyImage _ = Nothing
+    -- Check if the fragment consists of "just a single image".  Discard
+    -- headers.
+    onlyImage (Fragment (Pandoc.Header{} : bs)) = onlyImage (Fragment bs)
+    onlyImage (Fragment bs) = case filter isVisibleBlock bs of
+        [Pandoc.Figure _ _ bs'] -> onlyImage (Fragment bs')
+        [Pandoc.Para [Pandoc.Image _ _ (target, _)]] -> Just target
+        _ -> Nothing
 
 
 --------------------------------------------------------------------------------
