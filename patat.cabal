@@ -31,7 +31,7 @@ Library
   Default-language:  Haskell2010
 
   Build-depends:
-    aeson                >= 2.0  && < 2.1,
+    aeson                >= 2.0  && < 2.2,
     ansi-terminal        >= 0.6  && < 0.12,
     ansi-wl-pprint       >= 0.6  && < 0.7,
     async                >= 2.2  && < 2.3,
@@ -49,8 +49,8 @@ Library
     process              >= 1.6  && < 1.7,
     skylighting          >= 0.10 && < 0.14,
     terminal-size        >= 0.3  && < 0.4,
-    text                 >= 1.2  && < 1.3,
-    time                 >= 1.4  && < 1.12,
+    text                 >= 1.2  && < 2.1,
+    time                 >= 1.4  && < 1.13,
     unordered-containers >= 0.2  && < 0.3,
     yaml                 >= 0.8  && < 0.12,
     wcwidth              >= 0.0  && < 0.1,
@@ -117,8 +117,8 @@ Executable patat-make-man
     doctemplates >= 0.8 && < 0.12,
     mtl          >= 2.2 && < 2.3,
     pandoc       >= 3.1 && < 3.2,
-    text         >= 1.2 && < 1.3,
-    time         >= 1.6 && < 1.12
+    text         >= 1.2 && < 2.1,
+    time         >= 1.6 && < 1.13
 
 Test-suite patat-tests
   Main-is:          Main.hs
@@ -138,5 +138,5 @@ Test-suite patat-tests
     tasty            >= 1.2  && < 1.5,
     tasty-hunit      >= 0.10 && < 0.11,
     tasty-quickcheck >= 0.10 && < 0.11,
-    text             >= 1.2  && < 1.3,
+    text             >= 1.2  && < 2.1,
     QuickCheck       >= 2.8  && < 2.15
