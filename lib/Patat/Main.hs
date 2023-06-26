@@ -8,30 +8,30 @@ module Patat.Main
 
 
 --------------------------------------------------------------------------------
-import           Control.Concurrent           (forkIO, killThread, threadDelay)
-import           Control.Concurrent.Chan      (Chan)
-import qualified Control.Concurrent.Chan      as Chan
-import           Control.Exception            (bracket)
-import           Control.Monad                (forever, unless, when)
-import qualified Data.Aeson.Extended          as A
-import           Data.Functor                 (($>))
-import qualified Data.Text                    as T
-import           Data.Time                    (UTCTime)
-import           Data.Version                 (showVersion)
-import qualified Options.Applicative          as OA
+import           Control.Concurrent              (forkIO, killThread,
+                                                  threadDelay)
+import           Control.Concurrent.Chan         (Chan)
+import qualified Control.Concurrent.Chan         as Chan
+import           Control.Exception               (bracket)
+import           Control.Monad                   (forever, unless, when)
+import qualified Data.Aeson.Extended             as A
+import           Data.Functor                    (($>))
+import           Data.Time                       (UTCTime)
+import           Data.Version                    (showVersion)
+import qualified Options.Applicative             as OA
+import qualified Options.Applicative.Help.Pretty as OA.PP
 import           Patat.AutoAdvance
-import qualified Patat.Images                 as Images
+import qualified Patat.Images                    as Images
 import           Patat.Presentation
-import qualified Patat.PrettyPrint            as PP
+import qualified Patat.PrettyPrint               as PP
 import qualified Paths_patat
 import           Prelude
-import qualified System.Console.ANSI          as Ansi
-import           System.Directory             (doesFileExist,
-                                               getModificationTime)
-import           System.Exit                  (exitFailure, exitSuccess)
-import qualified System.IO                    as IO
-import qualified Text.Pandoc                  as Pandoc
-import qualified Text.PrettyPrint.ANSI.Leijen as PPL
+import qualified System.Console.ANSI             as Ansi
+import           System.Directory                (doesFileExist,
+                                                  getModificationTime)
+import           System.Exit                     (exitFailure, exitSuccess)
+import qualified System.IO                       as IO
+import qualified Text.Pandoc                     as Pandoc
 
 
 --------------------------------------------------------------------------------
@@ -77,7 +77,7 @@ parserInfo = OA.info (OA.helper <*> parseOptions) $
     OA.header ("patat v" <> showVersion Paths_patat.version) <>
     OA.progDescDoc (Just desc)
   where
-    desc = PPL.vcat
+    desc = OA.PP.vcat
         [ "Terminal-based presentations using Pandoc"
         , ""
         , "Controls:"
@@ -121,8 +121,8 @@ main = do
     options <- OA.customExecParser parserPrefs parserInfo
 
     when (oVersion options) $ do
-        putStrLn (showVersion Paths_patat.version)
-        putStrLn $ "Using pandoc: " ++ T.unpack Pandoc.pandocVersion
+        putStrLn $ showVersion Paths_patat.version
+        putStrLn $ "Using pandoc: " ++ showVersion Pandoc.pandocVersion
         exitSuccess
 
     filePath <- case oFilePath options of

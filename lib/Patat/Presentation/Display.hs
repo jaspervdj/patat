@@ -282,18 +282,15 @@ prettyBlock theme (Pandoc.Table _ caption specs thead tbodies tfoot) =
 
 prettyBlock theme (Pandoc.Div _attrs blocks) = prettyBlocks theme blocks
 
-prettyBlock _theme Pandoc.Null = mempty
-
-#if MIN_VERSION_pandoc(1,18,0)
--- 'LineBlock' elements are new in pandoc-1.18
 prettyBlock theme@Theme {..} (Pandoc.LineBlock inliness) =
     let ind = PP.NotTrimmable (themed themeLineBlock "| ") in
     PP.wrapAt Nothing $
     PP.indent ind ind $
     PP.vcat $
     map (prettyInlines theme) inliness
-#endif
 
+prettyBlock theme (Pandoc.Figure _attr _caption blocks) =
+    prettyBlocks theme blocks
 
 --------------------------------------------------------------------------------
 prettyBlocks :: Theme -> [Pandoc.Block] -> PP.Doc
@@ -394,7 +391,6 @@ isReferenceLink _ = False
 
 --------------------------------------------------------------------------------
 isVisibleBlock :: Pandoc.Block -> Bool
-isVisibleBlock Pandoc.Null = False
 isVisibleBlock (Pandoc.RawBlock (Pandoc.Format "html") t) =
     not ("<!--" `T.isPrefixOf` t && "-->" `T.isSuffixOf` t)
 isVisibleBlock _ = True

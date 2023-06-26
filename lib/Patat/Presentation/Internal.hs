@@ -188,10 +188,12 @@ instance A.FromJSON ExtensionList where
                 Nothing -> fail $
                     "Unknown extension: " ++ show txt ++
                     ", known extensions are: " ++
-                    intercalate ", "
-                        [ show (drop 4 (show e))
-                        | e <- [minBound .. maxBound] :: [Pandoc.Extension]
-                        ]
+                    intercalate ", " (map (drop 4 . show) allExts)
+          where
+            -- This is an approximation since we can't enumerate extensions
+            -- anymore in the latest pandoc...
+            allExts = Pandoc.extensionsToList $
+                Pandoc.getAllExtensions "markdown"
 
 
 --------------------------------------------------------------------------------
