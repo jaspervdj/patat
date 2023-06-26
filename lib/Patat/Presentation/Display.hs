@@ -165,7 +165,7 @@ dumpPresentation pres@Presentation {..} =
         j <- [0 .. numFragments slide - 1]
         case displayPresentation size pres {pActiveFragment = (i, j)} of
             DisplayDoc doc -> [doc]
-            DisplayImage _ -> []
+            DisplayImage filepath -> [PP.string $ "image:" ++ filepath]
 
 
 --------------------------------------------------------------------------------
