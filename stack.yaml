@@ -1,4 +1,5 @@
-resolver: 'lts-20.10'
+resolver: 'lts-21.0'
+compiler: 'ghc-9.4.3'
 save-hackage-creds: false
 
 packages:
@@ -8,7 +9,8 @@ flags:
   patat:
     patat-make-man: true
 
-extra-deps: []
+extra-deps:
+- 'pandoc-3.1.2'
 
 nix:
   packages:

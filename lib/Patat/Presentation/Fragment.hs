@@ -66,8 +66,8 @@ fragmentBlock _ block@(Pandoc.DefinitionList {}) = [Append [block]]
 fragmentBlock _ block@(Pandoc.Table {})          = [Append [block]]
 fragmentBlock _ block@(Pandoc.Div {})            = [Append [block]]
 fragmentBlock _ block@Pandoc.HorizontalRule      = [Append [block]]
-fragmentBlock _ block@Pandoc.Null                = [Append [block]]
 fragmentBlock _ block@(Pandoc.LineBlock {})      = [Append [block]]
+fragmentBlock _ block@(Pandoc.Figure {})         = [Append [block]]
 
 fragmentList
     :: FragmentSettings                    -- ^ Global settings
