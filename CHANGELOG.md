@@ -1,5 +1,16 @@
 # Changelog
 
+- 0.8.9.0 (2023-06-27)
+    * Apply block quote theming to entire block (#119) (#111)
+    * Fix table header theming (#128)
+    * Dependency updates:
+        - `aeson` to 2.1
+        - `optparse-applicative` to 0.18
+        - `pandoc` to 3.1
+        - `pandoc-types` to 1.23
+        - `text` to 2.0
+        - `time` to 1.12
+
 - 0.8.8.0 (2022-10-26)
     * Allow hiding slide number (contribution by Paweł Dybiec)
     * Support additional markdown extensions (contribution by Spreadcat)
