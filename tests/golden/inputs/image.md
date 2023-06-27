@@ -1,7 +1,7 @@
 ---
 patat:
   images:
-    backend: auto
+    backend: iterm2
 ...
 
 # An image
