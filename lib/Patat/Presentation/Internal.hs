@@ -39,9 +39,9 @@ import qualified Data.Foldable                  as Foldable
 import qualified Data.HashMap.Strict            as HMS
 import           Data.List                      (intercalate)
 import           Data.Maybe                     (fromMaybe)
+import           Data.Sequence.Extended         (Seq)
+import qualified Data.Sequence.Extended         as Seq
 import qualified Data.Text                      as T
-import qualified Data.Sequence.Extended as Seq
-import           Data.Sequence.Extended (Seq)
 import qualified Patat.Presentation.Instruction as Instruction
 import qualified Patat.Theme                    as Theme
 import           Prelude
