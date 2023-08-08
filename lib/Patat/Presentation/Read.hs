@@ -19,6 +19,8 @@ import qualified Data.Aeson                     as A
 import qualified Data.Aeson.KeyMap              as AKM
 import           Data.Bifunctor                 (first)
 import           Data.Maybe                     (fromMaybe)
+import           Data.Sequence.Extended         (Seq)
+import qualified Data.Sequence.Extended         as Seq
 import qualified Data.Text                      as T
 import qualified Data.Text.Encoding             as T
 import qualified Data.Text.IO                   as T
@@ -155,7 +157,7 @@ readHomeSettings = do
 
 
 --------------------------------------------------------------------------------
-pandocToSlides :: PresentationSettings -> Pandoc.Pandoc -> [Slide]
+pandocToSlides :: PresentationSettings -> Pandoc.Pandoc -> Seq.Seq Slide
 pandocToSlides settings pandoc =
     let slideLevel   = fromMaybe (detectSlideLevel pandoc) (psSlideLevel settings)
         unfragmented = splitSlides slideLevel pandoc
@@ -166,7 +168,7 @@ pandocToSlides settings pandoc =
                     fragmentInstructions fragmentSettings instrs0
             | slide <- unfragmented
             ] in
-    fragmented
+    Seq.fromList fragmented
   where
     fragmentSettings = FragmentSettings
         { fsIncrementalLists = fromMaybe False (psIncrementalLists settings)
@@ -221,12 +223,13 @@ splitSlides slideLevel (Pandoc.Pandoc _meta blocks0)
     splitAtHeaders acc (b : bs) =
         splitAtHeaders (b : acc) bs
 
-collectBreadcrumbs :: [Slide] -> [Breadcrumbs]
+collectBreadcrumbs :: Seq Slide -> Seq Breadcrumbs
 collectBreadcrumbs = go []
   where
-    go breadcrumbs = \case
-        [] -> []
-        ContentSlide _ : slides -> breadcrumbs : go breadcrumbs slides
-        TitleSlide lvl inlines : slides ->
+    go breadcrumbs slides0 = case Seq.viewl slides0 of
+        Seq.EmptyL -> Seq.empty
+        ContentSlide _ Seq.:< slides ->
+            breadcrumbs `Seq.cons` go breadcrumbs slides
+        TitleSlide lvl inlines Seq.:< slides ->
             let parent = filter ((< lvl) . fst) breadcrumbs in
-            parent : go (parent ++ [(lvl, inlines)]) slides
+            parent `Seq.cons` go (parent ++ [(lvl, inlines)]) slides

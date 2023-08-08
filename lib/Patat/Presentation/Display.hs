@@ -18,8 +18,8 @@ import qualified Data.Aeson.Extended                  as A
 import           Data.Char.WCWidth.Extended           (wcstrwidth)
 import           Data.Data.Extended                   (grecQ)
 import qualified Data.List                            as L
-import           Data.Maybe                           (fromMaybe, listToMaybe,
-                                                       maybeToList)
+import           Data.Maybe                           (fromMaybe, maybeToList)
+import qualified Data.Sequence.Extended               as Seq
 import qualified Data.Text                            as T
 import           Patat.Presentation.Display.CodeBlock
 import           Patat.Presentation.Display.Table
@@ -78,7 +78,7 @@ displayWithBorders (Size rows columns) Presentation {..} f =
     theme       = fromMaybe Theme.defaultTheme (psTheme settings)
 
     -- Compute title.
-    breadcrumbs = fromMaybe [] . listToMaybe $ drop sidx pBreadcrumbs
+    breadcrumbs = fromMaybe [] $ Seq.safeIndex pBreadcrumbs sidx
     plainTitle  = PP.toString $ prettyInlines theme pTitle
     breadTitle  = mappend plainTitle $ mconcat
         [ s

@@ -38,7 +38,9 @@ import qualified Data.Aeson.TH.Extended         as A
 import qualified Data.Foldable                  as Foldable
 import qualified Data.HashMap.Strict            as HMS
 import           Data.List                      (intercalate)
-import           Data.Maybe                     (fromMaybe, listToMaybe)
+import           Data.Maybe                     (fromMaybe)
+import           Data.Sequence.Extended         (Seq)
+import qualified Data.Sequence.Extended         as Seq
 import qualified Data.Text                      as T
 import qualified Patat.Presentation.Instruction as Instruction
 import qualified Patat.Theme                    as Theme
@@ -57,8 +59,8 @@ data Presentation = Presentation
     , pTitle          :: ![Pandoc.Inline]
     , pAuthor         :: ![Pandoc.Inline]
     , pSettings       :: !PresentationSettings
-    , pSlides         :: [Slide]
-    , pBreadcrumbs    :: [Breadcrumbs]  -- One for each slide.
+    , pSlides         :: !(Seq Slide)
+    , pBreadcrumbs    :: !(Seq Breadcrumbs)  -- One for each slide.
     , pActiveFragment :: !Index
     } deriving (Show)
 
@@ -271,7 +273,7 @@ type Index = (Int, Int)
 
 --------------------------------------------------------------------------------
 getSlide :: Int -> Presentation -> Maybe Slide
-getSlide sidx = listToMaybe . drop sidx . pSlides
+getSlide sidx = (`Seq.safeIndex` sidx) . pSlides
 
 
 --------------------------------------------------------------------------------
