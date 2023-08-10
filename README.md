@@ -24,7 +24,7 @@ Features:
 - Supports [evaluating code snippets and showing the result](#evaluating-code).
 - Written in [Haskell].
 
-![screenshot](extra/screenshot.png?raw=true)
+![screenshot](extra/demo.gif?raw=true)
 
 [Kate]: https://kate-editor.org/
 [Haskell]: http://haskell.org/
