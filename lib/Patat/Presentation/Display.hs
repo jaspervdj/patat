@@ -22,6 +22,7 @@ import           Data.Maybe                           (fromMaybe, maybeToList)
 import qualified Data.Sequence.Extended               as Seq
 import qualified Data.Text                            as T
 import           Patat.Presentation.Display.CodeBlock
+import           Patat.Presentation.Display.Internal
 import           Patat.Presentation.Display.Table
 import           Patat.Presentation.Internal
 import           Patat.PrettyPrint                    ((<$$>), (<+>))
@@ -59,7 +60,7 @@ data Display = DisplayDoc PP.Doc | DisplayImage FilePath deriving (Show)
 -- | Display something within the presentation borders that draw the title and
 -- the active slide number and so on.
 displayWithBorders
-    :: Size -> Presentation -> (Size -> Theme -> PP.Doc) -> PP.Doc
+    :: Size -> Presentation -> (Size -> DisplaySettings -> PP.Doc) -> PP.Doc
 displayWithBorders (Size rows columns) Presentation {..} f =
     (if null title
         then mempty
@@ -67,7 +68,7 @@ displayWithBorders (Size rows columns) Presentation {..} f =
             let titleRemainder = columns - titleWidth - titleOffset
                 wrappedTitle = PP.spaces titleOffset <> PP.string title <> PP.spaces titleRemainder in
         borders wrappedTitle <> PP.hardline <> PP.hardline) <>
-    formatWith settings (f canvasSize theme) <> PP.hardline <>
+    formatWith settings (f canvasSize ds) <> PP.hardline <>
     PP.goToLine (rows - 2) <>
     borders (PP.space <> PP.string author <> middleSpaces <> PP.string active <> PP.space) <>
     PP.hardline
@@ -75,14 +76,17 @@ displayWithBorders (Size rows columns) Presentation {..} f =
     -- Get terminal width/title
     (sidx, _)   = pActiveFragment
     settings    = pSettings {psColumns = Just $ A.FlexibleNum columns}
-    theme       = fromMaybe Theme.defaultTheme (psTheme settings)
+    ds          = DisplaySettings
+        { dsTheme     = fromMaybe Theme.defaultTheme (psTheme settings)
+        , dsSyntaxMap = pSyntaxMap
+        }
 
     -- Compute title.
     breadcrumbs = fromMaybe [] $ Seq.safeIndex pBreadcrumbs sidx
-    plainTitle  = PP.toString $ prettyInlines theme pTitle
+    plainTitle  = PP.toString $ prettyInlines ds pTitle
     breadTitle  = mappend plainTitle $ mconcat
         [ s
-        | b <- map (prettyInlines theme . snd) breadcrumbs
+        | b <- map (prettyInlines ds . snd) breadcrumbs
         , s <- [" > ", PP.toString b]
         ]
     title
@@ -93,7 +97,7 @@ displayWithBorders (Size rows columns) Presentation {..} f =
     -- Dimensions of title.
     titleWidth  = wcstrwidth title
     titleOffset = (columns - titleWidth) `div` 2
-    borders     = themed (themeBorders theme)
+    borders     = themed ds themeBorders
 
     -- Room left for content
     canvasSize = Size (rows - 2) columns
@@ -103,7 +107,7 @@ displayWithBorders (Size rows columns) Presentation {..} f =
         | fromMaybe True $ psSlideNumber settings = show (sidx + 1) ++ " / " ++ show (length pSlides)
         | otherwise                               = ""
     activeWidth  = wcstrwidth active
-    author       = PP.toString (prettyInlines theme pAuthor)
+    author       = PP.toString (prettyInlines ds pAuthor)
     authorWidth  = wcstrwidth author
     middleSpaces = PP.spaces $ columns - activeWidth - authorWidth - 2
 
@@ -146,8 +150,8 @@ displayPresentation size pres@Presentation {..} =
 -- want to display an error but keep the presentation running.
 displayPresentationError :: Size -> Presentation -> String -> PP.Doc
 displayPresentationError size pres err =
-    displayWithBorders size pres $ \_ Theme {..} ->
-        themed themeStrong "Error occurred in the presentation:" <$$>
+    displayWithBorders size pres $ \_ ds ->
+        themed ds themeStrong "Error occurred in the presentation:" <$$>
         "" <$$>
         (PP.string err)
 
@@ -181,34 +185,34 @@ formatWith ps = wrap . indent
 
 
 --------------------------------------------------------------------------------
-prettyFragment :: Theme -> Fragment -> PP.Doc
-prettyFragment theme (Fragment blocks) =
-    prettyBlocks theme blocks <>
-    case prettyReferences theme blocks of
+prettyFragment :: DisplaySettings -> Fragment -> PP.Doc
+prettyFragment ds (Fragment blocks) =
+    prettyBlocks ds blocks <>
+    case prettyReferences ds blocks of
         []   -> mempty
         refs -> PP.hardline <> PP.vcat refs
 
 
 --------------------------------------------------------------------------------
-prettyBlock :: Theme -> Pandoc.Block -> PP.Doc
+prettyBlock :: DisplaySettings -> Pandoc.Block -> PP.Doc
 
-prettyBlock theme (Pandoc.Plain inlines) = prettyInlines theme inlines
+prettyBlock ds (Pandoc.Plain inlines) = prettyInlines ds inlines
 
-prettyBlock theme (Pandoc.Para inlines) =
-    prettyInlines theme inlines <> PP.hardline
+prettyBlock ds (Pandoc.Para inlines) =
+    prettyInlines ds inlines <> PP.hardline
 
-prettyBlock theme@Theme {..} (Pandoc.Header i _ inlines) =
-    themed themeHeader (PP.string (replicate i '#') <+> prettyInlines theme inlines) <>
+prettyBlock ds (Pandoc.Header i _ inlines) =
+    themed ds themeHeader (PP.string (replicate i '#') <+> prettyInlines ds inlines) <>
     PP.hardline
 
-prettyBlock theme (Pandoc.CodeBlock (_, classes, _) txt) =
-    prettyCodeBlock theme classes txt
+prettyBlock ds (Pandoc.CodeBlock (_, classes, _) txt) =
+    prettyCodeBlock ds classes txt
 
-prettyBlock theme (Pandoc.BulletList bss) = PP.vcat
+prettyBlock ds (Pandoc.BulletList bss) = PP.vcat
     [ PP.indent
-        (PP.NotTrimmable $ themed (themeBulletList theme) prefix)
+        (PP.NotTrimmable $ themed ds themeBulletList prefix)
         (PP.Trimmable "    ")
-        (prettyBlocks theme' bs)
+        (prettyBlocks ds' bs)
     | bs <- bss
     ] <> PP.hardline
   where
@@ -218,16 +222,18 @@ prettyBlock theme (Pandoc.BulletList bss) = PP.vcat
         _            -> '-'
 
     -- Cycle the markers.
+    theme  = dsTheme ds
     theme' = theme
         { themeBulletListMarkers =
             (\ls -> T.drop 1 ls <> T.take 1 ls) <$> themeBulletListMarkers theme
         }
+    ds'    = ds {dsTheme = theme'}
 
-prettyBlock theme@Theme {..} (Pandoc.OrderedList _ bss) = PP.vcat
+prettyBlock ds (Pandoc.OrderedList _ bss) = PP.vcat
     [ PP.indent
-        (PP.NotTrimmable $ themed themeOrderedList $ PP.string prefix)
+        (PP.NotTrimmable $ themed ds themeOrderedList $ PP.string prefix)
         (PP.Trimmable "    ")
-        (prettyBlocks theme bs)
+        (prettyBlocks ds bs)
     | (prefix, bs) <- zip padded bss
     ] <> PP.hardline
   where
@@ -237,34 +243,34 @@ prettyBlock theme@Theme {..} (Pandoc.OrderedList _ bss) = PP.vcat
         | i <- [1 .. length bss]
         ]
 
-prettyBlock _theme (Pandoc.RawBlock _ t) = PP.text t <> PP.hardline
+prettyBlock _ds (Pandoc.RawBlock _ t) = PP.text t <> PP.hardline
 
-prettyBlock _theme Pandoc.HorizontalRule = "---"
+prettyBlock _ds Pandoc.HorizontalRule = "---"
 
-prettyBlock theme@Theme {..} (Pandoc.BlockQuote bs) =
-    let quote = PP.NotTrimmable (themed themeBlockQuote "> ") in
-    PP.indent quote quote (themed themeBlockQuote $ prettyBlocks theme bs)
+prettyBlock ds (Pandoc.BlockQuote bs) =
+    let quote = PP.NotTrimmable (themed ds themeBlockQuote "> ") in
+    PP.indent quote quote (themed ds themeBlockQuote $ prettyBlocks ds bs)
 
-prettyBlock theme@Theme {..} (Pandoc.DefinitionList terms) =
+prettyBlock ds (Pandoc.DefinitionList terms) =
     PP.vcat $ map prettyDefinition terms
   where
     prettyDefinition (term, definitions) =
-        themed themeDefinitionTerm (prettyInlines theme term) <$$>
+        themed ds themeDefinitionTerm (prettyInlines ds term) <$$>
         PP.hardline <> PP.vcat
         [ PP.indent
-            (PP.NotTrimmable (themed themeDefinitionList ":   "))
+            (PP.NotTrimmable (themed ds themeDefinitionList ":   "))
             (PP.Trimmable "    ") $
-            prettyBlocks theme (Pandoc.plainToPara definition)
+            prettyBlocks ds (Pandoc.plainToPara definition)
         | definition <- definitions
         ]
 
-prettyBlock theme (Pandoc.Table _ caption specs thead tbodies tfoot) =
+prettyBlock ds (Pandoc.Table _ caption specs thead tbodies tfoot) =
     PP.wrapAt Nothing $
-    prettyTable theme Table
-        { tCaption = prettyInlines theme caption'
+    prettyTable ds Table
+        { tCaption = prettyInlines ds caption'
         , tAligns  = map align aligns
-        , tHeaders = map (prettyBlocks theme) headers
-        , tRows    = map (map (prettyBlocks theme)) rows
+        , tHeaders = map (prettyBlocks ds) headers
+        , tRows    = map (map (prettyBlocks ds)) rows
         }
   where
     (caption', aligns, _, headers, rows) = Pandoc.toLegacyTable
@@ -275,90 +281,90 @@ prettyBlock theme (Pandoc.Table _ caption specs thead tbodies tfoot) =
     align Pandoc.AlignDefault = PP.AlignLeft
     align Pandoc.AlignRight   = PP.AlignRight
 
-prettyBlock theme (Pandoc.Div _attrs blocks) = prettyBlocks theme blocks
+prettyBlock ds (Pandoc.Div _attrs blocks) = prettyBlocks ds blocks
 
-prettyBlock theme@Theme {..} (Pandoc.LineBlock inliness) =
-    let ind = PP.NotTrimmable (themed themeLineBlock "| ") in
+prettyBlock ds (Pandoc.LineBlock inliness) =
+    let ind = PP.NotTrimmable (themed ds themeLineBlock "| ") in
     PP.wrapAt Nothing $
     PP.indent ind ind $
     PP.vcat $
-    map (prettyInlines theme) inliness
+    map (prettyInlines ds) inliness
 
-prettyBlock theme (Pandoc.Figure _attr _caption blocks) =
-    prettyBlocks theme blocks
-
---------------------------------------------------------------------------------
-prettyBlocks :: Theme -> [Pandoc.Block] -> PP.Doc
-prettyBlocks theme = PP.vcat . map (prettyBlock theme) . filter isVisibleBlock
-
+prettyBlock ds (Pandoc.Figure _attr _caption blocks) =
+    prettyBlocks ds blocks
 
 --------------------------------------------------------------------------------
-prettyInline :: Theme -> Pandoc.Inline -> PP.Doc
+prettyBlocks :: DisplaySettings -> [Pandoc.Block] -> PP.Doc
+prettyBlocks ds = PP.vcat . map (prettyBlock ds) . filter isVisibleBlock
 
-prettyInline _theme Pandoc.Space = PP.space
 
-prettyInline _theme (Pandoc.Str str) = PP.text str
+--------------------------------------------------------------------------------
+prettyInline :: DisplaySettings -> Pandoc.Inline -> PP.Doc
 
-prettyInline theme@Theme {..} (Pandoc.Emph inlines) =
-    themed themeEmph $
-    prettyInlines theme inlines
+prettyInline _ds Pandoc.Space = PP.space
 
-prettyInline theme@Theme {..} (Pandoc.Strong inlines) =
-    themed themeStrong $
-    prettyInlines theme inlines
+prettyInline _ds (Pandoc.Str str) = PP.text str
 
-prettyInline theme@Theme {..} (Pandoc.Underline inlines) =
-    themed themeUnderline $
-    prettyInlines theme inlines
+prettyInline ds (Pandoc.Emph inlines) =
+    themed ds themeEmph $
+    prettyInlines ds inlines
 
-prettyInline Theme {..} (Pandoc.Code _ txt) =
-    themed themeCode $
+prettyInline ds (Pandoc.Strong inlines) =
+    themed ds themeStrong $
+    prettyInlines ds inlines
+
+prettyInline ds (Pandoc.Underline inlines) =
+    themed ds themeUnderline $
+    prettyInlines ds inlines
+
+prettyInline ds (Pandoc.Code _ txt) =
+    themed ds themeCode $
     PP.text (" " <> txt <> " ")
 
-prettyInline theme@Theme {..} link@(Pandoc.Link _attrs text (target, _title))
+prettyInline ds link@(Pandoc.Link _attrs text (target, _title))
     | isReferenceLink link =
-        "[" <> themed themeLinkText (prettyInlines theme text) <> "]"
+        "[" <> themed ds themeLinkText (prettyInlines ds text) <> "]"
     | otherwise =
-        "<" <> themed themeLinkTarget (PP.text target) <> ">"
+        "<" <> themed ds themeLinkTarget (PP.text target) <> ">"
 
-prettyInline _theme Pandoc.SoftBreak = PP.softline
+prettyInline _ds Pandoc.SoftBreak = PP.softline
 
-prettyInline _theme Pandoc.LineBreak = PP.hardline
+prettyInline _ds Pandoc.LineBreak = PP.hardline
 
-prettyInline theme@Theme {..} (Pandoc.Strikeout t) =
-    "~~" <> themed themeStrikeout (prettyInlines theme t) <> "~~"
+prettyInline ds (Pandoc.Strikeout t) =
+    "~~" <> themed ds themeStrikeout (prettyInlines ds t) <> "~~"
 
-prettyInline theme@Theme {..} (Pandoc.Quoted Pandoc.SingleQuote t) =
-    "'" <> themed themeQuoted (prettyInlines theme t) <> "'"
-prettyInline theme@Theme {..} (Pandoc.Quoted Pandoc.DoubleQuote t) =
-    "'" <> themed themeQuoted (prettyInlines theme t) <> "'"
+prettyInline ds (Pandoc.Quoted Pandoc.SingleQuote t) =
+    "'" <> themed ds themeQuoted (prettyInlines ds t) <> "'"
+prettyInline ds (Pandoc.Quoted Pandoc.DoubleQuote t) =
+    "'" <> themed ds themeQuoted (prettyInlines ds t) <> "'"
 
-prettyInline Theme {..} (Pandoc.Math _ t) =
-    themed themeMath (PP.text t)
+prettyInline ds (Pandoc.Math _ t) =
+    themed ds themeMath (PP.text t)
 
-prettyInline theme@Theme {..} (Pandoc.Image _attrs text (target, _title)) =
-    "![" <> themed themeImageText (prettyInlines theme text) <> "](" <>
-    themed themeImageTarget (PP.text target) <> ")"
+prettyInline ds (Pandoc.Image _attrs text (target, _title)) =
+    "![" <> themed ds themeImageText (prettyInlines ds text) <> "](" <>
+    themed ds themeImageTarget (PP.text target) <> ")"
 
 -- These elements aren't really supported.
-prettyInline theme  (Pandoc.Cite      _ t) = prettyInlines theme t
-prettyInline theme  (Pandoc.Span      _ t) = prettyInlines theme t
-prettyInline _theme (Pandoc.RawInline _ t) = PP.text t
-prettyInline theme  (Pandoc.Note        t) = prettyBlocks  theme t
-prettyInline theme  (Pandoc.Superscript t) = prettyInlines theme t
-prettyInline theme  (Pandoc.Subscript   t) = prettyInlines theme t
-prettyInline theme  (Pandoc.SmallCaps   t) = prettyInlines theme t
+prettyInline ds  (Pandoc.Cite      _ t) = prettyInlines ds t
+prettyInline ds  (Pandoc.Span      _ t) = prettyInlines ds t
+prettyInline _ds (Pandoc.RawInline _ t) = PP.text t
+prettyInline ds  (Pandoc.Note        t) = prettyBlocks  ds t
+prettyInline ds  (Pandoc.Superscript t) = prettyInlines ds t
+prettyInline ds  (Pandoc.Subscript   t) = prettyInlines ds t
+prettyInline ds  (Pandoc.SmallCaps   t) = prettyInlines ds t
 -- prettyInline unsupported = PP.ondullred $ PP.string $ show unsupported
 
 
 --------------------------------------------------------------------------------
-prettyInlines :: Theme -> [Pandoc.Inline] -> PP.Doc
-prettyInlines theme = mconcat . map (prettyInline theme)
+prettyInlines :: DisplaySettings -> [Pandoc.Inline] -> PP.Doc
+prettyInlines ds = mconcat . map (prettyInline ds)
 
 
 --------------------------------------------------------------------------------
-prettyReferences :: Theme -> [Pandoc.Block] -> [PP.Doc]
-prettyReferences theme@Theme {..} =
+prettyReferences :: DisplaySettings -> [Pandoc.Block] -> [PP.Doc]
+prettyReferences ds =
     map prettyReference . getReferences
   where
     getReferences :: [Pandoc.Block] -> [Pandoc.Inline]
@@ -367,9 +373,10 @@ prettyReferences theme@Theme {..} =
     prettyReference :: Pandoc.Inline -> PP.Doc
     prettyReference (Pandoc.Link _attrs text (target, title)) =
         "[" <>
-        themed themeLinkText (prettyInlines theme $ Pandoc.newlineToSpace text) <>
+        themed ds themeLinkText
+            (prettyInlines ds $ Pandoc.newlineToSpace text) <>
         "](" <>
-        themed themeLinkTarget (PP.text target) <>
+        themed ds themeLinkTarget (PP.text target) <>
         (if T.null title
             then mempty
             else PP.space <> "\"" <> PP.text title <> "\"")

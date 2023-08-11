@@ -48,7 +48,8 @@ readPresentation filePath = runExceptT $ do
     metaSettings <- ExceptT $ return $ readMetaSettings src
     let settings = metaSettings <> homeSettings <> defaultPresentationSettings
 
-    syntaxMap <- ExceptT $ readSyntaxMap (psSyntaxDefinitions settings)
+    syntaxMap <- ExceptT $ readSyntaxMap $ fromMaybe [] $
+        psSyntaxDefinitions settings
     let pexts = fromMaybe defaultExtensionList (psPandocExtensions settings)
     reader <- case readExtension pexts ext of
         Nothing -> throwError $ "Unknown file extension: " ++ show ext

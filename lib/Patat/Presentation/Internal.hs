@@ -36,6 +36,7 @@ import           Control.Monad                  (mplus)
 import qualified Data.Aeson.Extended            as A
 import qualified Data.Aeson.TH.Extended         as A
 import qualified Data.Foldable                  as Foldable
+import           Data.Function                  (on)
 import qualified Data.HashMap.Strict            as HMS
 import           Data.List                      (intercalate)
 import           Data.Maybe                     (fromMaybe)
@@ -45,6 +46,7 @@ import qualified Data.Text                      as T
 import qualified Patat.Presentation.Instruction as Instruction
 import qualified Patat.Theme                    as Theme
 import           Prelude
+import qualified Skylighting                    as Skylighting
 import qualified Text.Pandoc                    as Pandoc
 import           Text.Read                      (readMaybe)
 
@@ -62,6 +64,7 @@ data Presentation = Presentation
     , pSlides         :: !(Seq Slide)
     , pBreadcrumbs    :: !(Seq Breadcrumbs)  -- One for each slide.
     , pActiveFragment :: !Index
+    , pSyntaxMap      :: !Skylighting.SyntaxMap
     } deriving (Show)
 
 
@@ -69,38 +72,40 @@ data Presentation = Presentation
 -- | These are patat-specific settings.  That is where they differ from more
 -- general metadata (author, title...)
 data PresentationSettings = PresentationSettings
-    { psRows             :: !(Maybe (A.FlexibleNum Int))
-    , psColumns          :: !(Maybe (A.FlexibleNum Int))
-    , psMargins          :: !(Maybe Margins)
-    , psWrap             :: !(Maybe Bool)
-    , psTheme            :: !(Maybe Theme.Theme)
-    , psIncrementalLists :: !(Maybe Bool)
-    , psAutoAdvanceDelay :: !(Maybe (A.FlexibleNum Int))
-    , psSlideLevel       :: !(Maybe Int)
-    , psPandocExtensions :: !(Maybe ExtensionList)
-    , psImages           :: !(Maybe ImageSettings)
-    , psBreadcrumbs      :: !(Maybe Bool)
-    , psEval             :: !(Maybe EvalSettingsMap)
-    , psSlideNumber      :: !(Maybe Bool)
+    { psRows              :: !(Maybe (A.FlexibleNum Int))
+    , psColumns           :: !(Maybe (A.FlexibleNum Int))
+    , psMargins           :: !(Maybe Margins)
+    , psWrap              :: !(Maybe Bool)
+    , psTheme             :: !(Maybe Theme.Theme)
+    , psIncrementalLists  :: !(Maybe Bool)
+    , psAutoAdvanceDelay  :: !(Maybe (A.FlexibleNum Int))
+    , psSlideLevel        :: !(Maybe Int)
+    , psPandocExtensions  :: !(Maybe ExtensionList)
+    , psImages            :: !(Maybe ImageSettings)
+    , psBreadcrumbs       :: !(Maybe Bool)
+    , psEval              :: !(Maybe EvalSettingsMap)
+    , psSlideNumber       :: !(Maybe Bool)
+    , psSyntaxDefinitions :: !(Maybe [FilePath])
     } deriving (Show)
 
 
 --------------------------------------------------------------------------------
 instance Semigroup PresentationSettings where
     l <> r = PresentationSettings
-        { psRows             = psRows             l `mplus` psRows             r
-        , psColumns          = psColumns          l `mplus` psColumns          r
-        , psMargins          = psMargins          l <>      psMargins          r
-        , psWrap             = psWrap             l `mplus` psWrap             r
-        , psTheme            = psTheme            l <>      psTheme            r
-        , psIncrementalLists = psIncrementalLists l `mplus` psIncrementalLists r
-        , psAutoAdvanceDelay = psAutoAdvanceDelay l `mplus` psAutoAdvanceDelay r
-        , psSlideLevel       = psSlideLevel       l `mplus` psSlideLevel       r
-        , psPandocExtensions = psPandocExtensions l `mplus` psPandocExtensions r
-        , psImages           = psImages           l `mplus` psImages           r
-        , psBreadcrumbs      = psBreadcrumbs      l `mplus` psBreadcrumbs      r
-        , psEval             = psEval             l <>      psEval             r
-        , psSlideNumber      = psSlideNumber      l `mplus` psSlideNumber      r
+        { psRows              = on mplus psRows              l r
+        , psColumns           = on mplus psColumns           l r
+        , psMargins           = on (<>)  psMargins           l r
+        , psWrap              = on mplus psWrap              l r
+        , psTheme             = on (<>)  psTheme             l r
+        , psIncrementalLists  = on mplus psIncrementalLists  l r
+        , psAutoAdvanceDelay  = on mplus psAutoAdvanceDelay  l r
+        , psSlideLevel        = on mplus psSlideLevel        l r
+        , psPandocExtensions  = on mplus psPandocExtensions  l r
+        , psImages            = on mplus psImages            l r
+        , psBreadcrumbs       = on mplus psBreadcrumbs       l r
+        , psEval              = on (<>)  psEval              l r
+        , psSlideNumber       = on mplus psSlideNumber       l r
+        , psSyntaxDefinitions = on (<>)  psSyntaxDefinitions l r
         }
 
 
@@ -109,25 +114,14 @@ instance Monoid PresentationSettings where
     mappend = (<>)
     mempty  = PresentationSettings
                     Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-                    Nothing Nothing Nothing Nothing Nothing Nothing
+                    Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 
 --------------------------------------------------------------------------------
 defaultPresentationSettings :: PresentationSettings
-defaultPresentationSettings = PresentationSettings
-    { psRows             = Nothing
-    , psColumns          = Nothing
-    , psMargins          = Just defaultMargins
-    , psWrap             = Nothing
+defaultPresentationSettings = mempty
+    { psMargins          = Just defaultMargins
     , psTheme            = Just Theme.defaultTheme
-    , psIncrementalLists = Nothing
-    , psAutoAdvanceDelay = Nothing
-    , psSlideLevel       = Nothing
-    , psPandocExtensions = Nothing
-    , psImages           = Nothing
-    , psBreadcrumbs      = Nothing
-    , psEval             = Nothing
-    , psSlideNumber      = Nothing
     }
 
 
