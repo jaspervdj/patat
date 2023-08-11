@@ -1,30 +1,31 @@
 --------------------------------------------------------------------------------
 -- | Displaying code blocks, optionally with syntax highlighting.
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
 module Patat.Presentation.Display.CodeBlock
     ( prettyCodeBlock
     ) where
 
 
 --------------------------------------------------------------------------------
-import           Data.Maybe                       (mapMaybe)
-import qualified Data.Text                        as T
-import           Patat.Presentation.Display.Table (themed)
-import qualified Patat.PrettyPrint                as PP
+import           Data.Maybe                          (mapMaybe)
+import qualified Data.Text                           as T
+import           Patat.Presentation.Display.Internal
+import qualified Patat.PrettyPrint                   as PP
 import           Patat.Theme
 import           Prelude
-import qualified Skylighting                      as Skylighting
+import qualified Skylighting                         as Skylighting
 
 
 --------------------------------------------------------------------------------
-highlight :: [T.Text] -> T.Text -> [Skylighting.SourceLine]
-highlight classes rawCodeBlock = case mapMaybe getSyntax classes of
-    []        -> zeroHighlight rawCodeBlock
-    (syn : _) ->
-        case Skylighting.tokenize config syn rawCodeBlock of
-            Left  _  -> zeroHighlight rawCodeBlock
-            Right sl -> sl
+highlight
+    :: Skylighting.SyntaxMap -> [T.Text] -> T.Text -> [Skylighting.SourceLine]
+highlight extraSyntaxMap classes rawCodeBlock =
+    case mapMaybe getSyntax classes of
+        []        -> zeroHighlight rawCodeBlock
+        (syn : _) ->
+            case Skylighting.tokenize config syn rawCodeBlock of
+                Left  _  -> zeroHighlight rawCodeBlock
+                Right sl -> sl
   where
     getSyntax :: T.Text -> Maybe Skylighting.Syntax
     getSyntax c = Skylighting.lookupSyntax c syntaxMap
@@ -36,7 +37,7 @@ highlight classes rawCodeBlock = case mapMaybe getSyntax classes of
         }
 
     syntaxMap :: Skylighting.SyntaxMap
-    syntaxMap = Skylighting.defaultSyntaxMap
+    syntaxMap = extraSyntaxMap <> Skylighting.defaultSyntaxMap
 
 
 --------------------------------------------------------------------------------
@@ -49,21 +50,22 @@ zeroHighlight txt =
 
 
 --------------------------------------------------------------------------------
-prettyCodeBlock :: Theme -> [T.Text] -> T.Text -> PP.Doc
-prettyCodeBlock theme@Theme {..} classes rawCodeBlock =
-    PP.vcat (map blockified sourceLines) <>
-    PP.hardline
+prettyCodeBlock :: DisplaySettings -> [T.Text] -> T.Text -> PP.Doc
+prettyCodeBlock ds classes rawCodeBlock =
+    PP.vcat (map blockified sourceLines) <> PP.hardline
   where
     sourceLines :: [Skylighting.SourceLine]
     sourceLines =
-        [[]] ++ highlight classes rawCodeBlock ++ [[]]
+        [[]] ++ highlight (dsSyntaxMap ds) classes rawCodeBlock ++ [[]]
 
     prettySourceLine :: Skylighting.SourceLine -> PP.Doc
     prettySourceLine = mconcat . map prettyToken
 
     prettyToken :: Skylighting.Token -> PP.Doc
-    prettyToken (tokenType, str) =
-        themed (syntaxHighlight theme tokenType) (PP.string $ T.unpack str)
+    prettyToken (tokenType, str) = themed
+        ds
+        (\theme -> syntaxHighlight theme tokenType)
+        (PP.string $ T.unpack str)
 
     sourceLineLength :: Skylighting.SourceLine -> Int
     sourceLineLength line = sum [T.length str | (_, str) <- line]
@@ -76,7 +78,7 @@ prettyCodeBlock theme@Theme {..} classes rawCodeBlock =
         let len    = sourceLineLength line
             indent = PP.NotTrimmable "   " in
         PP.indent indent indent $
-        themed themeCodeBlock $
+        themed ds themeCodeBlock $
             " " <>
             prettySourceLine line <>
             PP.string (replicate (blockWidth - len) ' ') <> " "

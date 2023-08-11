@@ -489,6 +489,20 @@ presentations, it might be better to stick with the named colours listed above.
 
 ### Syntax Highlighting
 
+`patat` uses [Kate] Syntax Highlighting files.  `patat` ships with support for
+nearly one hundred languages thanks to Pandoc.  However, if your language is
+not yet available, you can add the highlighting XML file in the settings:
+
+```markdown
+---
+patat:
+  syntaxDefinitions:
+  - 'impurescript.xml'
+...
+
+...
+```
+
 As part of theming, syntax highlighting is also configurable.  This can be
 configured like this:
 

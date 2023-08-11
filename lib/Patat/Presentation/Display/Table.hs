@@ -10,11 +10,11 @@ module Patat.Presentation.Display.Table
 
 
 --------------------------------------------------------------------------------
-import           Data.List         (intersperse, transpose)
-import           Patat.PrettyPrint ((<$$>))
-import qualified Patat.PrettyPrint as PP
-import           Patat.Theme       (Theme (..))
-import qualified Patat.Theme       as Theme
+import           Data.List                           (intersperse, transpose)
+import           Patat.Presentation.Display.Internal
+import           Patat.PrettyPrint                   ((<$$>))
+import qualified Patat.PrettyPrint                   as PP
+import           Patat.Theme                         (Theme (..))
 import           Prelude
 
 
@@ -28,15 +28,15 @@ data Table = Table
 
 
 --------------------------------------------------------------------------------
-prettyTable
-    :: Theme -> Table -> PP.Doc
-prettyTable theme@Theme {..} Table {..} =
+prettyTable :: DisplaySettings -> Table -> PP.Doc
+prettyTable ds Table {..} =
     PP.indent (PP.Trimmable "  ") (PP.Trimmable "  ") $
         lineIf (not isHeaderLess) (hcat2 headerHeight
-            [ themed themeTableHeader (PP.align w a (vpad headerHeight header))
+            [ themed ds themeTableHeader $
+                PP.align w a (vpad headerHeight header)
             | (w, a, header) <- zip3 columnWidths tAligns tHeaders
             ]) <>
-        dashedHeaderSeparator theme columnWidths <$$>
+        dashedHeaderSeparator ds columnWidths <$$>
         joinRows
             [ hcat2 rowHeight
                 [ PP.align w a (vpad rowHeight cell)
@@ -44,7 +44,7 @@ prettyTable theme@Theme {..} Table {..} =
                 ]
             | (rowHeight, row) <- zip rowHeights tRows
             ] <$$>
-        lineIf isHeaderLess (dashedHeaderSeparator theme columnWidths) <>
+        lineIf isHeaderLess (dashedHeaderSeparator ds columnWidths) <>
         lineIf
             (not $ PP.null tCaption) (PP.hardline <> "Table: " <> tCaption)
   where
@@ -90,17 +90,9 @@ isSimpleCell = (<= 1) . fst . PP.dimensions
 
 
 --------------------------------------------------------------------------------
-dashedHeaderSeparator :: Theme -> [Int] -> PP.Doc
-dashedHeaderSeparator Theme {..} columnWidths =
+dashedHeaderSeparator :: DisplaySettings -> [Int] -> PP.Doc
+dashedHeaderSeparator ds columnWidths =
     mconcat $ intersperse (PP.string "  ")
-        [ themed themeTableSeparator (PP.string (replicate w '-'))
+        [ themed ds themeTableSeparator (PP.string (replicate w '-'))
         | w <- columnWidths
         ]
-
-
---------------------------------------------------------------------------------
--- | This does not really belong in the module.
-themed :: Maybe Theme.Style -> PP.Doc -> PP.Doc
-themed Nothing                    = id
-themed (Just (Theme.Style []))    = id
-themed (Just (Theme.Style codes)) = PP.ansi codes
