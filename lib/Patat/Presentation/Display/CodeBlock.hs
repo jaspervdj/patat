@@ -18,13 +18,15 @@ import qualified Skylighting                      as Skylighting
 
 
 --------------------------------------------------------------------------------
-highlight :: [T.Text] -> T.Text -> [Skylighting.SourceLine]
-highlight classes rawCodeBlock = case mapMaybe getSyntax classes of
-    []        -> zeroHighlight rawCodeBlock
-    (syn : _) ->
-        case Skylighting.tokenize config syn rawCodeBlock of
-            Left  _  -> zeroHighlight rawCodeBlock
-            Right sl -> sl
+highlight
+    :: Skylighting.SyntaxMap -> [T.Text] -> T.Text -> [Skylighting.SourceLine]
+highlight extraSyntaxMap classes rawCodeBlock =
+    case mapMaybe getSyntax classes of
+        []        -> zeroHighlight rawCodeBlock
+        (syn : _) ->
+            case Skylighting.tokenize config syn rawCodeBlock of
+                Left  _  -> zeroHighlight rawCodeBlock
+                Right sl -> sl
   where
     getSyntax :: T.Text -> Maybe Skylighting.Syntax
     getSyntax c = Skylighting.lookupSyntax c syntaxMap
@@ -36,7 +38,7 @@ highlight classes rawCodeBlock = case mapMaybe getSyntax classes of
         }
 
     syntaxMap :: Skylighting.SyntaxMap
-    syntaxMap = Skylighting.defaultSyntaxMap
+    syntaxMap = extraSyntaxMap <> Skylighting.defaultSyntaxMap
 
 
 --------------------------------------------------------------------------------
@@ -56,7 +58,7 @@ prettyCodeBlock theme@Theme {..} classes rawCodeBlock =
   where
     sourceLines :: [Skylighting.SourceLine]
     sourceLines =
-        [[]] ++ highlight classes rawCodeBlock ++ [[]]
+        [[]] ++ highlight themeSyntaxDefinitions classes rawCodeBlock ++ [[]]
 
     prettySourceLine :: Skylighting.SourceLine -> PP.Doc
     prettySourceLine = mconcat . map prettyToken

@@ -10,13 +10,13 @@ module Patat.Eval
 import qualified Control.Concurrent.Async       as Async
 import           Control.Exception              (finally)
 import qualified Data.HashMap.Strict            as HMS
+import           Data.Maybe                     (maybeToList)
 import qualified Data.Text                      as T
 import qualified Data.Text.IO                   as T
 import           Patat.Presentation.Instruction
 import           Patat.Presentation.Internal
 import           System.Exit                    (ExitCode (..))
 import qualified System.IO                      as IO
-import Data.Maybe (maybeToList)
 import           System.IO.Unsafe               (unsafeInterleaveIO)
 import qualified System.Process                 as Process
 import qualified Text.Pandoc.Definition         as Pandoc

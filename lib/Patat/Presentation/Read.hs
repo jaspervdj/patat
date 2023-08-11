@@ -30,6 +30,7 @@ import           Patat.Presentation.Fragment
 import qualified Patat.Presentation.Instruction as Instruction
 import           Patat.Presentation.Internal
 import           Prelude
+import qualified Skylighting                    as Skylighting
 import           System.Directory               (doesFileExist,
                                                  getHomeDirectory)
 import           System.FilePath                (splitFileName, takeExtension,
@@ -47,6 +48,7 @@ readPresentation filePath = runExceptT $ do
     metaSettings <- ExceptT $ return $ readMetaSettings src
     let settings = metaSettings <> homeSettings <> defaultPresentationSettings
 
+    syntaxMap <- ExceptT $ readSyntaxMap (psSyntaxDefinitions settings)
     let pexts = fromMaybe defaultExtensionList (psPandocExtensions settings)
     reader <- case readExtension pexts ext of
         Nothing -> throwError $ "Unknown file extension: " ++ show ext
@@ -55,10 +57,19 @@ readPresentation filePath = runExceptT $ do
         Left  e -> throwError $ "Could not parse document: " ++ show e
         Right x -> return x
 
-    pres <- ExceptT $ pure $ pandocToPresentation filePath settings doc
+    pres <- ExceptT $ pure $
+        pandocToPresentation filePath settings syntaxMap doc
     liftIO $ eval pres
   where
     ext = takeExtension filePath
+
+
+--------------------------------------------------------------------------------
+readSyntaxMap :: [FilePath] -> IO (Either String Skylighting.SyntaxMap)
+readSyntaxMap =
+    runExceptT .
+    fmap (foldr Skylighting.addSyntaxDefinition mempty) .
+    traverse (ExceptT . Skylighting.loadSyntaxFromFile)
 
 
 --------------------------------------------------------------------------------
@@ -66,18 +77,18 @@ readExtension
     :: ExtensionList -> String
     -> Maybe (T.Text -> Either Pandoc.PandocError Pandoc.Pandoc)
 readExtension (ExtensionList extensions) fileExt = case fileExt of
-    ".markdown"  -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
-    ".md"  -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
-    ".mdown"  -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
-    ".mdtext"  -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
-    ".mdtxt"  -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
-    ".mdwn"  -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
-    ".mkd"  -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
-    ".mkdn"  -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
-    ".lhs" -> Just $ Pandoc.runPure . Pandoc.readMarkdown lhsOpts
-    ""     -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
-    ".org" -> Just $ Pandoc.runPure . Pandoc.readOrg      readerOpts
-    _      -> Nothing
+    ".markdown" -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
+    ".md"       -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
+    ".mdown"    -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
+    ".mdtext"   -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
+    ".mdtxt"    -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
+    ".mdwn"     -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
+    ".mkd"      -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
+    ".mkdn"     -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
+    ".lhs"      -> Just $ Pandoc.runPure . Pandoc.readMarkdown lhsOpts
+    ""          -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
+    ".org"      -> Just $ Pandoc.runPure . Pandoc.readOrg      readerOpts
+    _           -> Nothing
 
   where
     readerOpts = Pandoc.def
@@ -97,9 +108,11 @@ readExtension (ExtensionList extensions) fileExt = case fileExt of
 
 --------------------------------------------------------------------------------
 pandocToPresentation
-    :: FilePath -> PresentationSettings -> Pandoc.Pandoc
+    :: FilePath -> PresentationSettings -> Skylighting.SyntaxMap
+    -> Pandoc.Pandoc
     -> Either String Presentation
-pandocToPresentation pFilePath pSettings pandoc@(Pandoc.Pandoc meta _) = do
+pandocToPresentation pFilePath pSettings pSyntaxMap
+        pandoc@(Pandoc.Pandoc meta _) = do
     let !pTitle          = case Pandoc.docTitle meta of
             []    -> [Pandoc.Str . T.pack . snd $ splitFileName pFilePath]
             title -> title
