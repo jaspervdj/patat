@@ -497,7 +497,7 @@ not yet available, you can add the highlighting XML file in the settings:
 ---
 patat:
   syntaxDefinitions:
-  - 'golden/syntax-definitions/impurescript.xml'
+  - 'impurescript.xml'
 ...
 
 ...
