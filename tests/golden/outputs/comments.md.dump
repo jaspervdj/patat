@@ -1,3 +1,5 @@
+[m{speakerNotes: This is a comment so please don't include it.
+}[0m
 [33m                              comments.md                               [0m
 
 [34m# This is a test[0m
@@ -6,7 +8,12 @@
 
 [33m                                                                  1 / 2 [0m
 
-[m----------[0m
+[m{slide}[0m
+[m{speakerNotes: - Differently-formatted comment
+
+Differently-formatted
+comment
+}[0m
 [33m                              comments.md                               [0m
 
 [34m# This is a second slide[0m

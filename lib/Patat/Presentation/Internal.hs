@@ -20,6 +20,7 @@ module Patat.Presentation.Internal
     , EvalSettings (..)
 
     , Slide (..)
+    , SlideContent (..)
     , Instruction.Fragment (..)
     , Index
 
@@ -27,28 +28,30 @@ module Patat.Presentation.Internal
     , numFragments
 
     , ActiveFragment (..)
-    , getActiveFragment
+    , activeFragment
+    , activeSpeakerNotes
     ) where
 
 
 --------------------------------------------------------------------------------
-import           Control.Monad                  (mplus)
-import qualified Data.Aeson.Extended            as A
-import qualified Data.Aeson.TH.Extended         as A
-import qualified Data.Foldable                  as Foldable
-import           Data.Function                  (on)
-import qualified Data.HashMap.Strict            as HMS
-import           Data.List                      (intercalate)
-import           Data.Maybe                     (fromMaybe)
-import           Data.Sequence.Extended         (Seq)
-import qualified Data.Sequence.Extended         as Seq
-import qualified Data.Text                      as T
-import qualified Patat.Presentation.Instruction as Instruction
-import qualified Patat.Theme                    as Theme
+import           Control.Monad                   (mplus)
+import qualified Data.Aeson.Extended             as A
+import qualified Data.Aeson.TH.Extended          as A
+import qualified Data.Foldable                   as Foldable
+import           Data.Function                   (on)
+import qualified Data.HashMap.Strict             as HMS
+import           Data.List                       (intercalate)
+import           Data.Maybe                      (fromMaybe)
+import           Data.Sequence.Extended          (Seq)
+import qualified Data.Sequence.Extended          as Seq
+import qualified Data.Text                       as T
+import qualified Patat.Presentation.Instruction  as Instruction
+import qualified Patat.Presentation.SpeakerNotes as SpeakerNotes
+import qualified Patat.Theme                     as Theme
 import           Prelude
-import qualified Skylighting                    as Skylighting
-import qualified Text.Pandoc                    as Pandoc
-import           Text.Read                      (readMaybe)
+import qualified Skylighting                     as Skylighting
+import qualified Text.Pandoc                     as Pandoc
+import           Text.Read                       (readMaybe)
 
 
 --------------------------------------------------------------------------------
@@ -86,6 +89,7 @@ data PresentationSettings = PresentationSettings
     , psEval              :: !(Maybe EvalSettingsMap)
     , psSlideNumber       :: !(Maybe Bool)
     , psSyntaxDefinitions :: !(Maybe [FilePath])
+    , psSpeakerNotes      :: !(Maybe SpeakerNotes.Settings)
     } deriving (Show)
 
 
@@ -106,6 +110,7 @@ instance Semigroup PresentationSettings where
         , psEval              = on (<>)  psEval              l r
         , psSlideNumber       = on mplus psSlideNumber       l r
         , psSyntaxDefinitions = on (<>)  psSyntaxDefinitions l r
+        , psSpeakerNotes      = on mplus psSpeakerNotes      l r
         }
 
 
@@ -115,6 +120,7 @@ instance Monoid PresentationSettings where
     mempty  = PresentationSettings
                     Nothing Nothing Nothing Nothing Nothing Nothing Nothing
                     Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+                    Nothing
 
 
 --------------------------------------------------------------------------------
@@ -254,7 +260,14 @@ instance A.FromJSON EvalSettings where
 
 
 --------------------------------------------------------------------------------
-data Slide
+data Slide = Slide
+    { slideSpeakerNotes :: !SpeakerNotes.SpeakerNotes
+    , slideContent      :: !SlideContent
+    } deriving (Show)
+
+
+--------------------------------------------------------------------------------
+data SlideContent
     = ContentSlide (Instruction.Instructions Pandoc.Block)
     | TitleSlide   Int [Pandoc.Inline]
     deriving (Show)
@@ -272,8 +285,9 @@ getSlide sidx = (`Seq.safeIndex` sidx) . pSlides
 
 --------------------------------------------------------------------------------
 numFragments :: Slide -> Int
-numFragments (ContentSlide instrs) = Instruction.numFragments instrs
-numFragments (TitleSlide _ _)      = 1
+numFragments slide = case slideContent slide of
+    ContentSlide instrs -> Instruction.numFragments instrs
+    TitleSlide _ _      -> 1
 
 
 --------------------------------------------------------------------------------
@@ -284,15 +298,23 @@ data ActiveFragment
 
 
 --------------------------------------------------------------------------------
-getActiveFragment :: Presentation -> Maybe ActiveFragment
-getActiveFragment presentation = do
+activeFragment :: Presentation -> Maybe ActiveFragment
+activeFragment presentation = do
     let (sidx, fidx) = pActiveFragment presentation
     slide <- getSlide sidx presentation
-    pure $ case slide of
+    pure $ case slideContent slide of
         TitleSlide lvl is -> ActiveTitle $
             Pandoc.Header lvl Pandoc.nullAttr is
         ContentSlide instrs -> ActiveContent $
             Instruction.renderFragment fidx instrs
+
+
+--------------------------------------------------------------------------------
+activeSpeakerNotes :: Presentation -> SpeakerNotes.SpeakerNotes
+activeSpeakerNotes presentation = fromMaybe mempty $ do
+    let (sidx, _) = pActiveFragment presentation
+    slide <- getSlide sidx presentation
+    pure $ slideSpeakerNotes slide
 
 
 --------------------------------------------------------------------------------

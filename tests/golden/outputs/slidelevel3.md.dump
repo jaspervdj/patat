@@ -13,7 +13,7 @@
 
 [33m                                                                  1 / 6 [0m
 
-[m----------[0m
+[m{slide}[0m
 [33m                    slidelevel3.md > This is a title                    [0m
 
 
@@ -29,7 +29,7 @@
 
 [33m                                                                  2 / 6 [0m
 
-[m----------[0m
+[m{slide}[0m
 [33m         slidelevel3.md > This is a title > This is a subtitle          [0m
 
 [34m### This is a slide[0m
@@ -38,7 +38,7 @@
 
 [33m                                                                  3 / 6 [0m
 
-[m----------[0m
+[m{slide}[0m
 [33m                             slidelevel3.md                             [0m
 
 
@@ -54,7 +54,7 @@
 
 [33m                                                                  4 / 6 [0m
 
-[m----------[0m
+[m{slide}[0m
 [33m                 slidelevel3.md > This is another title                 [0m
 
 
@@ -70,7 +70,7 @@
 
 [33m                                                                  5 / 6 [0m
 
-[m----------[0m
+[m{slide}[0m
 [33m   slidelevel3.md > This is another title > This is another subtitle    [0m
 
 [34m### This is another slide[0m

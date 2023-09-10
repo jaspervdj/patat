@@ -13,7 +13,7 @@ module Patat.Presentation.Display
 
 
 --------------------------------------------------------------------------------
-import           Control.Monad                        (mplus)
+import           Control.Monad                        (guard, mplus)
 import qualified Data.Aeson.Extended                  as A
 import           Data.Char.WCWidth.Extended           (wcstrwidth)
 import           Data.Data.Extended                   (grecQ)
@@ -25,6 +25,7 @@ import           Patat.Presentation.Display.CodeBlock
 import           Patat.Presentation.Display.Internal
 import           Patat.Presentation.Display.Table
 import           Patat.Presentation.Internal
+import qualified Patat.Presentation.SpeakerNotes      as SpeakerNotes
 import           Patat.PrettyPrint                    ((<$$>), (<+>))
 import qualified Patat.PrettyPrint                    as PP
 import           Patat.Theme                          (Theme (..))
@@ -115,7 +116,7 @@ displayWithBorders (Size rows columns) Presentation {..} f =
 --------------------------------------------------------------------------------
 displayPresentation :: Size -> Presentation -> Display
 displayPresentation size pres@Presentation {..} =
-     case getActiveFragment pres of
+     case activeFragment pres of
         Nothing -> DisplayDoc $ displayWithBorders size pres mempty
         Just (ActiveContent fragment)
                 | Just _ <- psImages pSettings
@@ -139,10 +140,10 @@ displayPresentation size pres@Presentation {..} =
     -- Check if the fragment consists of "just a single image".  Discard
     -- headers.
     onlyImage (Fragment (Pandoc.Header{} : bs)) = onlyImage (Fragment bs)
-    onlyImage (Fragment bs) = case filter isVisibleBlock bs of
-        [Pandoc.Figure _ _ bs'] -> onlyImage (Fragment bs')
+    onlyImage (Fragment bs) = case bs of
+        [Pandoc.Figure _ _ bs']                      -> onlyImage (Fragment bs')
         [Pandoc.Para [Pandoc.Image _ _ (target, _)]] -> Just target
-        _ -> Nothing
+        _                                            -> Nothing
 
 
 --------------------------------------------------------------------------------
@@ -159,17 +160,33 @@ displayPresentationError size pres err =
 --------------------------------------------------------------------------------
 dumpPresentation :: Presentation -> IO ()
 dumpPresentation pres@Presentation {..} =
-    let sRows = fromMaybe 24 $ A.unFlexibleNum <$> psRows pSettings
-        sCols = fromMaybe 72 $ A.unFlexibleNum <$> psColumns pSettings
-        size  = Size {..} in
     PP.putDoc $ PP.removeControls $ formatWith pSettings $
-    PP.vcat $ L.intersperse "----------" $ do
-        i <- [0 .. length pSlides - 1]
+    PP.vcat $ L.intercalate ["{slide}"] $
+        map dumpSlide [0 .. length pSlides - 1]
+  where
+    dumpSlide :: Int -> [PP.Doc]
+    dumpSlide i = do
         slide <- maybeToList $ getSlide i pres
-        j <- [0 .. numFragments slide - 1]
-        case displayPresentation size pres {pActiveFragment = (i, j)} of
-            DisplayDoc doc -> [doc]
-            DisplayImage filepath -> [PP.string $ "image:" ++ filepath]
+        dumpSpeakerNotes slide <> L.intercalate ["{fragment}"]
+            [ dumpFragment (i, j)
+            | j <- [0 .. numFragments slide - 1]
+            ]
+
+    dumpSpeakerNotes :: Slide -> [PP.Doc]
+    dumpSpeakerNotes slide = do
+        guard $ slideSpeakerNotes slide /= mempty
+        pure $ PP.text $ "{speakerNotes: " <>
+            SpeakerNotes.toText (slideSpeakerNotes slide) <> "}"
+
+    dumpFragment :: Index -> [PP.Doc]
+    dumpFragment idx =
+        case displayPresentation size pres {pActiveFragment = idx} of
+            DisplayDoc doc        -> [doc]
+            DisplayImage filepath -> [PP.string $ "{image: " ++ filepath ++ "}"]
+
+    sRows = fromMaybe 24 $ A.unFlexibleNum <$> psRows pSettings
+    sCols = fromMaybe 72 $ A.unFlexibleNum <$> psColumns pSettings
+    size  = Size {..}
 
 
 --------------------------------------------------------------------------------
@@ -293,9 +310,10 @@ prettyBlock ds (Pandoc.LineBlock inliness) =
 prettyBlock ds (Pandoc.Figure _attr _caption blocks) =
     prettyBlocks ds blocks
 
+
 --------------------------------------------------------------------------------
 prettyBlocks :: DisplaySettings -> [Pandoc.Block] -> PP.Doc
-prettyBlocks ds = PP.vcat . map (prettyBlock ds) . filter isVisibleBlock
+prettyBlocks ds = PP.vcat . map (prettyBlock ds)
 
 
 --------------------------------------------------------------------------------
@@ -389,10 +407,3 @@ isReferenceLink :: Pandoc.Inline -> Bool
 isReferenceLink (Pandoc.Link _attrs text (target, _)) =
     [Pandoc.Str target] /= text
 isReferenceLink _ = False
-
-
---------------------------------------------------------------------------------
-isVisibleBlock :: Pandoc.Block -> Bool
-isVisibleBlock (Pandoc.RawBlock (Pandoc.Format "html") t) =
-    not ("<!--" `T.isPrefixOf` t && "-->" `T.isSuffixOf` t)
-isVisibleBlock _ = True
