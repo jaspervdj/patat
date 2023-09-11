@@ -142,11 +142,12 @@ main = do
     images <- traverse Images.new $ psImages $ pSettings pres
 
     -- (Maybe) initialize speaker notes.
-    speakerNotes <- traverse SpeakerNotes.new $ psSpeakerNotes $ pSettings pres
+    withMaybeHandle SpeakerNotes.with
+        (psSpeakerNotes $ pSettings pres) $ \speakerNotes ->
 
-    if oDump options
-        then dumpPresentation pres
-        else interactiveLoop options images speakerNotes pres
+        if oDump options
+            then dumpPresentation pres
+            else interactiveLoop options images speakerNotes pres
   where
     interactiveLoop
         :: Options -> Maybe Images.Handle -> Maybe SpeakerNotes.Handle
@@ -246,3 +247,14 @@ watcher chan filePath mtime0 = do
     when (mtime1 > mtime0) $ Chan.writeChan chan Reload
     threadDelay (200 * 1000)
     watcher chan filePath mtime1
+
+
+--------------------------------------------------------------------------------
+-- | Wrapper for optional handles.
+withMaybeHandle
+    :: (settings -> (handle -> IO a) -> IO a)
+    -> Maybe settings
+    -> (Maybe handle -> IO a)
+    -> IO a
+withMaybeHandle _    Nothing         f = f Nothing
+withMaybeHandle impl (Just settings) f = impl settings (f . Just)

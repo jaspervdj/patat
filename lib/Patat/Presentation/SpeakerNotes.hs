@@ -12,18 +12,20 @@ module Patat.Presentation.SpeakerNotes
 
     , Settings
     , Handle
-    , new
+    , with
     , write
     ) where
 
 
 --------------------------------------------------------------------------------
+import           Control.Exception      (bracket)
 import           Control.Monad          (when)
 import qualified Data.Aeson.TH.Extended as A
 import qualified Data.IORef             as IORef
 import           Data.List              (intersperse)
 import qualified Data.Text              as T
 import qualified Data.Text.IO           as T
+import           System.Directory       (removeFile)
 import qualified Text.Pandoc            as Pandoc
 
 
@@ -86,8 +88,10 @@ data Handle = Handle
 
 
 --------------------------------------------------------------------------------
-new :: Settings -> IO Handle
-new settings = Handle settings <$> IORef.newIORef mempty
+with :: Settings -> (Handle -> IO a) -> IO a
+with settings = bracket
+    (Handle settings <$> IORef.newIORef mempty)
+    (\_ -> removeFile (sFile settings))
 
 
 --------------------------------------------------------------------------------
