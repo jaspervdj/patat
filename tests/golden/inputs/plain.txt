@@ -1,0 +1,7 @@
+This is some _plain text_.
+
+It should not have any formatting applied whatsoever.
+
+---
+
+Slide splitting should not work either.

@@ -89,6 +89,7 @@ readExtension (ExtensionList extensions) fileExt = case fileExt of
     ".lhs"      -> Just $ Pandoc.runPure . Pandoc.readMarkdown lhsOpts
     ""          -> Just $ Pandoc.runPure . Pandoc.readMarkdown readerOpts
     ".org"      -> Just $ Pandoc.runPure . Pandoc.readOrg      readerOpts
+    ".txt"      -> Just $ pure . Pandoc.readPlainText
     _           -> Nothing
 
   where
