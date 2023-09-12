@@ -14,14 +14,15 @@ Features:
 - Supports [smart slide splitting](#input-format).
 - Slides can be split up into [multiple fragments](#fragmented-slides)
 - There is a [live reload](#running) mode.
-- [Theming](#theming) support including 24-bit RGB.
+- Supports [evaluating code snippets and showing the result](#evaluating-code).
+- Display [speaker notes](#speaker-notes) in a second window or monitor.
 - [Auto advancing](#auto-advancing) with configurable delay.
+- Experimental [images](#images) support.
 - Optionally [re-wrapping](#line-wrapping) text to terminal width with proper
   indentation.
 - Syntax highlighting for nearly one hundred languages generated from [Kate]
   syntax files.
-- Experimental [images](#images) support.
-- Supports [evaluating code snippets and showing the result](#evaluating-code).
+- [Theming](#theming) support including 24-bit RGB.
 - Written in [Haskell].
 
 ![screenshot](extra/demo.gif?raw=true)
@@ -53,6 +54,7 @@ Table of Contents
     -   [Images](#images)
     -   [Breadcrumbs](#breadcrumbs)
     -   [Evaluating code](#evaluating-code)
+    -   [Speaker notes](#speaker-notes)
 -   [Trivia](#trivia)
 
 Installation
@@ -240,26 +242,6 @@ Things I like:
 ```
 
 For more information, see [Advanced slide splitting](#advanced-slide-splitting).
-
-Patat supports comments which can be used as speaker notes.
-
-```markdown
----
-title: This is my presentation
-author: Jane Doe
-...
-
-# Chapter 1
-
-<!--
-Note: I should not bore the audience with my thoughts on powerpoint but
-just get straight to the point.
--->
-
-Slide contents.  Yay.
-
-<!-- TODO: Finish the rest of the presentation. -->
-```
 
 Configuration
 -------------
@@ -691,6 +673,53 @@ This feature works by simply by:
 2.  Write the contents of the code block to the `stdin` of the process
 3.  Wait for the process to exit
 4.  Render the `stdout` of the process
+
+### Speaker Notes
+
+`patat` supports comments which can be used as speaker notes.
+
+```markdown
+---
+title: This is my presentation
+author: Jane Doe
+...
+
+# Chapter 1
+
+<!--
+Note: I should not bore the audience with my thoughts on powerpoint but
+just get straight to the point.
+-->
+
+Slide contents.  Yay.
+
+<!-- TODO: Finish the rest of the presentation. -->
+```
+
+You can also configure `patat` to write the speaker notes for the current slide
+to a file whenever the slide changes:
+
+```yaml
+patat:
+  speakerNotes:
+    file: /tmp/notes.txt
+...
+
+Then, you can display these in a second terminal (presumably on a second
+monitor) by just displaying this file whenever it changes.  [entr] is one
+way to do that:
+
+[entr]: http://eradman.com/entrproject/
+
+```bash
+echo /tmp/notes.txt | entr -s 'clear; cat /tmp/notes.txt'
+```
+
+Alternatively, just use a second `patat` instance with `--watch` enabled:
+
+```bash
+patat -w /tmp/notes.txt
+```
 
 Trivia
 ------
