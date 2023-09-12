@@ -703,7 +703,7 @@ to a file whenever the slide changes:
 patat:
   speakerNotes:
     file: /tmp/notes.txt
-...
+```
 
 Then, you can display these in a second terminal (presumably on a second
 monitor) by just displaying this file whenever it changes.  [entr] is one
