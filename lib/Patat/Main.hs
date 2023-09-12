@@ -15,6 +15,7 @@ import qualified Control.Concurrent.Chan         as Chan
 import           Control.Exception               (bracket)
 import           Control.Monad                   (forever, unless, when)
 import qualified Data.Aeson.Extended             as A
+import           Data.Foldable                   (for_)
 import           Data.Functor                    (($>))
 import           Data.Time                       (UTCTime)
 import           Data.Version                    (showVersion)
@@ -23,6 +24,7 @@ import qualified Options.Applicative.Help.Pretty as OA.PP
 import           Patat.AutoAdvance
 import qualified Patat.Images                    as Images
 import           Patat.Presentation
+import qualified Patat.Presentation.SpeakerNotes as SpeakerNotes
 import qualified Patat.PrettyPrint               as PP
 import qualified Paths_patat
 import           Prelude
@@ -137,14 +139,20 @@ main = do
     unless (oForce options) assertAnsiFeatures
 
     -- (Maybe) initialize images backend.
-    images <- traverse Images.new (psImages $ pSettings pres)
+    images <- traverse Images.new $ psImages $ pSettings pres
 
-    if oDump options
-        then dumpPresentation pres
-        else interactiveLoop options images pres
+    -- (Maybe) initialize speaker notes.
+    withMaybeHandle SpeakerNotes.with
+        (psSpeakerNotes $ pSettings pres) $ \speakerNotes ->
+
+        if oDump options
+            then dumpPresentation pres
+            else interactiveLoop options images speakerNotes pres
   where
-    interactiveLoop :: Options -> Maybe Images.Handle -> Presentation -> IO ()
-    interactiveLoop options images pres0 =
+    interactiveLoop
+        :: Options -> Maybe Images.Handle -> Maybe SpeakerNotes.Handle
+        -> Presentation -> IO ()
+    interactiveLoop options images speakerNotes pres0 =
         interactively readPresentationCommand $ \commandChan0 -> do
 
         -- If an auto delay is set, use 'autoAdvance' to create a new one.
@@ -160,6 +168,9 @@ main = do
 
         let loop :: Presentation -> Maybe String -> IO ()
             loop pres mbError = do
+                for_ speakerNotes $ \sn ->
+                    SpeakerNotes.write sn $ activeSpeakerNotes pres
+
                 size <- getDisplaySize pres
                 let display = case mbError of
                         Nothing  -> displayPresentation size pres
@@ -236,3 +247,14 @@ watcher chan filePath mtime0 = do
     when (mtime1 > mtime0) $ Chan.writeChan chan Reload
     threadDelay (200 * 1000)
     watcher chan filePath mtime1
+
+
+--------------------------------------------------------------------------------
+-- | Wrapper for optional handles.
+withMaybeHandle
+    :: (settings -> (handle -> IO a) -> IO a)
+    -> Maybe settings
+    -> (Maybe handle -> IO a)
+    -> IO a
+withMaybeHandle _    Nothing         f = f Nothing
+withMaybeHandle impl (Just settings) f = impl settings (f . Just)

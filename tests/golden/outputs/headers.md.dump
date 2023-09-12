@@ -13,7 +13,7 @@
 
 [33m                                                                  1 / 5 [0m
 
-[m----------[0m
+[m{slide}[0m
 [33m                   headers.md > This could be a title                   [0m
 
 [34m## This is nested[0m
@@ -22,7 +22,7 @@
 
 [33m                                                                  2 / 5 [0m
 
-[m----------[0m
+[m{slide}[0m
 [33m                   headers.md > This could be a title                   [0m
 
 [34m## This is also nested[0m
@@ -31,7 +31,7 @@
 
 [33m                                                                  3 / 5 [0m
 
-[m----------[0m
+[m{slide}[0m
 [33m                               headers.md                               [0m
 
 
@@ -47,7 +47,7 @@
 
 [33m                                                                  4 / 5 [0m
 
-[m----------[0m
+[m{slide}[0m
 [33m                       headers.md > Another topic                       [0m
 
 [34m## What is going on?[0m

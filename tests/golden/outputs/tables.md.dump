@@ -12,7 +12,7 @@
 
 [33m                                                                  1 / 4 [0m
 
-[m----------[0m
+[m{slide}[0m
 [33m                               tables.md                                [0m
 
 [34m# Headerless table[0m
@@ -25,7 +25,7 @@
 
 [33m                                                                  2 / 4 [0m
 
-[m----------[0m
+[m{slide}[0m
 [33m                               tables.md                                [0m
 
 [34m# Multiline[0m
@@ -45,7 +45,7 @@
 
 [33m                                                                  3 / 4 [0m
 
-[m----------[0m
+[m{slide}[0m
 [33m                               tables.md                                [0m
 
 [34m# Headerless multiline[0m

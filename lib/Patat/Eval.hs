@@ -40,10 +40,11 @@ lookupSettings classes settings = do
 
 --------------------------------------------------------------------------------
 evalSlide :: EvalSettingsMap -> Slide -> IO Slide
-evalSlide settings slide = case slide of
+evalSlide settings slide = case slideContent slide of
     TitleSlide _ _ -> pure slide
-    ContentSlide instrs -> ContentSlide . fromList . concat <$>
-        traverse (evalInstruction settings) (toList instrs)
+    ContentSlide instrs0 -> do
+        instrs1 <- traverse (evalInstruction settings) (toList instrs0)
+        pure slide {slideContent = ContentSlide . fromList $ concat instrs1}
 
 
 --------------------------------------------------------------------------------

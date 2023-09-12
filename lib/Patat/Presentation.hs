@@ -5,6 +5,8 @@ module Patat.Presentation
     , Presentation (..)
     , readPresentation
 
+    , activeSpeakerNotes
+
     , Size
     , getDisplaySize
 
