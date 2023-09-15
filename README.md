@@ -1,34 +1,31 @@
-patat
-=====
+🥔 patat
+========
 
 ![CI](https://github.com/jaspervdj/patat/workflows/CI/badge.svg) [![Hackage](https://img.shields.io/hackage/v/patat.svg)](https://hackage.haskell.org/package/patat) [![GitHub tag](https://img.shields.io/github/tag/jaspervdj/patat.svg)]()
 
-`patat` (**P**resentations **A**top **T**he **A**NSI **T**erminal) is a small
-tool that allows you to show presentations using only an ANSI terminal.  It does
-not require `ncurses`.
+`patat` (**P**resentations **A**top **T**he **A**NSI **T**erminal) is a
+feature-rich presentation tool that runs in the terminal.
 
-Features:
-
-- Leverages the great [Pandoc] library to support many input formats including
-  [Literate Haskell].
-- Supports [smart slide splitting](#input-format).
-- Slides can be split up into [multiple fragments](#fragmented-slides)
-- There is a [live reload](#running) mode.
-- Supports [evaluating code snippets and showing the result](#evaluating-code).
-- Display [speaker notes](#speaker-notes) in a second window or monitor.
-- [Auto advancing](#auto-advancing) with configurable delay.
-- Experimental [images](#images) support.
-- Optionally [re-wrapping](#line-wrapping) text to terminal width with proper
-  indentation.
+- Understands most markdown extensions and many other input formats
+  (rST, Org-mode...) by building on top of [Pandoc].
+- [Evaluate code snippets and show the result](#evaluating-code).
 - Syntax highlighting for nearly one hundred languages generated from [Kate]
   syntax files.
+- [Automatically reload](#running) your slides as you edit them.
+- Display [speaker notes](#speaker-notes) in a second window or monitor.
+- [Incremental slide display](#fragmented-slides).
+- Experimental [images](#images) support.
+- Supports [smart slide splitting](#input-format).
+- [Auto advancing](#auto-advancing) with configurable delay.
+- Optionally [re-wrapping](#line-wrapping) text to terminal width with proper
+  indentation.
 - [Theming](#theming) support including 24-bit RGB.
-- Written in [Haskell].
+- Hihgly portable as it only requires an ANSI terminal as opposed to
+  something like `ncurses`.
 
 ![screenshot](extra/demo.gif?raw=true)
 
 [Kate]: https://kate-editor.org/
-[Haskell]: http://haskell.org/
 [Pandoc]: http://pandoc.org/
 
 Table of Contents
