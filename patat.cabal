@@ -66,6 +66,7 @@ Library
   Exposed-modules:
     Patat.AutoAdvance
     Patat.Cleanup
+    Patat.Encoding
     Patat.Eval
     Patat.Images
     Patat.Images.Internal

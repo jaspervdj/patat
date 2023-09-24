@@ -24,8 +24,8 @@ import           Data.Sequence.Extended          (Seq)
 import qualified Data.Sequence.Extended          as Seq
 import qualified Data.Text                       as T
 import qualified Data.Text.Encoding              as T
-import qualified Data.Text.IO                    as T
 import qualified Data.Yaml                       as Yaml
+import           Patat.Encoding                  (Encoding, readFileLenient)
 import           Patat.Eval                      (eval)
 import           Patat.Presentation.Fragment
 import qualified Patat.Presentation.Instruction  as Instruction
@@ -45,7 +45,7 @@ import qualified Text.Pandoc.Extended            as Pandoc
 readPresentation :: FilePath -> IO (Either String Presentation)
 readPresentation filePath = runExceptT $ do
     -- We need to read the settings first.
-    src          <- liftIO $ T.readFile filePath
+    (enc, src)   <- liftIO $ readFileLenient filePath
     homeSettings <- ExceptT readHomeSettings
     metaSettings <- ExceptT $ return $ readMetaSettings src
     let settings = metaSettings <> homeSettings <> defaultPresentationSettings
@@ -61,7 +61,7 @@ readPresentation filePath = runExceptT $ do
         Right x -> return x
 
     pres <- ExceptT $ pure $
-        pandocToPresentation filePath settings syntaxMap doc
+        pandocToPresentation filePath enc settings syntaxMap doc
     liftIO $ eval pres
   where
     ext = takeExtension filePath
@@ -112,10 +112,10 @@ readExtension (ExtensionList extensions) fileExt = case fileExt of
 
 --------------------------------------------------------------------------------
 pandocToPresentation
-    :: FilePath -> PresentationSettings -> Skylighting.SyntaxMap
+    :: FilePath -> Encoding -> PresentationSettings -> Skylighting.SyntaxMap
     -> Pandoc.Pandoc
     -> Either String Presentation
-pandocToPresentation pFilePath pSettings pSyntaxMap
+pandocToPresentation pFilePath pEncoding pSettings pSyntaxMap
         pandoc@(Pandoc.Pandoc meta _) = do
     let !pTitle          = case Pandoc.docTitle meta of
             []    -> [Pandoc.Str . T.pack . snd $ splitFileName pFilePath]

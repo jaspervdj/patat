@@ -22,6 +22,7 @@ import           Data.Version                    (showVersion)
 import qualified Options.Applicative             as OA
 import qualified Options.Applicative.Help.Pretty as OA.PP
 import           Patat.AutoAdvance
+import           Patat.Encoding                  (propagateEncoding)
 import qualified Patat.Images                    as Images
 import           Patat.Presentation
 import qualified Patat.Presentation.SpeakerNotes as SpeakerNotes
@@ -146,7 +147,9 @@ main = do
         (psSpeakerNotes $ pSettings pres) $ \speakerNotes ->
 
         if oDump options
-            then dumpPresentation pres
+            then do
+                propagateEncoding IO.stdout $ pEncoding pres
+                dumpPresentation pres
             else interactiveLoop options images speakerNotes pres
   where
     interactiveLoop
@@ -179,6 +182,7 @@ main = do
 
                 Ansi.clearScreen
                 Ansi.setCursorPosition 0 0
+                propagateEncoding IO.stdout $ pEncoding pres
                 cleanup <- case display of
                     DisplayDoc doc -> PP.putDoc doc $> mempty
                     DisplayImage path -> case images of
