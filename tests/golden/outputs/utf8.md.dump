@@ -1,0 +1,21 @@
+[33m                                utf8.md                                 [0m
+
+[mSome code:[0m
+
+[m   [0m[40;37m                                                                                                    [0m
+[m   [0m[40;37m hello-exe-hello> src/hello.hs:23:35: error:                                                        [0m
+[m   [0m[40;37m hello-exe-hello>     • Couldn't match type ‘Password’ with ‘BuiltinData’                           [0m
+[m   [0m[40;37m hello-exe-hello>       Expected type: template-haskell-2.16.0.0:Language.Haskell.TH.Syntax.Q       [0m
+[m   [0m[40;37m hello-exe-hello>                        (template-haskell-2.16.0.0:Language.Haskell.TH.Syntax.TExp [0m
+[m   [0m[40;37m hello-exe-hello>                           (PlutusTx.Code.CompiledCode                             [0m
+[m   [0m[40;37m hello-exe-hello>                              (BuiltinData -> BuiltinData -> BuiltinData -> ())))  [0m
+[m   [0m[40;37m hello-exe-hello>         Actual type: th-compat-0.1.4:Language.Haskell.TH.Syntax.Compat.SpliceQ    [0m
+[m   [0m[40;37m hello-exe-hello>                        (PlutusTx.Code.CompiledCode                                [0m
+[m   [0m[40;37m hello-exe-hello>                           (Password -> Password -> BuiltinData -> ()))            [0m
+[m   [0m[40;37m hello-exe-hello>     • In the expression: compile [|| validator ||]                                [0m
+[m   [0m[40;37m hello-exe-hello>       In the Template Haskell splice $$(compile [|| validator ||])                [0m
+[m   [0m[40;37m hello-exe-hello>       In the first argument of ‘mkValidatorScript’, namely                        [0m
+[m   [0m[40;37m hello-exe-hello>         ‘$$(compile [|| validator ||])’                                           [0m
+[m   [0m[40;37m                                                                                                    [0m
+
+[33m                                                                  1 / 1 [0m
