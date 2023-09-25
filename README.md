@@ -245,10 +245,14 @@ Configuration
 -------------
 
 `patat` is fairly configurable.  The configuration is done using [YAML].  There
-are two places where you can put your configuration:
+are several places where you can put your configuration.
 
-1. In the presentation file itself, using the [Pandoc metadata header].
-2. In `$HOME/.patat.yaml`
+1.  For per-user configuration you can use
+    `$XDG_CONFIG_DIRECTORY/patat/config.yaml`
+    (typically `$HOME/.config/patat/config.yaml`) or `$HOME/.patat.yaml`.
+2.  In the presentation file itself, using the [Pandoc metadata header].
+    These settings take precedence over anything specified in the per-user
+    configuration file.
 
 [YAML]: http://yaml.org/
 [Pandoc metadata header]: http://pandoc.org/MANUAL.html#extension-yaml_metadata_block
@@ -266,7 +270,8 @@ patat:
 Hello world.
 ```
 
-Or we can use a normal presentation and have the following `$HOME/.patat.yaml`:
+Or we can use a "plain" presentation and have the following
+`$XDG_CONFIG_DIRECTORY/patat/config.yaml`:
 
     key: val
 
