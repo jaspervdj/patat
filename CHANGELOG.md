@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.9.1.0 (2023-09-25)
+
+ *  Fall back to forcing UTF-8 if decoding fails (#144) (#127)
+
+    When we try to read a file that is encoded in UTF-8, and the system locale
+    is not set to UTF-8, the GHC runtime system will throw an error.
+
+    While this typically indicates that the user should update their system
+    locale using e.g. the `LANG` environment variable, we want to provide a good
+    initial experience for people unfamiliar with this, and in 2023 it's
+    reasonable to assume files may be encoded in UTF-8.
+
+ *  Dependency updates:
+     -  Bump `skylighting` upper bound to 0.15 (#143)
+
 ## 0.9.0.0 (2023-09-13)
 
  *  Add proper support for speaker notes (#142)
