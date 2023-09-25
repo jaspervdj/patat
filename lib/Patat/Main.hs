@@ -52,6 +52,7 @@ parseOptions :: OA.Parser Options
 parseOptions = Options
     <$> (OA.optional $ OA.strArgument $
             OA.metavar "FILENAME" <>
+            OA.action  "file" <>  -- For bash file completion
             OA.help    "Input file")
     <*> (OA.switch $
             OA.long    "force" <>
