@@ -34,8 +34,10 @@ import           Patat.Presentation.Internal
 import qualified Patat.Presentation.SpeakerNotes as SpeakerNotes
 import           Prelude
 import qualified Skylighting                     as Skylighting
-import           System.Directory                (doesFileExist,
-                                                  getHomeDirectory)
+import           System.Directory                (XdgDirectory (XdgConfig),
+                                                  doesFileExist,
+                                                  getHomeDirectory,
+                                                  getXdgDirectory)
 import           System.FilePath                 (splitFileName, takeExtension,
                                                   (</>))
 import qualified Text.Pandoc.Error               as Pandoc
@@ -48,8 +50,13 @@ readPresentation filePath = runExceptT $ do
     -- We need to read the settings first.
     (enc, src)   <- liftIO $ EncodingFallback.readFile filePath
     homeSettings <- ExceptT readHomeSettings
+    xdgSettings  <- ExceptT readXdgSettings
     metaSettings <- ExceptT $ return $ readMetaSettings src
-    let settings = metaSettings <> homeSettings <> defaultPresentationSettings
+    let settings =
+            metaSettings <>
+            xdgSettings  <>
+            homeSettings <>
+            defaultPresentationSettings
 
     syntaxMap <- ExceptT $ readSyntaxMap $ fromMaybe [] $
         psSyntaxDefinitions settings
@@ -162,7 +169,20 @@ readMetaSettings src = case parseMetadataBlock src of
 readHomeSettings :: IO (Either String PresentationSettings)
 readHomeSettings = do
     home <- getHomeDirectory
-    let path = home </> ".patat.yaml"
+    readSettings $ home </> ".patat.yaml"
+
+
+--------------------------------------------------------------------------------
+-- | Read settings from "$XDG_CONFIG_DIRECTORY/patat/config.yaml".
+readXdgSettings :: IO (Either String PresentationSettings)
+readXdgSettings =
+    getXdgDirectory XdgConfig ("patat" </> "config.yaml") >>= readSettings
+
+
+--------------------------------------------------------------------------------
+-- | Read settings from the specified path, if it exists.
+readSettings :: FilePath -> IO (Either String PresentationSettings)
+readSettings path = do
     exists <- doesFileExist path
     if not exists
         then return (Right mempty)
