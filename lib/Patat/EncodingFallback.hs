@@ -9,7 +9,7 @@
 --
 -- If we forced UTF-8, we also want to propagate that to the output handle;
 -- otherwise will get errors when we try to display these characters; so
--- 'propagateEncoding' should be used on the output handle (typically stdout).
+-- withHandle should be used on the output handle (typically stdout).
 module Patat.EncodingFallback
     ( EncodingFallback (..)
     , readFile
