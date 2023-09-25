@@ -25,7 +25,10 @@ import qualified Data.IORef             as IORef
 import           Data.List              (intersperse)
 import qualified Data.Text              as T
 import qualified Data.Text.IO           as T
+import           Patat.EncodingFallback (EncodingFallback)
+import qualified Patat.EncodingFallback as EncodingFallback
 import           System.Directory       (removeFile)
+import qualified System.IO              as IO
 import qualified Text.Pandoc            as Pandoc
 
 
@@ -95,10 +98,12 @@ with settings = bracket
 
 
 --------------------------------------------------------------------------------
-write :: Handle -> SpeakerNotes -> IO ()
-write h sn = do
+write :: Handle -> EncodingFallback -> SpeakerNotes -> IO ()
+write h encodingFallback sn = do
     change <- IORef.atomicModifyIORef' (hActive h) $ \old -> (sn, old /= sn)
-    when change $ T.writeFile (sFile $ hSettings h) $ toText sn
+    when change $ IO.withFile (sFile $ hSettings h) IO.WriteMode $ \ioh ->
+        EncodingFallback.withHandle ioh encodingFallback $
+        T.hPutStr ioh $ toText sn
 
 
 --------------------------------------------------------------------------------
