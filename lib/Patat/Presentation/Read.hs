@@ -25,7 +25,8 @@ import qualified Data.Sequence.Extended          as Seq
 import qualified Data.Text                       as T
 import qualified Data.Text.Encoding              as T
 import qualified Data.Yaml                       as Yaml
-import           Patat.Encoding                  (Encoding, readFileLenient)
+import           Patat.EncodingFallback          (EncodingFallback)
+import qualified Patat.EncodingFallback          as EncodingFallback
 import           Patat.Eval                      (eval)
 import           Patat.Presentation.Fragment
 import qualified Patat.Presentation.Instruction  as Instruction
@@ -45,7 +46,7 @@ import qualified Text.Pandoc.Extended            as Pandoc
 readPresentation :: FilePath -> IO (Either String Presentation)
 readPresentation filePath = runExceptT $ do
     -- We need to read the settings first.
-    (enc, src)   <- liftIO $ readFileLenient filePath
+    (enc, src)   <- liftIO $ EncodingFallback.readFile filePath
     homeSettings <- ExceptT readHomeSettings
     metaSettings <- ExceptT $ return $ readMetaSettings src
     let settings = metaSettings <> homeSettings <> defaultPresentationSettings
@@ -112,10 +113,9 @@ readExtension (ExtensionList extensions) fileExt = case fileExt of
 
 --------------------------------------------------------------------------------
 pandocToPresentation
-    :: FilePath -> Encoding -> PresentationSettings -> Skylighting.SyntaxMap
-    -> Pandoc.Pandoc
-    -> Either String Presentation
-pandocToPresentation pFilePath pEncoding pSettings pSyntaxMap
+    :: FilePath -> EncodingFallback -> PresentationSettings
+    -> Skylighting.SyntaxMap -> Pandoc.Pandoc -> Either String Presentation
+pandocToPresentation pFilePath pEncodingFallback pSettings pSyntaxMap
         pandoc@(Pandoc.Pandoc meta _) = do
     let !pTitle          = case Pandoc.docTitle meta of
             []    -> [Pandoc.Str . T.pack . snd $ splitFileName pFilePath]

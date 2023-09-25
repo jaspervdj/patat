@@ -45,7 +45,7 @@ import           Data.Maybe                      (fromMaybe)
 import           Data.Sequence.Extended          (Seq)
 import qualified Data.Sequence.Extended          as Seq
 import qualified Data.Text                       as T
-import           Patat.Encoding                  (Encoding)
+import           Patat.EncodingFallback          (EncodingFallback)
 import qualified Patat.Presentation.Instruction  as Instruction
 import qualified Patat.Presentation.SpeakerNotes as SpeakerNotes
 import qualified Patat.Theme                     as Theme
@@ -61,15 +61,15 @@ type Breadcrumbs = [(Int, [Pandoc.Inline])]
 
 --------------------------------------------------------------------------------
 data Presentation = Presentation
-    { pFilePath       :: !FilePath
-    , pEncoding       :: !Encoding
-    , pTitle          :: ![Pandoc.Inline]
-    , pAuthor         :: ![Pandoc.Inline]
-    , pSettings       :: !PresentationSettings
-    , pSlides         :: !(Seq Slide)
-    , pBreadcrumbs    :: !(Seq Breadcrumbs)  -- One for each slide.
-    , pActiveFragment :: !Index
-    , pSyntaxMap      :: !Skylighting.SyntaxMap
+    { pFilePath         :: !FilePath
+    , pEncodingFallback :: !EncodingFallback
+    , pTitle            :: ![Pandoc.Inline]
+    , pAuthor           :: ![Pandoc.Inline]
+    , pSettings         :: !PresentationSettings
+    , pSlides           :: !(Seq Slide)
+    , pBreadcrumbs      :: !(Seq Breadcrumbs)  -- One for each slide.
+    , pActiveFragment   :: !Index
+    , pSyntaxMap        :: !Skylighting.SyntaxMap
     } deriving (Show)
 
 

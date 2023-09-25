@@ -22,7 +22,7 @@ import           Data.Version                    (showVersion)
 import qualified Options.Applicative             as OA
 import qualified Options.Applicative.Help.Pretty as OA.PP
 import           Patat.AutoAdvance
-import           Patat.Encoding                  (propagateEncoding)
+import qualified Patat.EncodingFallback          as EncodingFallback
 import qualified Patat.Images                    as Images
 import           Patat.Presentation
 import qualified Patat.Presentation.SpeakerNotes as SpeakerNotes
@@ -146,11 +146,11 @@ main = do
     withMaybeHandle SpeakerNotes.with
         (psSpeakerNotes $ pSettings pres) $ \speakerNotes ->
 
-        if oDump options
-            then do
-                propagateEncoding IO.stdout $ pEncoding pres
-                dumpPresentation pres
-            else interactiveLoop options images speakerNotes pres
+        if oDump options then
+            EncodingFallback.withHandle IO.stdout (pEncodingFallback pres) $
+            dumpPresentation pres
+        else
+            interactiveLoop options images speakerNotes pres
   where
     interactiveLoop
         :: Options -> Maybe Images.Handle -> Maybe SpeakerNotes.Handle
@@ -171,8 +171,9 @@ main = do
 
         let loop :: Presentation -> Maybe String -> IO ()
             loop pres mbError = do
-                for_ speakerNotes $ \sn ->
-                    SpeakerNotes.write sn $ activeSpeakerNotes pres
+                for_ speakerNotes $ \sn -> SpeakerNotes.write sn
+                    (pEncodingFallback pres)
+                    (activeSpeakerNotes pres)
 
                 size <- getDisplaySize pres
                 let display = case mbError of
@@ -182,9 +183,10 @@ main = do
 
                 Ansi.clearScreen
                 Ansi.setCursorPosition 0 0
-                propagateEncoding IO.stdout $ pEncoding pres
                 cleanup <- case display of
-                    DisplayDoc doc -> PP.putDoc doc $> mempty
+                    DisplayDoc doc -> EncodingFallback.withHandle
+                        IO.stdout (pEncodingFallback pres) $
+                        PP.putDoc doc $> mempty
                     DisplayImage path -> case images of
                         Nothing -> do
                             PP.putDoc $ displayPresentationError
