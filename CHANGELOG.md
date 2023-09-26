@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.9.2.0 (2023-09-26)
+
+ *  Read configuration from XDG standard directory (#146)
+
+    The per-user patat configuration file was `$HOME/.patat.yaml`,
+    which does not follow the XDG standard.  We now support
+    `$XDG_CONFIG_DIRECTORY/patat/config.yaml` (typically `$XDG_CONFIG_DIRECTORY`
+    is set to `$HOME/.config`) which is compliant with the standard.
+
+    Note that `$HOME/.patat.yaml` is still supported for backward-compatibility,
+    but anything in `$XDG_CONFIG_DIRECTORY` takes precedence.
+
+ *  Support filenames in bash completion (#145) (#126)
+
 ## 0.9.1.0 (2023-09-25)
 
  *  Fall back to forcing UTF-8 if decoding fails (#144) (#127)
