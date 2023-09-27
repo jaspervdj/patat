@@ -295,15 +295,22 @@ patat:
     margins:
         left: 10
         right: 10
+        top: 5
 ...
 
 Lorem ipsum dolor sit amet, ...
 ```
 
-This example configuration will generate slides with a margin of 10 characters on the left,
-and break lines 10 characters before they reach the end of the terminal's width.
+This example configuration will generate slides with a margin of 10 columns on
+the left, and it will wrap long lines 10 columns before the right side of the
+terminal.  Additionally, there will be 5 empty lines in between the title bar
+and slide content.
 
-It is recommended to enable [line wrapping](#line-wrapping) along with this feature.
+[Line wrapping](#line-wrapping) should be enabled when using non-zero `right`
+margin.
+
+By default, the `left` and `right` margin are set to 0, and the `top` margin is
+set to 1.
 
 ### Auto advancing
 

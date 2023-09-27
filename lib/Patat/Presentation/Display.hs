@@ -68,7 +68,8 @@ displayWithBorders (Size rows columns) Presentation {..} f =
         else
             let titleRemainder = columns - titleWidth - titleOffset
                 wrappedTitle = PP.spaces titleOffset <> PP.string title <> PP.spaces titleRemainder in
-        borders wrappedTitle <> PP.hardline <> PP.hardline) <>
+        borders wrappedTitle <> PP.hardline) <>
+    mconcat (replicate topMargin PP.hardline) <>
     formatWith settings (f canvasSize ds) <> PP.hardline <>
     PP.goToLine (rows - 2) <>
     borders (PP.space <> PP.string author <> middleSpaces <> PP.string active <> PP.space) <>
@@ -101,7 +102,8 @@ displayWithBorders (Size rows columns) Presentation {..} f =
     borders     = themed ds themeBorders
 
     -- Room left for content
-    canvasSize = Size (rows - 2) columns
+    topMargin  = mTop $ margins pSettings
+    canvasSize = Size (rows - 2 - topMargin) columns
 
     -- Compute footer.
     active
@@ -127,12 +129,12 @@ displayPresentation size pres@Presentation {..} =
                 prettyFragment theme fragment
         Just (ActiveTitle block) -> DisplayDoc $
             displayWithBorders size pres $ \canvasSize theme ->
-            let pblock          = prettyBlock theme block
-                (prows, pcols)  = PP.dimensions pblock
-                (mLeft, mRight) = marginsOf pSettings
-                offsetRow       = (sRows canvasSize `div` 2) - (prows `div` 2)
-                offsetCol       = ((sCols canvasSize - mLeft - mRight) `div` 2) - (pcols `div` 2)
-                spaces          = PP.NotTrimmable $ PP.spaces offsetCol in
+            let pblock         = prettyBlock theme block
+                (prows, pcols) = PP.dimensions pblock
+                Margins {..}   = margins pSettings
+                offsetRow      = (sRows canvasSize `div` 2) - (prows `div` 2)
+                offsetCol      = ((sCols canvasSize - mLeft - mRight) `div` 2) - (pcols `div` 2)
+                spaces         = PP.NotTrimmable $ PP.spaces offsetCol in
             mconcat (replicate (offsetRow - 3) PP.hardline) <$$>
             PP.indent spaces spaces pblock
 
@@ -193,11 +195,11 @@ dumpPresentation pres@Presentation {..} =
 formatWith :: PresentationSettings -> PP.Doc -> PP.Doc
 formatWith ps = wrap . indent
   where
-    (marginLeft, marginRight) = marginsOf ps
+    Margins {..} = margins ps
     wrap = case (psWrap ps, psColumns ps) of
-        (Just True,  Just (A.FlexibleNum col)) -> PP.wrapAt (Just $ col - marginRight)
+        (Just True,  Just (A.FlexibleNum col)) -> PP.wrapAt (Just $ col - mRight)
         _                                      -> id
-    spaces = PP.NotTrimmable $ PP.spaces marginLeft
+    spaces = PP.NotTrimmable $ PP.spaces mLeft
     indent = PP.indent spaces spaces
 
 
