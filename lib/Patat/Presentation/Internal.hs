@@ -8,8 +8,9 @@ module Patat.Presentation.Internal
     , PresentationSettings (..)
     , defaultPresentationSettings
 
+    , MarginSettings (..)
     , Margins (..)
-    , marginsOf
+    , margins
 
     , ExtensionList (..)
     , defaultExtensionList
@@ -79,7 +80,7 @@ data Presentation = Presentation
 data PresentationSettings = PresentationSettings
     { psRows              :: !(Maybe (A.FlexibleNum Int))
     , psColumns           :: !(Maybe (A.FlexibleNum Int))
-    , psMargins           :: !(Maybe Margins)
+    , psMargins           :: !(Maybe MarginSettings)
     , psWrap              :: !(Maybe Bool)
     , psTheme             :: !(Maybe Theme.Theme)
     , psIncrementalLists  :: !(Maybe Bool)
@@ -134,42 +135,55 @@ defaultPresentationSettings = mempty
 
 
 --------------------------------------------------------------------------------
-data Margins = Margins
-    { mLeft  :: !(Maybe (A.FlexibleNum Int))
-    , mRight :: !(Maybe (A.FlexibleNum Int))
+data MarginSettings = MarginSettings
+    { msTop   :: !(Maybe (A.FlexibleNum Int))
+    , msLeft  :: !(Maybe (A.FlexibleNum Int))
+    , msRight :: !(Maybe (A.FlexibleNum Int))
     } deriving (Show)
 
 
 --------------------------------------------------------------------------------
-instance Semigroup Margins where
-    l <> r = Margins
-        { mLeft  = mLeft  l `mplus` mLeft  r
-        , mRight = mRight l `mplus` mRight r
+instance Semigroup MarginSettings where
+    l <> r = MarginSettings
+        { msTop   = on mplus msTop   l r
+        , msLeft  = on mplus msLeft  l r
+        , msRight = on mplus msRight l r
         }
 
 
 --------------------------------------------------------------------------------
-instance Monoid Margins where
+instance Monoid MarginSettings where
     mappend = (<>)
-    mempty  = Margins Nothing Nothing
+    mempty  = MarginSettings Nothing Nothing Nothing
 
 
 --------------------------------------------------------------------------------
-defaultMargins :: Margins
-defaultMargins = Margins
-    { mLeft  = Nothing
-    , mRight = Nothing
+defaultMargins :: MarginSettings
+defaultMargins = MarginSettings
+    { msTop   = Just (A.FlexibleNum 1)
+    , msLeft  = Nothing
+    , msRight = Nothing
     }
 
 
+
 --------------------------------------------------------------------------------
-marginsOf :: PresentationSettings -> (Int, Int)
-marginsOf presentationSettings =
-    (marginLeft, marginRight)
+data Margins = Margins
+    { mTop   :: Int
+    , mLeft  :: Int
+    , mRight :: Int
+    } deriving (Show)
+
+
+--------------------------------------------------------------------------------
+margins :: PresentationSettings -> Margins
+margins ps = Margins
+    { mLeft  = get msLeft
+    , mRight = get msRight
+    , mTop   = get msTop
+    }
   where
-    margins    = fromMaybe defaultMargins $ psMargins presentationSettings
-    marginLeft  = fromMaybe 0 (A.unFlexibleNum <$> mLeft margins)
-    marginRight = fromMaybe 0 (A.unFlexibleNum <$> mRight margins)
+    get f = fromMaybe 0 . fmap A.unFlexibleNum $ psMargins ps >>= f
 
 
 --------------------------------------------------------------------------------
@@ -320,5 +334,5 @@ activeSpeakerNotes presentation = fromMaybe mempty $ do
 
 
 --------------------------------------------------------------------------------
-$(A.deriveFromJSON A.dropPrefixOptions ''Margins)
+$(A.deriveFromJSON A.dropPrefixOptions ''MarginSettings)
 $(A.deriveFromJSON A.dropPrefixOptions ''PresentationSettings)
