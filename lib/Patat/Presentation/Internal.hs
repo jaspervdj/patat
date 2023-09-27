@@ -129,8 +129,8 @@ instance Monoid PresentationSettings where
 --------------------------------------------------------------------------------
 defaultPresentationSettings :: PresentationSettings
 defaultPresentationSettings = mempty
-    { psMargins          = Just defaultMargins
-    , psTheme            = Just Theme.defaultTheme
+    { psMargins = Nothing
+    , psTheme   = Just Theme.defaultTheme
     }
 
 
@@ -158,16 +158,6 @@ instance Monoid MarginSettings where
 
 
 --------------------------------------------------------------------------------
-defaultMargins :: MarginSettings
-defaultMargins = MarginSettings
-    { msTop   = Just (A.FlexibleNum 1)
-    , msLeft  = Nothing
-    , msRight = Nothing
-    }
-
-
-
---------------------------------------------------------------------------------
 data Margins = Margins
     { mTop   :: Int
     , mLeft  :: Int
@@ -178,12 +168,12 @@ data Margins = Margins
 --------------------------------------------------------------------------------
 margins :: PresentationSettings -> Margins
 margins ps = Margins
-    { mLeft  = get msLeft
-    , mRight = get msRight
-    , mTop   = get msTop
+    { mLeft  = get 0 msLeft
+    , mRight = get 0 msRight
+    , mTop   = get 1 msTop
     }
   where
-    get f = fromMaybe 0 . fmap A.unFlexibleNum $ psMargins ps >>= f
+    get def f = fromMaybe def . fmap A.unFlexibleNum $ psMargins ps >>= f
 
 
 --------------------------------------------------------------------------------
