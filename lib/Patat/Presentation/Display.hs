@@ -21,11 +21,11 @@ import qualified Data.List                            as L
 import           Data.Maybe                           (fromMaybe, maybeToList)
 import qualified Data.Sequence.Extended               as Seq
 import qualified Data.Text                            as T
+import qualified Patat.Presentation.Comments          as Comments
 import           Patat.Presentation.Display.CodeBlock
 import           Patat.Presentation.Display.Internal
 import           Patat.Presentation.Display.Table
 import           Patat.Presentation.Internal
-import qualified Patat.Presentation.SpeakerNotes      as SpeakerNotes
 import           Patat.PrettyPrint                    ((<$$>), (<+>))
 import qualified Patat.PrettyPrint                    as PP
 import           Patat.Theme                          (Theme (..))
@@ -42,15 +42,17 @@ data Size = Size {sRows :: Int, sCols :: Int} deriving (Show)
 
 --------------------------------------------------------------------------------
 getDisplaySize :: Presentation -> IO Size
-getDisplaySize Presentation {..} = do
+getDisplaySize pres = do
     mbWindow <- Terminal.size
     let sRows = fromMaybe 24 $
-            (A.unFlexibleNum <$> psRows pSettings) `mplus`
+            (A.unFlexibleNum <$> psRows settings) `mplus`
             (Terminal.height <$> mbWindow)
         sCols = fromMaybe 72 $
-            (A.unFlexibleNum <$> psColumns pSettings) `mplus`
+            (A.unFlexibleNum <$> psColumns settings) `mplus`
             (Terminal.width  <$> mbWindow)
     pure $ Size {..}
+  where
+    settings = activeSettings pres
 
 
 --------------------------------------------------------------------------------
@@ -62,7 +64,7 @@ data Display = DisplayDoc PP.Doc | DisplayImage FilePath deriving (Show)
 -- the active slide number and so on.
 displayWithBorders
     :: Size -> Presentation -> (Size -> DisplaySettings -> PP.Doc) -> PP.Doc
-displayWithBorders (Size rows columns) Presentation {..} f =
+displayWithBorders (Size rows columns) pres@Presentation {..} f =
     (if null title
         then mempty
         else
@@ -77,7 +79,7 @@ displayWithBorders (Size rows columns) Presentation {..} f =
   where
     -- Get terminal width/title
     (sidx, _)   = pActiveFragment
-    settings    = pSettings {psColumns = Just $ A.FlexibleNum columns}
+    settings    = (activeSettings pres) {psColumns = Just $ A.FlexibleNum columns}
     ds          = DisplaySettings
         { dsTheme     = fromMaybe Theme.defaultTheme (psTheme settings)
         , dsSyntaxMap = pSyntaxMap
@@ -102,7 +104,7 @@ displayWithBorders (Size rows columns) Presentation {..} f =
     borders     = themed ds themeBorders
 
     -- Room left for content
-    topMargin  = mTop $ margins pSettings
+    topMargin  = mTop $ margins settings
     canvasSize = Size (rows - 2 - topMargin) columns
 
     -- Compute footer.
@@ -131,7 +133,7 @@ displayPresentation size pres@Presentation {..} =
             displayWithBorders size pres $ \canvasSize theme ->
             let pblock         = prettyBlock theme block
                 (prows, pcols) = PP.dimensions pblock
-                Margins {..}   = margins pSettings
+                Margins {..}   = margins (activeSettings pres)
                 offsetRow      = (sRows canvasSize `div` 2) - (prows `div` 2)
                 offsetCol      = ((sCols canvasSize - mLeft - mRight) `div` 2) - (pcols `div` 2)
                 spaces         = PP.NotTrimmable $ PP.spaces offsetCol in
@@ -162,33 +164,39 @@ displayPresentationError size pres err =
 --------------------------------------------------------------------------------
 dumpPresentation :: Presentation -> IO ()
 dumpPresentation pres@Presentation {..} =
-    PP.putDoc $ PP.removeControls $ formatWith pSettings $
+    PP.putDoc $ PP.removeControls $
     PP.vcat $ L.intercalate ["{slide}"] $
         map dumpSlide [0 .. length pSlides - 1]
   where
     dumpSlide :: Int -> [PP.Doc]
     dumpSlide i = do
         slide <- maybeToList $ getSlide i pres
-        dumpSpeakerNotes slide <> L.intercalate ["{fragment}"]
-            [ dumpFragment (i, j)
-            | j <- [0 .. numFragments slide - 1]
-            ]
+        map (formatWith (getSettings i pres)) $
+            dumpComment slide <> L.intercalate ["{fragment}"]
+                [ dumpFragment (i, j)
+                | j <- [0 .. numFragments slide - 1]
+                ]
 
-    dumpSpeakerNotes :: Slide -> [PP.Doc]
-    dumpSpeakerNotes slide = do
-        guard $ slideSpeakerNotes slide /= mempty
+    dumpComment :: Slide -> [PP.Doc]
+    dumpComment slide = do
+        guard (Comments.cSpeakerNotes comment /= mempty)
         pure $ PP.text $ "{speakerNotes: " <>
-            SpeakerNotes.toText (slideSpeakerNotes slide) <> "}"
+            Comments.speakerNotesToText (Comments.cSpeakerNotes comment) <> "}"
+      where
+        comment = slideComment slide
 
     dumpFragment :: Index -> [PP.Doc]
     dumpFragment idx =
-        case displayPresentation size pres {pActiveFragment = idx} of
+        case displayPresentation (getSize idx) pres {pActiveFragment = idx} of
             DisplayDoc doc        -> [doc]
             DisplayImage filepath -> [PP.string $ "{image: " ++ filepath ++ "}"]
 
-    sRows = fromMaybe 24 $ A.unFlexibleNum <$> psRows pSettings
-    sCols = fromMaybe 72 $ A.unFlexibleNum <$> psColumns pSettings
-    size  = Size {..}
+    getSize :: Index -> Size
+    getSize idx =
+        let settings = activeSettings pres {pActiveFragment = idx}
+            sRows    = fromMaybe 24 $ A.unFlexibleNum <$> psRows settings
+            sCols    = fromMaybe 72 $ A.unFlexibleNum <$> psColumns settings in
+        Size {..}
 
 
 --------------------------------------------------------------------------------

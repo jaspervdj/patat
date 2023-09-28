@@ -13,35 +13,35 @@ module Patat.Presentation.Read
 
 
 --------------------------------------------------------------------------------
-import           Control.Monad.Except            (ExceptT (..), runExceptT,
-                                                  throwError)
-import           Control.Monad.Trans             (liftIO)
-import qualified Data.Aeson                      as A
-import qualified Data.Aeson.KeyMap               as AKM
-import           Data.Bifunctor                  (first)
-import           Data.Maybe                      (fromMaybe)
-import           Data.Sequence.Extended          (Seq)
-import qualified Data.Sequence.Extended          as Seq
-import qualified Data.Text                       as T
-import qualified Data.Text.Encoding              as T
-import qualified Data.Yaml                       as Yaml
-import           Patat.EncodingFallback          (EncodingFallback)
-import qualified Patat.EncodingFallback          as EncodingFallback
-import           Patat.Eval                      (eval)
+import           Control.Monad.Except           (ExceptT (..), runExceptT,
+                                                 throwError)
+import           Control.Monad.Trans            (liftIO)
+import qualified Data.Aeson                     as A
+import qualified Data.Aeson.KeyMap              as AKM
+import           Data.Bifunctor                 (first)
+import           Data.Maybe                     (fromMaybe)
+import           Data.Sequence.Extended         (Seq)
+import qualified Data.Sequence.Extended         as Seq
+import qualified Data.Text                      as T
+import qualified Data.Text.Encoding             as T
+import qualified Data.Yaml                      as Yaml
+import           Patat.EncodingFallback         (EncodingFallback)
+import qualified Patat.EncodingFallback         as EncodingFallback
+import           Patat.Eval                     (eval)
+import qualified Patat.Presentation.Comments    as Comments
 import           Patat.Presentation.Fragment
-import qualified Patat.Presentation.Instruction  as Instruction
+import qualified Patat.Presentation.Instruction as Instruction
 import           Patat.Presentation.Internal
-import qualified Patat.Presentation.SpeakerNotes as SpeakerNotes
 import           Prelude
-import qualified Skylighting                     as Skylighting
-import           System.Directory                (XdgDirectory (XdgConfig),
-                                                  doesFileExist,
-                                                  getHomeDirectory,
-                                                  getXdgDirectory)
-import           System.FilePath                 (splitFileName, takeExtension,
-                                                  (</>))
-import qualified Text.Pandoc.Error               as Pandoc
-import qualified Text.Pandoc.Extended            as Pandoc
+import qualified Skylighting                    as Skylighting
+import           System.Directory               (XdgDirectory (XdgConfig),
+                                                 doesFileExist,
+                                                 getHomeDirectory,
+                                                 getXdgDirectory)
+import           System.FilePath                (splitFileName, takeExtension,
+                                                 (</>))
+import qualified Text.Pandoc.Error              as Pandoc
+import qualified Text.Pandoc.Extended           as Pandoc
 
 
 --------------------------------------------------------------------------------
@@ -131,6 +131,11 @@ pandocToPresentation pFilePath pEncodingFallback pSettings pSyntaxMap
         !pBreadcrumbs    = collectBreadcrumbs pSlides
         !pActiveFragment = (0, 0)
         !pAuthor         = concat (Pandoc.docAuthors meta)
+    pSlideSettings <- Seq.traverseWithIndex
+        (\i ->
+            first (\err -> "on slide " ++ show (i + 1) ++ ": " ++ err) .
+            Comments.parseSlideSettings . slideComment)
+        pSlides
     return Presentation {..}
 
 
@@ -217,7 +222,7 @@ pandocToSlides settings pandoc =
 -- header that occurs before a non-header in the blocks.
 detectSlideLevel :: Pandoc.Pandoc -> Int
 detectSlideLevel (Pandoc.Pandoc _meta blocks0) =
-    go 6 $ SpeakerNotes.remove blocks0
+    go 6 $ Comments.remove blocks0
   where
     go level (Pandoc.Header n _ _ : x : xs)
         | n < level && not (isHeader x) = go n xs
@@ -240,7 +245,7 @@ splitSlides slideLevel (Pandoc.Pandoc _meta blocks0)
     | otherwise                              = splitAtHeaders [] blocks0
   where
     mkContentSlide :: [Pandoc.Block] -> [Slide]
-    mkContentSlide bs0 = case SpeakerNotes.partition bs0 of
+    mkContentSlide bs0 = case Comments.partition bs0 of
         (_,  [])  -> [] -- Never create empty slides
         (sn, bs1) -> pure . Slide sn . ContentSlide $
             Instruction.fromList [Instruction.Append bs1]
@@ -256,7 +261,7 @@ splitSlides slideLevel (Pandoc.Pandoc _meta blocks0)
         | i == slideLevel =
             mkContentSlide (reverse acc) ++ splitAtHeaders [b] bs0
         | otherwise       =
-            let (sn, bs1) = SpeakerNotes.split bs0 in
+            let (sn, bs1) = Comments.split bs0 in
             mkContentSlide (reverse acc) ++
             [Slide sn $ TitleSlide i txt] ++
             splitAtHeaders [] bs1
