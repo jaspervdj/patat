@@ -3,7 +3,7 @@
 module Patat.Images
     ( Backend
     , Handle
-    , new
+    , withHandle
     , drawImage
     ) where
 
@@ -21,16 +21,16 @@ import           Patat.Presentation.Internal
 
 
 --------------------------------------------------------------------------------
-new :: ImageSettings -> IO Handle
-new is
-    | isBackend is == "auto" = auto
+withHandle :: ImageSettings -> (Handle -> IO a) -> IO a
+withHandle is f
+    | isBackend is == "auto" = auto >>= f
     | Just (Backend b) <- lookup (isBackend is) backends =
         case A.fromJSON (A.Object $ isParams is) of
-            A.Success c -> b (Explicit c)
+            A.Success c -> b (Explicit c) >>= f
             A.Error err -> fail $
                 "Patat.Images.new: Error parsing config for " ++
                 show (isBackend is) ++ " image backend: " ++ err
-new is = fail $
+withHandle is _ = fail $
     "Patat.Images.new: Could not find " ++ show (isBackend is) ++
     " image backend."
 

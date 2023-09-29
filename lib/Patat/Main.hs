@@ -120,6 +120,15 @@ assertAnsiFeatures = do
 
 
 --------------------------------------------------------------------------------
+data App = App
+    { aOptions      :: Options
+    , aImages       :: Maybe Images.Handle
+    , aSpeakerNotes :: Maybe Comments.SpeakerNotesHandle
+    , aCommandChan  :: Chan PresentationCommand
+    }
+
+
+--------------------------------------------------------------------------------
 main :: IO ()
 main = do
     options <- OA.customExecParser parserPrefs parserInfo
@@ -137,76 +146,82 @@ main = do
 
     errOrPres <- readPresentation filePath
     pres      <- either (errorAndExit . return) return errOrPres
+    let settings = pSettings pres
 
     unless (oForce options) assertAnsiFeatures
 
-    -- (Maybe) initialize images backend.
-    images <- traverse Images.new $ psImages $ pSettings pres
+    if oDump options then
+        EncodingFallback.withHandle IO.stdout (pEncodingFallback pres) $
+        dumpPresentation pres
+    else
+        -- (Maybe) initialize images backend.
+        withMaybeHandle Images.withHandle (psImages settings) $ \images ->
 
-    -- (Maybe) initialize speaker notes.
-    withMaybeHandle Comments.withSpeakerNotesHandle
-        (psSpeakerNotes $ pSettings pres) $ \speakerNotes ->
+        -- (Maybe) initialize speaker notes.
+        withMaybeHandle Comments.withSpeakerNotesHandle
+            (psSpeakerNotes settings) $ \speakerNotes ->
 
-        if oDump options then
-            EncodingFallback.withHandle IO.stdout (pEncodingFallback pres) $
-            dumpPresentation pres
-        else
-            interactiveLoop options images speakerNotes pres
-  where
-    interactiveLoop
-        :: Options -> Maybe Images.Handle -> Maybe Comments.SpeakerNotesHandle
-        -> Presentation -> IO ()
-    interactiveLoop options images speakerNotes pres0 =
+        -- Read presentation commands
         interactively readPresentationCommand $ \commandChan0 -> do
 
         -- If an auto delay is set, use 'autoAdvance' to create a new one.
-        commandChan <- case psAutoAdvanceDelay (pSettings pres0) of
+        commandChan <- case psAutoAdvanceDelay settings of
             Nothing                    -> return commandChan0
             Just (A.FlexibleNum delay) -> autoAdvance delay commandChan0
 
         -- Spawn a thread that adds 'Reload' commands based on the file time.
-        mtime0 <- getModificationTime (pFilePath pres0)
+        mtime0 <- getModificationTime (pFilePath pres)
         when (oWatch options) $ do
-            _ <- forkIO $ watcher commandChan (pFilePath pres0) mtime0
+            _ <- forkIO $ watcher commandChan (pFilePath pres) mtime0
             return ()
 
-        let loop :: Presentation -> Maybe String -> IO ()
-            loop pres mbError = do
-                for_ speakerNotes $ \sn -> Comments.writeSpeakerNotes sn
-                    (pEncodingFallback pres)
-                    (activeSpeakerNotes pres)
+        loop
+            App
+                { aOptions      = options
+                , aImages       = images
+                , aSpeakerNotes = speakerNotes
+                , aCommandChan  = commandChan
+                }
+            pres
+            Nothing
 
-                size <- getDisplaySize pres
-                let display = case mbError of
-                        Nothing  -> displayPresentation size pres
-                        Just err -> DisplayDoc $
-                            displayPresentationError size pres err
 
-                Ansi.clearScreen
-                Ansi.setCursorPosition 0 0
-                cleanup <- case display of
-                    DisplayDoc doc -> EncodingFallback.withHandle
-                        IO.stdout (pEncodingFallback pres) $
-                        PP.putDoc doc $> mempty
-                    DisplayImage path -> case images of
-                        Nothing -> do
-                            PP.putDoc $ displayPresentationError
-                                 size pres "image backend not initialized"
-                            pure mempty
-                        Just img -> do
-                            putStrLn ""
-                            IO.hFlush IO.stdout
-                            Images.drawImage img path
+--------------------------------------------------------------------------------
+loop :: App -> Presentation -> Maybe String -> IO ()
+loop app@App {..} pres mbError = do
+    for_ aSpeakerNotes $ \sn -> Comments.writeSpeakerNotes sn
+        (pEncodingFallback pres)
+        (activeSpeakerNotes pres)
 
-                c      <- Chan.readChan commandChan
-                update <- updatePresentation c pres
-                cleanup
-                case update of
-                    ExitedPresentation        -> return ()
-                    UpdatedPresentation pres' -> loop pres' Nothing
-                    ErroredPresentation err   -> loop pres (Just err)
+    size <- getDisplaySize pres
+    let display = case mbError of
+            Nothing  -> displayPresentation size pres
+            Just err -> DisplayDoc $
+                displayPresentationError size pres err
 
-        loop pres0 Nothing
+    Ansi.clearScreen
+    Ansi.setCursorPosition 0 0
+    cleanup <- case display of
+        DisplayDoc doc -> EncodingFallback.withHandle
+            IO.stdout (pEncodingFallback pres) $
+            PP.putDoc doc $> mempty
+        DisplayImage path -> case aImages of
+            Nothing -> do
+                PP.putDoc $ displayPresentationError
+                     size pres "image backend not initialized"
+                pure mempty
+            Just img -> do
+                putStrLn ""
+                IO.hFlush IO.stdout
+                Images.drawImage img path
+
+    c      <- Chan.readChan aCommandChan
+    update <- updatePresentation c pres
+    cleanup
+    case update of
+        ExitedPresentation        -> return ()
+        UpdatedPresentation pres' -> loop app pres' Nothing
+        ErroredPresentation err   -> loop app pres (Just err)
 
 
 --------------------------------------------------------------------------------
