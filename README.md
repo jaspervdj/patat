@@ -251,31 +251,60 @@ are several places where you can put your configuration.
 
 1.  For per-user configuration you can use
     `$XDG_CONFIG_DIRECTORY/patat/config.yaml`
-    (typically `$HOME/.config/patat/config.yaml`) or `$HOME/.patat.yaml`.
+    (typically `$HOME/.config/patat/config.yaml`) or `$HOME/.patat.yaml`, for
+    example:
+
+    ```yaml
+    slideNumber: false
+    ```
+
 2.  In the presentation file itself, using the [Pandoc metadata header].
     These settings take precedence over anything specified in the per-user
-    configuration file.
+    configuration file.  They must be placed in a `patat:` section, so they
+    don't conflict with metadata:
+
+    ```markdown
+    ---
+    title: Presentation with options
+    author: John Doe
+    patat:
+        slideNumber: false
+    ...
+
+    Hello world.
+    ```
+
+3.  Within a slide, using a comment starting with `<!--config:`.  These
+    settings can override configuration for that specific slide only.
+    There should not be any whitespace between `<!--` and `config:`.
+
+    ```markdown
+    # First slide
+
+    Slide numbers are turned on here.
+
+    # Second slide
+
+    <!--config:
+    slideNumber: false
+    -->
+
+    Slide numbers are turned off here.
+    ```
+
+    The following settings can **not** be set in a slide configuration block,
+    and doing so will result in an error:
+
+     -  `autoAdvanceDelay`
+     -  `eval`
+     -  `images`
+     -  `incrementalLists`
+     -  `pandocExtensions`
+     -  `slideLevel`
+     -  `speakerNotes`
 
 [YAML]: http://yaml.org/
 [Pandoc metadata header]: http://pandoc.org/MANUAL.html#extension-yaml_metadata_block
-
-For example, we set an option `key` to `val` by using the following file:
-
-```markdown
----
-title: Presentation with options
-author: John Doe
-patat:
-    key: val
-...
-
-Hello world.
-```
-
-Or we can use a "plain" presentation and have the following
-`$XDG_CONFIG_DIRECTORY/patat/config.yaml`:
-
-    key: val
 
 ### Line wrapping
 
@@ -732,6 +761,10 @@ Alternatively, just use a second `patat` instance with `--watch` enabled:
 ```bash
 patat -w /tmp/notes.txt
 ```
+
+Note that speaker notes should not start with `<!--config:`, since then they
+will be parsed as [configuration](#configuration) blocks.  They are allowed
+to start with `<!-- config:`; the lack of whitespace matters.
 
 Trivia
 ------

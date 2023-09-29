@@ -25,7 +25,7 @@ import           Patat.AutoAdvance
 import qualified Patat.EncodingFallback          as EncodingFallback
 import qualified Patat.Images                    as Images
 import           Patat.Presentation
-import qualified Patat.Presentation.SpeakerNotes as SpeakerNotes
+import qualified Patat.Presentation.Comments     as Comments
 import qualified Patat.PrettyPrint               as PP
 import qualified Paths_patat
 import           Prelude
@@ -144,7 +144,7 @@ main = do
     images <- traverse Images.new $ psImages $ pSettings pres
 
     -- (Maybe) initialize speaker notes.
-    withMaybeHandle SpeakerNotes.with
+    withMaybeHandle Comments.withSpeakerNotesHandle
         (psSpeakerNotes $ pSettings pres) $ \speakerNotes ->
 
         if oDump options then
@@ -154,7 +154,7 @@ main = do
             interactiveLoop options images speakerNotes pres
   where
     interactiveLoop
-        :: Options -> Maybe Images.Handle -> Maybe SpeakerNotes.Handle
+        :: Options -> Maybe Images.Handle -> Maybe Comments.SpeakerNotesHandle
         -> Presentation -> IO ()
     interactiveLoop options images speakerNotes pres0 =
         interactively readPresentationCommand $ \commandChan0 -> do
@@ -172,7 +172,7 @@ main = do
 
         let loop :: Presentation -> Maybe String -> IO ()
             loop pres mbError = do
-                for_ speakerNotes $ \sn -> SpeakerNotes.write sn
+                for_ speakerNotes $ \sn -> Comments.writeSpeakerNotes sn
                     (pEncodingFallback pres)
                     (activeSpeakerNotes pres)
 
