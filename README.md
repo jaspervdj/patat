@@ -274,8 +274,9 @@ are several places where you can put your configuration.
     Hello world.
     ```
 
-3.  Within a slide, using a comment containing a `config:` block.  These
+3.  Within a slide, using a comment starting with `<!--config:`.  These
     settings can override configuration for that specific slide only.
+    There should not be any whitespace between `<!--` and `config:`.
 
     ```markdown
     # First slide
@@ -291,8 +292,8 @@ are several places where you can put your configuration.
     Slide numbers are turned off here.
     ```
 
-    The following settings **not** be set in a slide configuration block, and
-    doing so will result in an error:
+    The following settings can **not** be set in a slide configuration block,
+    and doing so will result in an error:
 
      -  `autoAdvanceDelay`
      -  `eval`
@@ -301,8 +302,6 @@ are several places where you can put your configuration.
      -  `pandocExtensions`
      -  `slideLevel`
      -  `speakerNotes`
-
-    There should not be any whitespace between `<!--` and `config:`.
 
 [YAML]: http://yaml.org/
 [Pandoc metadata header]: http://pandoc.org/MANUAL.html#extension-yaml_metadata_block
