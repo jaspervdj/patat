@@ -13,7 +13,7 @@ import qualified Control.Concurrent.Async         as Async
 import           Control.Concurrent.Chan.Extended (Chan)
 import qualified Control.Concurrent.Chan.Extended as Chan
 import           Control.Exception                (bracket)
-import           Control.Monad                    (forever, unless, when)
+import           Control.Monad                    (forever, unless, void, when)
 import qualified Data.Aeson.Extended              as A
 import           Data.Foldable                    (for_)
 import           Data.Functor                     (($>))
@@ -228,27 +228,24 @@ loop app@App {..} = do
                 Images.drawImage img path
 
     appCmd <- Chan.readChan aCommandChan
+    cleanup
     case appCmd of
         EffectTick eid -> case aView of
-            EffectView eff0 -> case stepEffect eid eff0 of
+            PresentationView -> loop app
+            ErrorView _      -> loop app
+            EffectView eff0  -> case stepEffect eid eff0 of
                 Just eff1 -> do
-                    _ <- forkIO $ do
-                        threadDelay $ eDelay eff1
-                        Chan.writeChan aCommandChan $ EffectTick eid
+                    scheduleEffectTick eff1
                     loop app {aView = EffectView eff1}
                 Nothing -> loop app {aView = PresentationView}
-            _ -> loop app
         PresentationCommand c -> do
             update <- updatePresentation c aPresentation
-            cleanup
             case update of
                 ExitedPresentation       -> return ()
                 UpdatedPresentation pres
                     | triggerEffect c aPresentation pres -> do
                         eff <- newEffect
-                        _   <- forkIO $ do
-                            threadDelay $ eDelay eff
-                            Chan.writeChan aCommandChan $ EffectTick $ eId eff
+                        scheduleEffectTick eff
                         loop app
                             {aPresentation = pres, aView = EffectView eff}
                     | otherwise -> loop app
@@ -259,6 +256,10 @@ loop app@App {..} = do
     triggerEffect c old new =
         c == Forward &&
         fst (pActiveFragment old) + 1 == fst (pActiveFragment new)
+
+    scheduleEffectTick eff = void $ forkIO $ do
+        threadDelay $ eDelay eff
+        Chan.writeChan aCommandChan $ EffectTick $ eId eff
 
 
 --------------------------------------------------------------------------------
