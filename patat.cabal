@@ -66,6 +66,7 @@ Library
   Exposed-modules:
     Patat.AutoAdvance
     Patat.Cleanup
+    Patat.Effect
     Patat.EncodingFallback
     Patat.Eval
     Patat.Images
@@ -90,6 +91,7 @@ Library
     Patat.Theme
 
   Other-modules:
+    Control.Concurrent.Chan.Extended
     Data.Aeson.Extended
     Data.Aeson.TH.Extended
     Data.Char.WCWidth.Extended
