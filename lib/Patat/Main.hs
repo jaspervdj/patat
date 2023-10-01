@@ -8,7 +8,7 @@ module Patat.Main
 
 
 --------------------------------------------------------------------------------
-import           Control.Concurrent               (threadDelay)
+import           Control.Concurrent               (forkIO, threadDelay)
 import qualified Control.Concurrent.Async         as Async
 import           Control.Concurrent.Chan.Extended (Chan)
 import qualified Control.Concurrent.Chan.Extended as Chan
@@ -17,10 +17,12 @@ import           Control.Monad                    (forever, unless, when)
 import qualified Data.Aeson.Extended              as A
 import           Data.Foldable                    (for_)
 import           Data.Functor                     (($>))
+import qualified Data.List.NonEmpty               as NonEmpty
 import           Data.Version                     (showVersion)
 import qualified Options.Applicative              as OA
 import qualified Options.Applicative.Help.Pretty  as OA.PP
 import           Patat.AutoAdvance
+import           Patat.Effect
 import qualified Patat.EncodingFallback           as EncodingFallback
 import qualified Patat.Images                     as Images
 import           Patat.Presentation
@@ -130,11 +132,11 @@ data App = App
 
 
 --------------------------------------------------------------------------------
-data AppView = PresentationView | ErrorView String
+data AppView = PresentationView | ErrorView String | EffectView Effect
 
 
 --------------------------------------------------------------------------------
-data AppCommand = PresentationCommand PresentationCommand | EffectTick
+data AppCommand = PresentationCommand PresentationCommand | EffectTick EffectId
 
 
 --------------------------------------------------------------------------------
@@ -207,6 +209,7 @@ loop app@App {..} = do
             PresentationView -> displayPresentation size aPresentation
             ErrorView err    -> DisplayDoc $
                 displayPresentationError size aPresentation err
+            EffectView eff   -> DisplayDoc $ NonEmpty.head $ eFrames eff
 
     Ansi.clearScreen
     Ansi.setCursorPosition 0 0
@@ -226,16 +229,36 @@ loop app@App {..} = do
 
     appCmd <- Chan.readChan aCommandChan
     case appCmd of
-        EffectTick -> loop app
+        EffectTick eid -> case aView of
+            EffectView eff0 -> case stepEffect eid eff0 of
+                Just eff1 -> do
+                    _ <- forkIO $ do
+                        threadDelay $ eDelay eff1
+                        Chan.writeChan aCommandChan $ EffectTick eid
+                    loop app {aView = EffectView eff1}
+                Nothing -> loop app {aView = PresentationView}
+            _ -> loop app
         PresentationCommand c -> do
             update <- updatePresentation c aPresentation
             cleanup
             case update of
                 ExitedPresentation       -> return ()
-                UpdatedPresentation pres ->
-                    loop app {aPresentation = pres, aView = PresentationView}
+                UpdatedPresentation pres
+                    | triggerEffect c aPresentation pres -> do
+                        eff <- newEffect
+                        _   <- forkIO $ do
+                            threadDelay $ eDelay eff
+                            Chan.writeChan aCommandChan $ EffectTick $ eId eff
+                        loop app
+                            {aPresentation = pres, aView = EffectView eff}
+                    | otherwise -> loop app
+                        {aPresentation = pres, aView = PresentationView}
                 ErroredPresentation err  ->
                     loop app {aView = ErrorView err}
+  where
+    triggerEffect c old new =
+        c == Forward &&
+        fst (pActiveFragment old) + 1 == fst (pActiveFragment new)
 
 
 --------------------------------------------------------------------------------
