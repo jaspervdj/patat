@@ -39,7 +39,9 @@ docToMatrix size doc = V.create $ do
     pure matrix
   where
     go _ _ _ []                                      = pure ()
+    go _ y _ _  | y >= sRows size                    = pure ()
     go r y _ (NewlineChunk : cs)                     = go r (y + 1) 0 cs
+    go r y x cs | x > sCols size                     = go r (y + 1) 0 cs
     go r y x (ControlChunk ClearScreenControl  : cs) = go r y x cs  -- ?
     go r _ x (ControlChunk (GoToLineControl y) : cs) = go r y x cs
     go r y x (StringChunk _      []      : cs)       = go r y x cs
