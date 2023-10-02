@@ -28,6 +28,7 @@ import qualified Patat.Images                     as Images
 import           Patat.Presentation
 import qualified Patat.Presentation.Comments      as Comments
 import qualified Patat.PrettyPrint                as PP
+import           Patat.PrettyPrint.Matrix         (hPutMatrix)
 import qualified Paths_patat
 import           Prelude
 import qualified System.Console.ANSI              as Ansi
@@ -205,27 +206,17 @@ loop app@App {..} = do
         (activeSpeakerNotes aPresentation)
 
     size <- getDisplaySize aPresentation
-    let display = case aView of
-            PresentationView -> displayPresentation size aPresentation
-            ErrorView err    -> DisplayDoc $
-                displayPresentationError size aPresentation err
-            EffectView eff   -> DisplayDoc $ NonEmpty.head $ eFrames eff
-
     Ansi.clearScreen
     Ansi.setCursorPosition 0 0
-    cleanup <- case display of
-        DisplayDoc doc -> EncodingFallback.withHandle
-            IO.stdout (pEncodingFallback aPresentation) $
-            PP.putDoc doc $> mempty
-        DisplayImage path -> case aImages of
-            Nothing -> do
-                PP.putDoc $ displayPresentationError
-                     size aPresentation "image backend not initialized"
-                pure mempty
-            Just img -> do
-                putStrLn ""
-                IO.hFlush IO.stdout
-                Images.drawImage img path
+    cleanup <- case aView of
+        PresentationView -> case displayPresentation size aPresentation of
+            DisplayDoc doc    -> drawDoc doc
+            DisplayImage path -> drawImg size path
+        ErrorView err -> drawDoc $
+                displayPresentationError size aPresentation err
+        EffectView eff -> do
+            drawMatrix size $ NonEmpty.head $ eFrames eff
+            pure mempty
 
     appCmd <- Chan.readChan aCommandChan
     cleanup
@@ -243,8 +234,10 @@ loop app@App {..} = do
             case update of
                 ExitedPresentation       -> return ()
                 UpdatedPresentation pres
-                    | triggerEffect c aPresentation pres -> do
-                        eff <- newEffect
+                    | triggerEffect c aPresentation pres
+                    , DisplayDoc old <- displayPresentation size aPresentation
+                    , DisplayDoc new <- displayPresentation size pres -> do
+                        eff <- newEffect size old new
                         scheduleEffectTick eff
                         loop app
                             {aPresentation = pres, aView = EffectView eff}
@@ -253,6 +246,18 @@ loop app@App {..} = do
                 ErroredPresentation err  ->
                     loop app {aView = ErrorView err}
   where
+    drawDoc doc = EncodingFallback.withHandle
+        IO.stdout (pEncodingFallback aPresentation) $
+        PP.putDoc doc $> mempty
+    drawImg size path =case aImages of
+        Nothing -> drawDoc $ displayPresentationError
+            size aPresentation "image backend not initialized"
+        Just img -> do
+            putStrLn ""
+            IO.hFlush IO.stdout
+            Images.drawImage img path
+    drawMatrix size raster = hPutMatrix IO.stdout size raster
+
     triggerEffect c old new =
         c == Forward &&
         fst (pActiveFragment old) + 1 == fst (pActiveFragment new)

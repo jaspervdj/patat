@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 module Patat.Presentation.Display
-    ( Size
+    ( Size (..)
     , getDisplaySize
 
     , Display (..)
