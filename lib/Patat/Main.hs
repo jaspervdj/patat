@@ -215,7 +215,7 @@ loop app@App {..} = do
         ErrorView err -> drawDoc $
                 displayPresentationError size aPresentation err
         EffectView eff -> do
-            drawMatrix size $ NonEmpty.head $ eFrames eff
+            drawMatrix (eSize eff) $ NonEmpty.head $ eFrames eff
             pure mempty
 
     appCmd <- Chan.readChan aCommandChan

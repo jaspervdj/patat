@@ -1,40 +1,42 @@
 --------------------------------------------------------------------------------
+{-# LANGUAGE BangPatterns #-}
 module Patat.PrettyPrint.Matrix
     ( Matrix
-    , Elem (..)
+    , Cell (..)
+    , emptyCell
     , docToMatrix
     , hPutMatrix
     ) where
 
 
 --------------------------------------------------------------------------------
-import           Control.Monad              (when)
+import           Control.Monad              (unless, when)
 import           Data.Char.WCWidth.Extended (wcwidth)
 import qualified Data.Vector                as V
 import qualified Data.Vector.Mutable        as VM
 import           Patat.Presentation.Display (Size (..))
-import           Patat.PrettyPrint.Internal
+import           Patat.PrettyPrint.Internal hiding (null)
 import qualified System.Console.ANSI        as Ansi
 import qualified System.IO                  as IO
 
 
 --------------------------------------------------------------------------------
-data Elem = Elem [Ansi.SGR] Char
+data Cell = Cell [Ansi.SGR] Char deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
-type Matrix = V.Vector Elem
+type Matrix = V.Vector Cell
 
 
 --------------------------------------------------------------------------------
-emptyElem :: Elem
-emptyElem = Elem [] ' '
+emptyCell :: Cell
+emptyCell = Cell [] ' '
 
 
 --------------------------------------------------------------------------------
 docToMatrix :: Size -> Doc -> Matrix
 docToMatrix size doc = V.create $ do
-    matrix <- VM.replicate (sRows size * sCols size) emptyElem
+    matrix <- VM.replicate (sRows size * sCols size) emptyCell
     go matrix 0 0 $ docToChunks doc
     pure matrix
   where
@@ -46,22 +48,28 @@ docToMatrix size doc = V.create $ do
     go r _ x (ControlChunk (GoToLineControl y) : cs) = go r y x cs
     go r y x (StringChunk _      []      : cs)       = go r y x cs
     go r y x (StringChunk codes (z : zs) : cs)       = do
-        VM.write r (y * sCols size + x) (Elem codes z)
+        VM.write r (y * sCols size + x) (Cell codes z)
         go r y (x + wcwidth z) (StringChunk codes zs : cs)
 
 
 --------------------------------------------------------------------------------
 hPutMatrix :: IO.Handle -> Size -> Matrix -> IO ()
-hPutMatrix h size matrix = go 0 0 []
+hPutMatrix h size matrix = go 0 0 0 []
   where
-    go y x codes0
-        | x >= sCols size     = IO.hPutStrLn h "" >> go (y + 1) 0 codes0
-        -- | Never use the last line, it's empty to receive prompts.
-        | y + 1 >= sRows size = Ansi.hSetSGR h [Ansi.Reset]
+    go !y !x !empties prevCodes
+        | x >= sCols size     = IO.hPutStrLn h "" >> go (y + 1) 0 0 prevCodes
+        | y >= sRows size     = Ansi.hSetSGR h [Ansi.Reset]
+        -- Try to not print empty things (e.g. fill the screen with spaces) as
+        -- an optimization.  Instead, store the number of empties and print them
+        -- when something actually follows.
+        | cell == emptyCell   = do
+            unless (null prevCodes) $ Ansi.hSetSGR h [Ansi.Reset]
+            go y (x + 1) (empties + 1) []
         | otherwise           = do
-            when (codes0 /= codes1) $
-                Ansi.hSetSGR h (Ansi.Reset : reverse codes1)
+            unless (empties == 0) $ IO.hPutStr h (replicate empties ' ')
+            when (prevCodes /= codes) $
+                Ansi.hSetSGR h (Ansi.Reset : reverse codes)
             IO.hPutStr h [c]
-            go y (x + wcwidth c) codes1
+            go y (x + wcwidth c) 0 codes
       where
-          Elem codes1 c = matrix V.! (y * sCols size + x)
+        cell@(Cell codes c) = matrix V.! (y * sCols size + x)

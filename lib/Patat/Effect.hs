@@ -25,6 +25,7 @@ newtype EffectId = EffectId Unique deriving (Eq)
 --------------------------------------------------------------------------------
 data Effect = Effect
     { eId     :: EffectId
+    , eSize   :: Size
     , eFrames :: NonEmpty Matrix
     , eDelay  :: Int
     }
@@ -32,9 +33,13 @@ data Effect = Effect
 
 --------------------------------------------------------------------------------
 newEffect :: Size -> PP.Doc -> PP.Doc -> IO Effect
-newEffect size frame0 frame1 =
-    Effect <$> (EffectId <$> newUnique) <*> pure frames <*> pure 10000
+newEffect termSize frame0 frame1 = do
+    unique <- newUnique
+    pure $ Effect (EffectId unique) size frames 10000
   where
+    -- The actual part we want to animate does not cover the last row, which is
+    -- always empty.
+    size    = termSize {sRows = sRows termSize - 1}
     matrix0 = docToMatrix size frame0
     matrix1 = docToMatrix size frame1
     frames  = slide size matrix0 matrix1
@@ -56,7 +61,7 @@ slide (Size rows cols) initial final =
     frame offset = V.create $ do
         ini <- V.unsafeThaw initial
         fin <- V.unsafeThaw final
-        mat <- VM.replicate (rows * cols) $ Elem [] ' '
+        mat <- VM.replicate (rows * cols) emptyCell
         for_ [0 .. rows - 1] $ \y -> do
             VM.copy
                 (VM.slice (y * cols) (cols - offset) mat)
