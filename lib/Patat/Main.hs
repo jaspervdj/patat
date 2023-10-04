@@ -215,7 +215,7 @@ loop app@App {..} = do
         ErrorView err -> drawDoc $
                 displayPresentationError size aPresentation err
         EffectView eff -> do
-            drawMatrix (eSize eff) $ NonEmpty.head $ eFrames eff
+            drawMatrix (eSize eff) . fst . NonEmpty.head $ eFrames eff
             pure mempty
 
     appCmd <- Chan.readChan aCommandChan
@@ -263,7 +263,8 @@ loop app@App {..} = do
         fst (pActiveFragment old) + 1 == fst (pActiveFragment new)
 
     scheduleEffectTick eff = void $ forkIO $ do
-        threadDelay $ eDelay eff
+        let Duration delay = snd . NonEmpty.head $ eFrames eff
+        threadDelay delay
         Chan.writeChan aCommandChan $ EffectTick $ eId eff
 
 

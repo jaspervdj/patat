@@ -1,6 +1,7 @@
 --------------------------------------------------------------------------------
 module Patat.Effect
     ( EffectId
+    , Duration (..)
     , Effect (..)
     , newEffect
     , stepEffect
@@ -23,11 +24,14 @@ newtype EffectId = EffectId Unique deriving (Eq)
 
 
 --------------------------------------------------------------------------------
+newtype Duration = Duration Int deriving (Show)
+
+
+--------------------------------------------------------------------------------
 data Effect = Effect
     { eId     :: EffectId
     , eSize   :: Size
-    , eFrames :: NonEmpty Matrix
-    , eDelay  :: Int
+    , eFrames :: NonEmpty (Matrix, Duration)
     }
 
 
@@ -35,14 +39,14 @@ data Effect = Effect
 newEffect :: Size -> PP.Doc -> PP.Doc -> IO Effect
 newEffect termSize frame0 frame1 = do
     unique <- newUnique
-    pure $ Effect (EffectId unique) size frames 10000
+    pure $ Effect (EffectId unique) size frames
   where
     -- The actual part we want to animate does not cover the last row, which is
     -- always empty.
     size    = termSize {sRows = sRows termSize - 1}
     matrix0 = docToMatrix size frame0
     matrix1 = docToMatrix size frame1
-    frames  = slide size matrix0 matrix1
+    frames  = (\f -> (f, Duration 10000)) <$> slide size matrix0 matrix1
 
 
 --------------------------------------------------------------------------------
