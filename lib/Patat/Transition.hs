@@ -1,10 +1,10 @@
 --------------------------------------------------------------------------------
-module Patat.Effect
-    ( EffectId
+module Patat.Transition
+    ( TransitionId
     , Duration (..)
-    , Effect (..)
-    , newEffect
-    , stepEffect
+    , Transition (..)
+    , newTransition
+    , stepTransition
     ) where
 
 
@@ -20,7 +20,7 @@ import           Patat.PrettyPrint.Matrix
 
 
 --------------------------------------------------------------------------------
-newtype EffectId = EffectId Unique deriving (Eq)
+newtype TransitionId = TransitionId Unique deriving (Eq)
 
 
 --------------------------------------------------------------------------------
@@ -28,33 +28,33 @@ newtype Duration = Duration Int deriving (Show)
 
 
 --------------------------------------------------------------------------------
-data Effect = Effect
-    { eId     :: EffectId
-    , eSize   :: Size
-    , eFrames :: NonEmpty (Matrix, Duration)
+data Transition = Transition
+    { tId     :: TransitionId
+    , tSize   :: Size
+    , tFrames :: NonEmpty (Matrix, Duration)
     }
 
 
 --------------------------------------------------------------------------------
-newEffect :: Size -> PP.Doc -> PP.Doc -> IO Effect
-newEffect termSize frame0 frame1 = do
+newTransition :: Size -> PP.Doc -> PP.Doc -> IO Transition
+newTransition termSize frame0 frame1 = do
     unique <- newUnique
-    pure $ Effect (EffectId unique) size frames
+    pure $ Transition (TransitionId unique) size frames
   where
     -- The actual part we want to animate does not cover the last row, which is
     -- always empty.
     size    = termSize {sRows = sRows termSize - 1}
     matrix0 = docToMatrix size frame0
     matrix1 = docToMatrix size frame1
-    frames  = (\f -> (f, Duration 10000)) <$> slide size matrix0 matrix1
+    frames  = (\f -> (f, Duration 5000)) <$> slide size matrix0 matrix1
 
 
 --------------------------------------------------------------------------------
-stepEffect :: EffectId -> Effect -> Maybe Effect
-stepEffect eid eff | eid /= eId eff = Just eff
-stepEffect _   eff                  = case eFrames eff of
+stepTransition :: TransitionId -> Transition -> Maybe Transition
+stepTransition tid tr | tid /= tId tr = Just tr
+stepTransition _   tr                  = case tFrames tr of
     _ :| []     -> Nothing
-    _ :| f : fs -> Just eff {eFrames = f :| fs}
+    _ :| f : fs -> Just tr {tFrames = f :| fs}
 
 
 --------------------------------------------------------------------------------

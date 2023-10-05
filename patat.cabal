@@ -67,7 +67,6 @@ Library
   Exposed-modules:
     Patat.AutoAdvance
     Patat.Cleanup
-    Patat.Effect
     Patat.EncodingFallback
     Patat.Eval
     Patat.Images
@@ -92,6 +91,7 @@ Library
     Patat.PrettyPrint.Internal
     Patat.PrettyPrint.Matrix
     Patat.Theme
+    Patat.Transition
 
   Other-modules:
     Control.Concurrent.Chan.Extended

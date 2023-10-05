@@ -22,13 +22,13 @@ import           Data.Version                     (showVersion)
 import qualified Options.Applicative              as OA
 import qualified Options.Applicative.Help.Pretty  as OA.PP
 import           Patat.AutoAdvance
-import           Patat.Effect
 import qualified Patat.EncodingFallback           as EncodingFallback
 import qualified Patat.Images                     as Images
 import           Patat.Presentation
 import qualified Patat.Presentation.Comments      as Comments
 import qualified Patat.PrettyPrint                as PP
 import           Patat.PrettyPrint.Matrix         (hPutMatrix)
+import           Patat.Transition
 import qualified Paths_patat
 import           Prelude
 import qualified System.Console.ANSI              as Ansi
@@ -133,11 +133,11 @@ data App = App
 
 
 --------------------------------------------------------------------------------
-data AppView = PresentationView | ErrorView String | EffectView Effect
+data AppView = PresentationView | ErrorView String | TransitionView Transition
 
 
 --------------------------------------------------------------------------------
-data AppCommand = PresentationCommand PresentationCommand | EffectTick EffectId
+data AppCommand = PresentationCommand PresentationCommand | TransitionTick TransitionId
 
 
 --------------------------------------------------------------------------------
@@ -214,33 +214,33 @@ loop app@App {..} = do
             DisplayImage path -> drawImg size path
         ErrorView err -> drawDoc $
                 displayPresentationError size aPresentation err
-        EffectView eff -> do
-            drawMatrix (eSize eff) . fst . NonEmpty.head $ eFrames eff
+        TransitionView tr -> do
+            drawMatrix (tSize tr) . fst . NonEmpty.head $ tFrames tr
             pure mempty
 
     appCmd <- Chan.readChan aCommandChan
     cleanup
     case appCmd of
-        EffectTick eid -> case aView of
+        TransitionTick eid -> case aView of
             PresentationView -> loop app
             ErrorView _      -> loop app
-            EffectView eff0  -> case stepEffect eid eff0 of
-                Just eff1 -> do
-                    scheduleEffectTick eff1
-                    loop app {aView = EffectView eff1}
+            TransitionView tr0  -> case stepTransition eid tr0 of
+                Just tr1 -> do
+                    scheduleTransitionTick tr1
+                    loop app {aView = TransitionView tr1}
                 Nothing -> loop app {aView = PresentationView}
         PresentationCommand c -> do
             update <- updatePresentation c aPresentation
             case update of
                 ExitedPresentation       -> return ()
                 UpdatedPresentation pres
-                    | triggerEffect c aPresentation pres
+                    | triggerTransition c aPresentation pres
                     , DisplayDoc old <- displayPresentation size aPresentation
                     , DisplayDoc new <- displayPresentation size pres -> do
-                        eff <- newEffect size old new
-                        scheduleEffectTick eff
+                        tr <- newTransition size old new
+                        scheduleTransitionTick tr
                         loop app
-                            {aPresentation = pres, aView = EffectView eff}
+                            {aPresentation = pres, aView = TransitionView tr}
                     | otherwise -> loop app
                         {aPresentation = pres, aView = PresentationView}
                 ErroredPresentation err  ->
@@ -258,14 +258,14 @@ loop app@App {..} = do
             Images.drawImage img path
     drawMatrix size raster = hPutMatrix IO.stdout size raster
 
-    triggerEffect c old new =
+    triggerTransition c old new =
         c == Forward &&
         fst (pActiveFragment old) + 1 == fst (pActiveFragment new)
 
-    scheduleEffectTick eff = void $ forkIO $ do
-        let Duration delay = snd . NonEmpty.head $ eFrames eff
+    scheduleTransitionTick tr = void $ forkIO $ do
+        let Duration delay = snd . NonEmpty.head $ tFrames tr
         threadDelay delay
-        Chan.writeChan aCommandChan $ EffectTick $ eId eff
+        Chan.writeChan aCommandChan $ TransitionTick $ tId tr
 
 
 --------------------------------------------------------------------------------
