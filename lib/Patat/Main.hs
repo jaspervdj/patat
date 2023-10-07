@@ -205,7 +205,7 @@ loop app@App {..} = do
         (pEncodingFallback aPresentation)
         (activeSpeakerNotes aPresentation)
 
-    size <- getDisplaySize aPresentation
+    size <- getPresentationSize aPresentation
     Ansi.clearScreen
     Ansi.setCursorPosition 0 0
     cleanup <- case aView of

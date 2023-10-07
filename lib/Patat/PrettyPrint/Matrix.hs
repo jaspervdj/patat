@@ -14,8 +14,8 @@ import           Control.Monad              (unless, when)
 import           Data.Char.WCWidth.Extended (wcwidth)
 import qualified Data.Vector                as V
 import qualified Data.Vector.Mutable        as VM
-import           Patat.Presentation.Display (Size (..))
 import           Patat.PrettyPrint.Internal hiding (null)
+import           Patat.Size                 (Size (..))
 import qualified System.Console.ANSI        as Ansi
 import qualified System.IO                  as IO
 

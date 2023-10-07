@@ -9,14 +9,14 @@ module Patat.Transition
 
 
 --------------------------------------------------------------------------------
-import           Data.Foldable              (for_)
-import           Data.List.NonEmpty         (NonEmpty ((:|)))
-import           Data.Unique                (Unique, newUnique)
-import qualified Data.Vector                as V
-import qualified Data.Vector.Mutable        as VM
-import           Patat.Presentation.Display (Size (..))
-import qualified Patat.PrettyPrint          as PP
+import           Data.Foldable            (for_)
+import           Data.List.NonEmpty       (NonEmpty ((:|)))
+import           Data.Unique              (Unique, newUnique)
+import qualified Data.Vector              as V
+import qualified Data.Vector.Mutable      as VM
+import qualified Patat.PrettyPrint        as PP
 import           Patat.PrettyPrint.Matrix
+import           Patat.Size               (Size (..))
 
 
 --------------------------------------------------------------------------------

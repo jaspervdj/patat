@@ -34,6 +34,9 @@ module Patat.Presentation.Internal
 
     , getSettings
     , activeSettings
+
+    , Size
+    , getPresentationSize
     ) where
 
 
@@ -46,6 +49,7 @@ import           Patat.EncodingFallback         (EncodingFallback)
 import qualified Patat.Presentation.Comments    as Comments
 import qualified Patat.Presentation.Instruction as Instruction
 import           Patat.Presentation.Settings
+import           Patat.Size
 import           Prelude
 import qualified Skylighting                    as Skylighting
 import qualified Text.Pandoc                    as Pandoc
@@ -158,3 +162,14 @@ getSettings sidx pres =
 activeSettings :: Presentation -> PresentationSettings
 activeSettings pres =
     let (sidx, _) = pActiveFragment pres in getSettings sidx pres
+
+
+--------------------------------------------------------------------------------
+getPresentationSize :: Presentation -> IO Size
+getPresentationSize pres = do
+    term <- getTerminalSize
+    let rows = fromMaybe (sRows term) $ A.unFlexibleNum <$> psRows settings
+        cols = fromMaybe (sCols term) $ A.unFlexibleNum <$> psColumns settings
+    pure $ Size {sRows = rows, sCols = cols}
+  where
+    settings = activeSettings pres

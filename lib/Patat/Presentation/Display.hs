@@ -2,10 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 module Patat.Presentation.Display
-    ( Size (..)
-    , getDisplaySize
-
-    , Display (..)
+    ( Display (..)
     , displayPresentation
     , displayPresentationError
     , dumpPresentation
@@ -13,7 +10,7 @@ module Patat.Presentation.Display
 
 
 --------------------------------------------------------------------------------
-import           Control.Monad                        (guard, mplus)
+import           Control.Monad                        (guard)
 import qualified Data.Aeson.Extended                  as A
 import           Data.Char.WCWidth.Extended           (wcstrwidth)
 import           Data.Data.Extended                   (grecQ)
@@ -28,31 +25,12 @@ import           Patat.Presentation.Display.Table
 import           Patat.Presentation.Internal
 import           Patat.PrettyPrint                    ((<$$>), (<+>))
 import qualified Patat.PrettyPrint                    as PP
+import           Patat.Size
 import           Patat.Theme                          (Theme (..))
 import qualified Patat.Theme                          as Theme
 import           Prelude
-import qualified System.Console.Terminal.Size         as Terminal
 import qualified Text.Pandoc.Extended                 as Pandoc
 import qualified Text.Pandoc.Writers.Shared           as Pandoc
-
-
---------------------------------------------------------------------------------
-data Size = Size {sRows :: Int, sCols :: Int} deriving (Show)
-
-
---------------------------------------------------------------------------------
-getDisplaySize :: Presentation -> IO Size
-getDisplaySize pres = do
-    mbWindow <- Terminal.size
-    let sRows = fromMaybe 24 $
-            (A.unFlexibleNum <$> psRows settings) `mplus`
-            (Terminal.height <$> mbWindow)
-        sCols = fromMaybe 72 $
-            (A.unFlexibleNum <$> psColumns settings) `mplus`
-            (Terminal.width  <$> mbWindow)
-    pure $ Size {..}
-  where
-    settings = activeSettings pres
 
 
 --------------------------------------------------------------------------------
