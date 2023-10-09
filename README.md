@@ -791,18 +791,17 @@ Slide one content.
 # Slide two
 
 <!--config:
-patat:
-  transition:
-    type: slideLeft
-    duration: 2
+transition:
+  type: slideLeft
+  duration: 2
 -->
 
 Slide two content.
 ```
 
-Supported transitions:
+Supported transitions `type`s:
 
- -  `type: slideLeft`: slides the new slide in from right to left.
+ -  `slideLeft`: slides the new slide in from right to left.
 
     Arguments:
 
@@ -826,6 +825,6 @@ Lastly, I also prefer not to install Node.js on my machine if I can avoid it.
 [VTMC]: https://github.com/jclulow/vtmc
 [Literate Haskell]: https://wiki.haskell.org/Literate_programming
 
-[Alacritty](https://alacritty.org/)
-[iTerm2](https://iterm2.com/)
-[Kitty](https://sw.kovidgoyal.net/kitty/)
+[Alacritty]: https://alacritty.org/
+[iTerm2]: https://iterm2.com/
+[Kitty]: https://sw.kovidgoyal.net/kitty/
