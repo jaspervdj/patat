@@ -13,11 +13,13 @@ import qualified Control.Concurrent.Async         as Async
 import           Control.Concurrent.Chan.Extended (Chan)
 import qualified Control.Concurrent.Chan.Extended as Chan
 import           Control.Exception                (bracket)
-import           Control.Monad                    (forever, unless, void, when)
+import           Control.Monad                    (forever, join, unless, void,
+                                                   when)
 import qualified Data.Aeson.Extended              as A
 import           Data.Foldable                    (for_)
 import           Data.Functor                     (($>))
 import qualified Data.List.NonEmpty               as NonEmpty
+import qualified Data.Sequence.Extended           as Seq
 import           Data.Version                     (showVersion)
 import qualified Options.Applicative              as OA
 import qualified Options.Applicative.Help.Pretty  as OA.PP
@@ -133,7 +135,10 @@ data App = App
 
 
 --------------------------------------------------------------------------------
-data AppView = PresentationView | ErrorView String | TransitionView Transition
+data AppView
+    = PresentationView
+    | ErrorView String
+    | TransitionView TransitionInstance
 
 
 --------------------------------------------------------------------------------
@@ -215,7 +220,7 @@ loop app@App {..} = do
         ErrorView err -> drawDoc $
                 displayPresentationError size aPresentation err
         TransitionView tr -> do
-            drawMatrix (tSize tr) . fst . NonEmpty.head $ tFrames tr
+            drawMatrix (tiSize tr) . fst . NonEmpty.head $ tiFrames tr
             pure mempty
 
     appCmd <- Chan.readChan aCommandChan
@@ -234,10 +239,10 @@ loop app@App {..} = do
             case update of
                 ExitedPresentation       -> return ()
                 UpdatedPresentation pres
-                    | triggerTransition c aPresentation pres
+                    | Just tgen <- triggerTransition c aPresentation pres
                     , DisplayDoc old <- displayPresentation size aPresentation
                     , DisplayDoc new <- displayPresentation size pres -> do
-                        tr <- newTransition size old new
+                        tr <- newTransition tgen size old new
                         scheduleTransitionTick tr
                         loop app
                             {aPresentation = pres, aView = TransitionView tr}
@@ -258,14 +263,19 @@ loop app@App {..} = do
             Images.drawImage img path
     drawMatrix size raster = hPutMatrix IO.stdout size raster
 
-    triggerTransition c old new =
-        c == Forward &&
-        fst (pActiveFragment old) + 1 == fst (pActiveFragment new)
+    triggerTransition c old new
+        | c == Forward
+        , oldSlide + 1 == newSlide =
+            join $ pTransitionGens new `Seq.safeIndex` newSlide
+        | otherwise = Nothing
+      where
+        (oldSlide, _) = pActiveFragment old
+        (newSlide, _) = pActiveFragment new
 
     scheduleTransitionTick tr = void $ forkIO $ do
-        let Duration delay = snd . NonEmpty.head $ tFrames tr
+        let Duration delay = snd . NonEmpty.head $ tiFrames tr
         threadDelay delay
-        Chan.writeChan aCommandChan $ TransitionTick $ tId tr
+        Chan.writeChan aCommandChan $ TransitionTick $ tiId tr
 
 
 --------------------------------------------------------------------------------

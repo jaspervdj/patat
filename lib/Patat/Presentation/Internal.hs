@@ -50,6 +50,7 @@ import qualified Patat.Presentation.Comments    as Comments
 import qualified Patat.Presentation.Instruction as Instruction
 import           Patat.Presentation.Settings
 import           Patat.Size
+import           Patat.Transition               (TransitionGen)
 import           Prelude
 import qualified Skylighting                    as Skylighting
 import qualified Text.Pandoc                    as Pandoc
@@ -67,11 +68,12 @@ data Presentation = Presentation
     , pAuthor           :: ![Pandoc.Inline]
     , pSettings         :: !PresentationSettings
     , pSlides           :: !(Seq Slide)
-    , pBreadcrumbs      :: !(Seq Breadcrumbs)           -- One for each slide.
-    , pSlideSettings    :: !(Seq PresentationSettings)  -- One for each slide.
+    , pBreadcrumbs      :: !(Seq Breadcrumbs)            -- One for each slide.
+    , pSlideSettings    :: !(Seq PresentationSettings)   -- One for each slide.
+    , pTransitionGens   :: !(Seq (Maybe TransitionGen))  -- One for each slide.
     , pActiveFragment   :: !Index
     , pSyntaxMap        :: !Skylighting.SyntaxMap
-    } deriving (Show)
+    }
 
 
 --------------------------------------------------------------------------------

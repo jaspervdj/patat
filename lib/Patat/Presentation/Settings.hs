@@ -17,6 +17,8 @@ module Patat.Presentation.Settings
     , EvalSettings (..)
 
     , SpeakerNotesSettings (..)
+
+    , TransitionSettings (..)
     ) where
 
 
@@ -54,6 +56,7 @@ data PresentationSettings = PresentationSettings
     , psSlideNumber       :: !(Maybe Bool)
     , psSyntaxDefinitions :: !(Maybe [FilePath])
     , psSpeakerNotes      :: !(Maybe SpeakerNotesSettings)
+    , psTransition        :: !(Maybe TransitionSettings)
     } deriving (Show)
 
 
@@ -75,6 +78,7 @@ instance Semigroup PresentationSettings where
         , psSlideNumber       = on mplus psSlideNumber       l r
         , psSyntaxDefinitions = on (<>)  psSyntaxDefinitions l r
         , psSpeakerNotes      = on mplus psSpeakerNotes      l r
+        , psTransition        = on mplus psTransition        l r
         }
 
 
@@ -84,7 +88,7 @@ instance Monoid PresentationSettings where
     mempty  = PresentationSettings
                     Nothing Nothing Nothing Nothing Nothing Nothing Nothing
                     Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-                    Nothing
+                    Nothing Nothing
 
 
 --------------------------------------------------------------------------------
@@ -211,6 +215,19 @@ instance A.FromJSON EvalSettings where
 data SpeakerNotesSettings = SpeakerNotesSettings
     { snsFile :: !FilePath
     } deriving (Show)
+
+
+--------------------------------------------------------------------------------
+data TransitionSettings = TransitionSettings
+    { tsType   :: !T.Text
+    , tsParams :: !A.Object
+    } deriving (Show)
+
+
+--------------------------------------------------------------------------------
+instance A.FromJSON TransitionSettings where
+    parseJSON = A.withObject "FromJSON TransitionSettings" $ \o ->
+        TransitionSettings <$> o A..: "type" <*> pure o
 
 
 --------------------------------------------------------------------------------
