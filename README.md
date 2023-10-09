@@ -15,6 +15,7 @@ feature-rich presentation tool that runs in the terminal.
 - Display [speaker notes](#speaker-notes) in a second window or monitor.
 - [Incremental slide display](#fragmented-slides).
 - Experimental [images](#images) support.
+- [Transition effects](#transitions).
 - Supports [smart slide splitting](#input-format).
 - [Auto advancing](#auto-advancing) with configurable delay.
 - Optionally [re-wrapping](#line-wrapping) text to terminal width with proper
