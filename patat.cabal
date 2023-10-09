@@ -94,6 +94,8 @@ Library
     Patat.Size
     Patat.Theme
     Patat.Transition
+    Patat.Transition.Internal
+    Patat.Transition.SlideLeft
 
   Other-modules:
     Control.Concurrent.Chan.Extended
