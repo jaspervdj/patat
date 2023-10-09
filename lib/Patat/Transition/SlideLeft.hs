@@ -8,9 +8,9 @@ module Patat.Transition.SlideLeft
 --------------------------------------------------------------------------------
 import qualified Data.Aeson.Extended       as A
 import qualified Data.Aeson.TH.Extended    as A
-import Data.Maybe (fromMaybe)
 import           Data.Foldable             (for_)
 import           Data.List.NonEmpty        (NonEmpty ((:|)))
+import           Data.Maybe                (fromMaybe)
 import qualified Data.Vector               as V
 import qualified Data.Vector.Mutable       as VM
 import           Patat.PrettyPrint.Matrix
