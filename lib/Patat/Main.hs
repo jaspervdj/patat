@@ -239,10 +239,8 @@ loop app@App {..} = do
             case update of
                 ExitedPresentation       -> return ()
                 UpdatedPresentation pres
-                    | Just tgen <- triggerTransition c aPresentation pres
-                    , DisplayDoc old <- displayPresentation size aPresentation
-                    , DisplayDoc new <- displayPresentation size pres -> do
-                        tr <- newTransition tgen size old new
+                    | Just tgen <- mbTransition c size aPresentation pres -> do
+                        tr <- tgen
                         scheduleTransitionTick tr
                         loop app
                             {aPresentation = pres, aView = TransitionView tr}
@@ -263,10 +261,13 @@ loop app@App {..} = do
             Images.drawImage img path
     drawMatrix size raster = hPutMatrix IO.stdout size raster
 
-    triggerTransition c old new
+    mbTransition c size old new
         | c == Forward
-        , oldSlide + 1 == newSlide =
-            join $ pTransitionGens new `Seq.safeIndex` newSlide
+        , oldSlide + 1 == newSlide
+        , DisplayDoc oldDoc <- displayPresentation size old
+        , DisplayDoc newDoc <- displayPresentation size new
+        , Just (Just tgen) <- pTransitionGens new `Seq.safeIndex` newSlide =
+            Just $ newTransition tgen size oldDoc newDoc
         | otherwise = Nothing
       where
         (oldSlide, _) = pActiveFragment old
