@@ -2,6 +2,8 @@
 {-# LANGUAGE GADTs #-}
 module Patat.Transition.Internal
     ( Duration (..)
+    , threadDelayDuration
+
     , Transition (..)
     , TransitionGen
     , TransitionId
@@ -12,24 +14,25 @@ module Patat.Transition.Internal
 
 
 --------------------------------------------------------------------------------
-import qualified Data.Aeson                  as A
-import           Data.Foldable               (for_)
-import qualified Data.HashMap.Strict         as HMS
-import           Data.List.NonEmpty          (NonEmpty ((:|)))
-import           Data.Text                   (Text)
-import qualified Data.Text                   as T
-import           Data.Unique                 (Unique, newUnique)
-import qualified Data.Vector                 as V
-import qualified Data.Vector.Mutable         as VM
-import           Patat.Presentation.Settings (TransitionSettings (..))
-import qualified Patat.PrettyPrint           as PP
+import           Control.Concurrent       (threadDelay)
+import qualified Data.Aeson               as A
+import           Data.List.NonEmpty       (NonEmpty ((:|)))
+import           Data.Unique              (Unique, newUnique)
+import qualified Patat.PrettyPrint        as PP
 import           Patat.PrettyPrint.Matrix
-import           Patat.Size                  (Size (..))
-import           System.Random               (StdGen, newStdGen)
+import           Patat.Size               (Size (..))
+import           System.Random            (StdGen, newStdGen)
 
 
 --------------------------------------------------------------------------------
-newtype Duration = Duration Int deriving (Show)
+newtype Duration = Duration Double  -- Duration in seconds
+    deriving (Show)
+
+
+--------------------------------------------------------------------------------
+threadDelayDuration :: Duration -> IO ()
+threadDelayDuration (Duration seconds) =
+    threadDelay . round $ seconds * 1000 * 1000
 
 
 --------------------------------------------------------------------------------

@@ -1,8 +1,9 @@
 --------------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
 module Patat.Transition
-    ( TransitionGen
-    , Duration (..)
+    ( Duration (..)
+    , threadDelayDuration
+    , TransitionGen
     , TransitionId
     , TransitionInstance (..)
     , parseTransitionSettings

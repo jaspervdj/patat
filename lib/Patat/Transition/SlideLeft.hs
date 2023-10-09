@@ -1,10 +1,14 @@
 --------------------------------------------------------------------------------
+{-# LANGUAGE TemplateHaskell #-}
 module Patat.Transition.SlideLeft
     ( slideLeft
     ) where
 
 
 --------------------------------------------------------------------------------
+import qualified Data.Aeson.Extended       as A
+import qualified Data.Aeson.TH.Extended    as A
+import Data.Maybe (fromMaybe)
 import           Data.Foldable             (for_)
 import           Data.List.NonEmpty        (NonEmpty ((:|)))
 import qualified Data.Vector               as V
@@ -15,12 +19,25 @@ import           Patat.Transition.Internal
 
 
 --------------------------------------------------------------------------------
-slideLeft :: () -> TransitionGen
-slideLeft _noconf (Size rows cols) initial final _rgen =
-    fmap (\f -> (f, Duration 5000)) $
-    initial :| map frame [1 .. cols - 1] ++ [final]
+data Config = Config
+    { cDuration :: Maybe (A.FlexibleNum Double)
+    , cFrames   :: Maybe (A.FlexibleNum Int)
+    }
+
+
+--------------------------------------------------------------------------------
+slideLeft :: Config -> TransitionGen
+slideLeft config (Size rows cols) initial final _rgen =
+    fmap (\f -> (f, Duration delay)) $
+    frame 0 :| map frame [1 .. frames - 1]
   where
-    frame offset = V.create $ do
+    duration = fromMaybe 1  $ A.unFlexibleNum <$> cDuration config
+    frames   = fromMaybe 24 $ A.unFlexibleNum <$> cFrames   config
+
+    delay = duration / fromIntegral (frames + 1)
+
+    frame :: Int -> Matrix
+    frame idx = V.create $ do
         ini <- V.unsafeThaw initial
         fin <- V.unsafeThaw final
         mat <- VM.replicate (rows * cols) emptyCell
@@ -32,3 +49,10 @@ slideLeft _noconf (Size rows cols) initial final _rgen =
                 (VM.slice (y * cols + cols - offset) offset mat)
                 (VM.slice (y * cols) offset fin)
         pure mat
+      where
+        offset = max 0 . min cols . (round :: Double -> Int) $
+            fromIntegral (idx + 1) / fromIntegral frames * fromIntegral cols
+
+
+--------------------------------------------------------------------------------
+$(A.deriveFromJSON A.dropPrefixOptions ''Config)

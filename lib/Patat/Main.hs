@@ -273,8 +273,7 @@ loop app@App {..} = do
         (newSlide, _) = pActiveFragment new
 
     scheduleTransitionTick tr = void $ forkIO $ do
-        let Duration delay = snd . NonEmpty.head $ tiFrames tr
-        threadDelay delay
+        threadDelayDuration . snd . NonEmpty.head $ tiFrames tr
         Chan.writeChan aCommandChan $ TransitionTick $ tiId tr
 
 
