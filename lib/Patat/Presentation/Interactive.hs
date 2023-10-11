@@ -89,7 +89,6 @@ data UpdatedPresentation
     = UpdatedPresentation !Presentation
     | ExitedPresentation
     | ErroredPresentation String
-    deriving (Show)
 
 
 --------------------------------------------------------------------------------

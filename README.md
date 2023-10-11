@@ -15,6 +15,7 @@ feature-rich presentation tool that runs in the terminal.
 - Display [speaker notes](#speaker-notes) in a second window or monitor.
 - [Incremental slide display](#fragmented-slides).
 - Experimental [images](#images) support.
+- [Transition effects](#transitions).
 - Supports [smart slide splitting](#input-format).
 - [Auto advancing](#auto-advancing) with configurable delay.
 - Optionally [re-wrapping](#line-wrapping) text to terminal width with proper
@@ -54,6 +55,7 @@ Table of Contents
     -   [Slide numbers](#slide-numbers)
     -   [Evaluating code](#evaluating-code)
     -   [Speaker notes](#speaker-notes)
+    -   [Transitions](#transitions)
 -   [Trivia](#trivia)
 
 Installation
@@ -766,6 +768,47 @@ Note that speaker notes should not start with `<!--config:`, since then they
 will be parsed as [configuration](#configuration) blocks.  They are allowed
 to start with `<!-- config:`; the lack of whitespace matters.
 
+### Transitions
+
+`patat` supports transitions in between slides.  A relatively fast terminal
+emulator (e.g. [Alacritty], [Kitty], [iTerm2])
+is suggested when enabling this, to avoid too much flickering -- some
+flickering is unavoidable since we redraw the entire screen on each frame.
+
+```yaml
+patat:
+  transition:
+    type: slideLeft
+```
+
+To set transitions on specific slides, use `<!--config:` blocks, as detailed
+in the [configuration section](#configuration).  For example:
+
+```markdown
+# Slide one
+
+Slide one content.
+
+# Slide two
+
+<!--config:
+transition:
+  type: slideLeft
+  duration: 2
+-->
+
+Slide two content.
+```
+
+Supported transitions `type`s:
+
+ -  `slideLeft`: slides the new slide in from right to left.
+
+    Arguments:
+
+     -  `frames`: number of frames to use.  Defaults to 24.
+     -  `duration`: duration of the animation in seconds.  Defaults to 1.
+
 Trivia
 ------
 
@@ -782,3 +825,7 @@ Lastly, I also prefer not to install Node.js on my machine if I can avoid it.
 [MDP]: https://github.com/visit1985/mdp
 [VTMC]: https://github.com/jclulow/vtmc
 [Literate Haskell]: https://wiki.haskell.org/Literate_programming
+
+[Alacritty]: https://alacritty.org/
+[iTerm2]: https://iterm2.com/
+[Kitty]: https://sw.kovidgoyal.net/kitty/

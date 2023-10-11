@@ -24,6 +24,7 @@ import           Data.Sequence.Extended         (Seq)
 import qualified Data.Sequence.Extended         as Seq
 import qualified Data.Text                      as T
 import qualified Data.Text.Encoding             as T
+import           Data.Traversable               (for)
 import qualified Data.Yaml                      as Yaml
 import           Patat.EncodingFallback         (EncodingFallback)
 import qualified Patat.EncodingFallback         as EncodingFallback
@@ -32,6 +33,7 @@ import qualified Patat.Presentation.Comments    as Comments
 import           Patat.Presentation.Fragment
 import qualified Patat.Presentation.Instruction as Instruction
 import           Patat.Presentation.Internal
+import           Patat.Transition               (parseTransitionSettings)
 import           Prelude
 import qualified Skylighting                    as Skylighting
 import           System.Directory               (XdgDirectory (XdgConfig),
@@ -136,6 +138,10 @@ pandocToPresentation pFilePath pEncodingFallback pSettings pSyntaxMap
             first (\err -> "on slide " ++ show (i + 1) ++ ": " ++ err) .
             Comments.parseSlideSettings . slideComment)
         pSlides
+    pTransitionGens <- for pSlideSettings $ \slideSettings ->
+        case psTransition (slideSettings <> pSettings) of
+            Nothing -> pure Nothing
+            Just ts -> Just <$> parseTransitionSettings ts
     return Presentation {..}
 
 

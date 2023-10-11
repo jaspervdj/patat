@@ -8,7 +8,7 @@ module Patat.Presentation
     , activeSpeakerNotes
 
     , Size
-    , getDisplaySize
+    , getPresentationSize
 
     , Display (..)
     , displayPresentation

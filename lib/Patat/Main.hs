@@ -8,33 +8,37 @@ module Patat.Main
 
 
 --------------------------------------------------------------------------------
-import           Control.Concurrent              (forkIO, killThread,
-                                                  threadDelay)
-import           Control.Concurrent.Chan         (Chan)
-import qualified Control.Concurrent.Chan         as Chan
-import           Control.Exception               (bracket)
-import           Control.Monad                   (forever, unless, when)
-import qualified Data.Aeson.Extended             as A
-import           Data.Foldable                   (for_)
-import           Data.Functor                    (($>))
-import           Data.Time                       (UTCTime)
-import           Data.Version                    (showVersion)
-import qualified Options.Applicative             as OA
-import qualified Options.Applicative.Help.Pretty as OA.PP
+import           Control.Concurrent               (forkIO, threadDelay)
+import qualified Control.Concurrent.Async         as Async
+import           Control.Concurrent.Chan.Extended (Chan)
+import qualified Control.Concurrent.Chan.Extended as Chan
+import           Control.Exception                (bracket)
+import           Control.Monad                    (forever, join, unless, void,
+                                                   when)
+import qualified Data.Aeson.Extended              as A
+import           Data.Foldable                    (for_)
+import           Data.Functor                     (($>))
+import qualified Data.List.NonEmpty               as NonEmpty
+import qualified Data.Sequence.Extended           as Seq
+import           Data.Version                     (showVersion)
+import qualified Options.Applicative              as OA
+import qualified Options.Applicative.Help.Pretty  as OA.PP
 import           Patat.AutoAdvance
-import qualified Patat.EncodingFallback          as EncodingFallback
-import qualified Patat.Images                    as Images
+import qualified Patat.EncodingFallback           as EncodingFallback
+import qualified Patat.Images                     as Images
 import           Patat.Presentation
-import qualified Patat.Presentation.Comments     as Comments
-import qualified Patat.PrettyPrint               as PP
+import qualified Patat.Presentation.Comments      as Comments
+import qualified Patat.PrettyPrint                as PP
+import           Patat.PrettyPrint.Matrix         (hPutMatrix)
+import           Patat.Transition
 import qualified Paths_patat
 import           Prelude
-import qualified System.Console.ANSI             as Ansi
-import           System.Directory                (doesFileExist,
-                                                  getModificationTime)
-import           System.Exit                     (exitFailure, exitSuccess)
-import qualified System.IO                       as IO
-import qualified Text.Pandoc                     as Pandoc
+import qualified System.Console.ANSI              as Ansi
+import           System.Directory                 (doesFileExist,
+                                                   getModificationTime)
+import           System.Exit                      (exitFailure, exitSuccess)
+import qualified System.IO                        as IO
+import qualified Text.Pandoc                      as Pandoc
 
 
 --------------------------------------------------------------------------------
@@ -124,8 +128,21 @@ data App = App
     { aOptions      :: Options
     , aImages       :: Maybe Images.Handle
     , aSpeakerNotes :: Maybe Comments.SpeakerNotesHandle
-    , aCommandChan  :: Chan PresentationCommand
+    , aCommandChan  :: Chan AppCommand
+    , aPresentation :: Presentation
+    , aView         :: AppView
     }
+
+
+--------------------------------------------------------------------------------
+data AppView
+    = PresentationView
+    | ErrorView String
+    | TransitionView TransitionInstance
+
+
+--------------------------------------------------------------------------------
+data AppCommand = PresentationCommand PresentationCommand | TransitionTick TransitionId
 
 
 --------------------------------------------------------------------------------
@@ -162,66 +179,103 @@ main = do
             (psSpeakerNotes settings) $ \speakerNotes ->
 
         -- Read presentation commands
-        interactively readPresentationCommand $ \commandChan0 -> do
+        interactively (readPresentationCommand) $ \commandChan0 ->
 
         -- If an auto delay is set, use 'autoAdvance' to create a new one.
-        commandChan <- case psAutoAdvanceDelay settings of
-            Nothing                    -> return commandChan0
-            Just (A.FlexibleNum delay) -> autoAdvance delay commandChan0
+        maybeAutoAdvance
+            (A.unFlexibleNum <$> psAutoAdvanceDelay settings)
+            commandChan0 $ \commandChan1 ->
+
+        -- Change to AppCommand
+        Chan.withMapChan PresentationCommand commandChan1 $ \commandChan ->
 
         -- Spawn a thread that adds 'Reload' commands based on the file time.
-        mtime0 <- getModificationTime (pFilePath pres)
-        when (oWatch options) $ do
-            _ <- forkIO $ watcher commandChan (pFilePath pres) mtime0
-            return ()
+        withWatcher (oWatch options) commandChan (pFilePath pres)
+            (PresentationCommand Reload) $
 
-        loop
-            App
-                { aOptions      = options
-                , aImages       = images
-                , aSpeakerNotes = speakerNotes
-                , aCommandChan  = commandChan
-                }
-            pres
-            Nothing
+        loop App
+            { aOptions      = options
+            , aImages       = images
+            , aSpeakerNotes = speakerNotes
+            , aCommandChan  = commandChan
+            , aPresentation = pres
+            , aView         = PresentationView
+            }
 
 
 --------------------------------------------------------------------------------
-loop :: App -> Presentation -> Maybe String -> IO ()
-loop app@App {..} pres mbError = do
+loop :: App -> IO ()
+loop app@App {..} = do
     for_ aSpeakerNotes $ \sn -> Comments.writeSpeakerNotes sn
-        (pEncodingFallback pres)
-        (activeSpeakerNotes pres)
+        (pEncodingFallback aPresentation)
+        (activeSpeakerNotes aPresentation)
 
-    size <- getDisplaySize pres
-    let display = case mbError of
-            Nothing  -> displayPresentation size pres
-            Just err -> DisplayDoc $
-                displayPresentationError size pres err
-
+    size <- getPresentationSize aPresentation
     Ansi.clearScreen
     Ansi.setCursorPosition 0 0
-    cleanup <- case display of
-        DisplayDoc doc -> EncodingFallback.withHandle
-            IO.stdout (pEncodingFallback pres) $
-            PP.putDoc doc $> mempty
-        DisplayImage path -> case aImages of
-            Nothing -> do
-                PP.putDoc $ displayPresentationError
-                     size pres "image backend not initialized"
-                pure mempty
-            Just img -> do
-                putStrLn ""
-                IO.hFlush IO.stdout
-                Images.drawImage img path
+    cleanup <- case aView of
+        PresentationView -> case displayPresentation size aPresentation of
+            DisplayDoc doc    -> drawDoc doc
+            DisplayImage path -> drawImg size path
+        ErrorView err -> drawDoc $
+                displayPresentationError size aPresentation err
+        TransitionView tr -> do
+            drawMatrix (tiSize tr) . fst . NonEmpty.head $ tiFrames tr
+            pure mempty
 
-    c      <- Chan.readChan aCommandChan
-    update <- updatePresentation c pres
+    appCmd <- Chan.readChan aCommandChan
     cleanup
-    case update of
-        ExitedPresentation        -> return ()
-        UpdatedPresentation pres' -> loop app pres' Nothing
-        ErroredPresentation err   -> loop app pres (Just err)
+    case appCmd of
+        TransitionTick eid -> case aView of
+            PresentationView -> loop app
+            ErrorView _      -> loop app
+            TransitionView tr0  -> case stepTransition eid tr0 of
+                Just tr1 -> do
+                    scheduleTransitionTick tr1
+                    loop app {aView = TransitionView tr1}
+                Nothing -> loop app {aView = PresentationView}
+        PresentationCommand c -> do
+            update <- updatePresentation c aPresentation
+            case update of
+                ExitedPresentation       -> return ()
+                UpdatedPresentation pres
+                    | Just tgen <- mbTransition c size aPresentation pres -> do
+                        tr <- tgen
+                        scheduleTransitionTick tr
+                        loop app
+                            {aPresentation = pres, aView = TransitionView tr}
+                    | otherwise -> loop app
+                        {aPresentation = pres, aView = PresentationView}
+                ErroredPresentation err  ->
+                    loop app {aView = ErrorView err}
+  where
+    drawDoc doc = EncodingFallback.withHandle
+        IO.stdout (pEncodingFallback aPresentation) $
+        PP.putDoc doc $> mempty
+    drawImg size path =case aImages of
+        Nothing -> drawDoc $ displayPresentationError
+            size aPresentation "image backend not initialized"
+        Just img -> do
+            putStrLn ""
+            IO.hFlush IO.stdout
+            Images.drawImage img path
+    drawMatrix size raster = hPutMatrix IO.stdout size raster
+
+    mbTransition c size old new
+        | c == Forward
+        , oldSlide + 1 == newSlide
+        , DisplayDoc oldDoc <- displayPresentation size old
+        , DisplayDoc newDoc <- displayPresentation size new
+        , Just (Just tgen) <- pTransitionGens new `Seq.safeIndex` newSlide =
+            Just $ newTransition tgen size oldDoc newDoc
+        | otherwise = Nothing
+      where
+        (oldSlide, _) = pActiveFragment old
+        (newSlide, _) = pActiveFragment new
+
+    scheduleTransitionTick tr = void $ forkIO $ do
+        threadDelayDuration . snd . NonEmpty.head $ tiFrames tr
+        Chan.writeChan aCommandChan $ TransitionTick $ tiId tr
 
 
 --------------------------------------------------------------------------------
@@ -236,7 +290,10 @@ interactively
     -- ^ Application to run.
     -> IO ()
     -- ^ Returns when application finishes.
-interactively reader app = bracket setup teardown $ \(_, _, _, chan) -> app chan
+interactively reader app = bracket setup teardown $ \(_, _, chan) ->
+    Async.withAsync
+        (forever $ reader IO.stdin >>= Chan.writeChan chan)
+        (\_ -> app chan)
   where
     setup = do
         chan <- Chan.newChan
@@ -245,30 +302,33 @@ interactively reader app = bracket setup teardown $ \(_, _, _, chan) -> app chan
         IO.hSetEcho      IO.stdin False
         IO.hSetBuffering IO.stdin IO.NoBuffering
         Ansi.hideCursor
-        readerThreadId <- forkIO $ forever $
-            reader IO.stdin >>= Chan.writeChan chan
-        return (echo, buff, readerThreadId, chan)
+        return (echo, buff, chan)
 
-    teardown (echo, buff, readerThreadId, _chan) = do
+    teardown (echo, buff, _chan) = do
         Ansi.showCursor
         Ansi.clearScreen
         Ansi.setCursorPosition 0 0
-        killThread readerThreadId
         IO.hSetEcho      IO.stdin echo
         IO.hSetBuffering IO.stdin buff
 
 
 --------------------------------------------------------------------------------
-watcher :: Chan.Chan PresentationCommand -> FilePath -> UTCTime -> IO a
-watcher chan filePath mtime0 = do
-    -- The extra exists check helps because some editors temporarily make the
-    -- file disappear while writing.
-    exists <- doesFileExist filePath
-    mtime1 <- if exists then getModificationTime filePath else return mtime0
+withWatcher
+    :: Bool -> Chan.Chan cmd -> FilePath -> cmd -> IO a -> IO a
+withWatcher False _    _        _   mx = mx
+withWatcher True  chan filePath cmd mx = do
+    mtime0 <- getModificationTime filePath
+    Async.withAsync (watcher mtime0) (\_ -> mx)
+  where
+    watcher mtime0 = do
+        -- The extra exists check helps because some editors temporarily make
+        -- the file disappear while writing.
+        exists <- doesFileExist filePath
+        mtime1 <- if exists then getModificationTime filePath else return mtime0
 
-    when (mtime1 > mtime0) $ Chan.writeChan chan Reload
-    threadDelay (200 * 1000)
-    watcher chan filePath mtime1
+        when (mtime1 > mtime0) $ Chan.writeChan chan cmd
+        threadDelay (200 * 1000)
+        watcher mtime1
 
 
 --------------------------------------------------------------------------------
