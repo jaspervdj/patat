@@ -20,8 +20,8 @@ import           Patat.Transition.Internal
 
 --------------------------------------------------------------------------------
 data Config = Config
-    { cDuration :: Maybe (A.FlexibleNum Double)
-    , cFrames   :: Maybe (A.FlexibleNum Int)
+    { cDuration  :: Maybe (A.FlexibleNum Double)
+    , cFrameRate :: Maybe (A.FlexibleNum Int)
     }
 
 
@@ -31,10 +31,11 @@ slideLeft config (Size rows cols) initial final _rgen =
     fmap (\f -> (f, Duration delay)) $
     frame 0 :| map frame [1 .. frames - 1]
   where
-    duration = fromMaybe 1  $ A.unFlexibleNum <$> cDuration config
-    frames   = fromMaybe 24 $ A.unFlexibleNum <$> cFrames   config
+    duration  = fromMaybe 1  $ A.unFlexibleNum <$> cDuration  config
+    frameRate = fromMaybe 24 $ A.unFlexibleNum <$> cFrameRate config
 
-    delay = duration / fromIntegral (frames + 1)
+    frames = round $ duration * fromIntegral frameRate :: Int
+    delay  = duration / fromIntegral (frames + 1)
 
     frame :: Int -> Matrix
     frame idx = V.create $ do

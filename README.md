@@ -806,7 +806,7 @@ Supported transitions `type`s:
 
     Arguments:
 
-     -  `frames`: number of frames to use.  Defaults to 24.
+     -  `frameRate`: number of frames per second.  Defaults to 24.
      -  `duration`: duration of the animation in seconds.  Defaults to 1.
 
 Trivia
