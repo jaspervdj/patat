@@ -1,5 +1,47 @@
 # Changelog
 
+## 0.10.0.0 (2023-10-12)
+
+ *  Add transition effects (#149)
+
+    This adds a framework for setting transition effects in between slides. Only
+    a single transition type is implemented at this point, `slideLeft`.
+
+    Example configuration:
+
+        patat:
+          transition:
+            type: slideLeft
+            frames: 24  # Optional
+            duration: 1  # Seconds, optional
+
+
+ *  Allow overriding certain settings in slides (#148)
+
+    Configuration was typically done in the metadata block of the input file,
+    or in a per-user configuration.  These settings are applied to the entire
+    presentation.
+
+    We now allow selectively overriding these settings on a per-slide basis,
+    by adding one or more config blocks to those slides.  Config blocks are
+    comments that start with `config:`.  They can be placed anywhere in the
+    slide.
+
+        # This is a normal slide
+
+        Normal slide content
+
+        # This slide has a different colour header
+
+        <!--config:
+        theme:
+          header: [vividYellow]
+        -->
+
+        Wow, how did that happen?
+
+ *  Allow configuring top margin (#147)
+
 ## 0.9.2.0 (2023-09-26)
 
  *  Read configuration from XDG standard directory (#146)
