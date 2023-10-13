@@ -803,11 +803,12 @@ Slide two content.
 Supported transitions `type`s:
 
  -  `slideLeft`: slides the new slide in from right to left.
+ -  `dissolve`: changes characters over time.
 
-    Arguments:
+All transitions currently take these arguments:
 
-     -  `frameRate`: number of frames per second.  Defaults to 24.
-     -  `duration`: duration of the animation in seconds.  Defaults to 1.
+ -  `frameRate`: number of frames per second.  Defaults to 24.
+ -  `duration`: duration of the animation in seconds.  Defaults to 1.
 
 Trivia
 ------

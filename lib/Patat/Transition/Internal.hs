@@ -10,6 +10,8 @@ module Patat.Transition.Internal
     , TransitionInstance (..)
     , newTransition
     , stepTransition
+
+    , evenlySpacedFrames
     ) where
 
 
@@ -17,6 +19,7 @@ module Patat.Transition.Internal
 import           Control.Concurrent       (threadDelay)
 import qualified Data.Aeson               as A
 import           Data.List.NonEmpty       (NonEmpty ((:|)))
+import           Data.Maybe               (fromMaybe)
 import           Data.Unique              (Unique, newUnique)
 import qualified Patat.PrettyPrint        as PP
 import           Patat.PrettyPrint.Matrix
@@ -79,3 +82,20 @@ stepTransition transId trans | transId /= tiId trans = Just trans
 stepTransition _       trans                         = case tiFrames trans of
     _ :| []     -> Nothing
     _ :| f : fs -> Just trans {tiFrames = f :| fs}
+
+
+--------------------------------------------------------------------------------
+-- | Given an optional duration and frame rate, generate a sequence of evenly
+-- spaced frames, represented by a number ranging from [0 .. 1].
+evenlySpacedFrames
+    :: Maybe Double -> Maybe Int -> NonEmpty (Double, Duration)
+evenlySpacedFrames mbDuration mbFrameRate =
+    frame 0 :| map frame [1 .. frames - 1]
+  where
+    duration  = fromMaybe 1  mbDuration
+    frameRate = fromMaybe 24 mbFrameRate
+
+    frames = round $ duration * fromIntegral frameRate :: Int
+    delay  = duration / fromIntegral (frames + 1)
+
+    frame idx = (fromIntegral (idx + 1) / fromIntegral frames, Duration delay)
