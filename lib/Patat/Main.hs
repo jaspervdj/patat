@@ -13,8 +13,7 @@ import qualified Control.Concurrent.Async         as Async
 import           Control.Concurrent.Chan.Extended (Chan)
 import qualified Control.Concurrent.Chan.Extended as Chan
 import           Control.Exception                (bracket)
-import           Control.Monad                    (forever, join, unless, void,
-                                                   when)
+import           Control.Monad                    (forever, unless, void, when)
 import qualified Data.Aeson.Extended              as A
 import           Data.Foldable                    (for_)
 import           Data.Functor                     (($>))
