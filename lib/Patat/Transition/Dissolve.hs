@@ -1,6 +1,6 @@
 --------------------------------------------------------------------------------
 {-# LANGUAGE TemplateHaskell #-}
-module Patat.Transition.SlideLeft
+module Patat.Transition.Dissolve
     ( transition
     ) where
 
@@ -9,12 +9,11 @@ module Patat.Transition.SlideLeft
 import qualified Data.Aeson.Extended       as A
 import qualified Data.Aeson.TH.Extended    as A
 import           Data.Bifunctor            (first)
-import           Data.Foldable             (for_)
 import qualified Data.Vector               as V
-import qualified Data.Vector.Mutable       as VM
 import           Patat.PrettyPrint.Matrix
 import           Patat.Size                (Size (..))
 import           Patat.Transition.Internal
+import           System.Random.Stateful
 
 
 --------------------------------------------------------------------------------
@@ -26,28 +25,24 @@ data Config = Config
 
 --------------------------------------------------------------------------------
 transition :: Config -> TransitionGen
-transition config (Size rows cols) initial final _rgen =
+transition config (Size rows cols) initial final rgen =
     first frame <$>
     evenlySpacedFrames
         (A.unFlexibleNum <$> cDuration  config)
         (A.unFlexibleNum <$> cFrameRate config)
   where
+    -- Generate a random number between 0 and 1 for each position.
+    noise :: V.Vector Double
+    noise = runStateGen_ rgen $ \g ->
+        V.replicateM (rows * cols) (uniformRM (0, 1) g)
+
+    -- Select the initial or final value depending on the noise.
     frame :: Double -> Matrix
-    frame t = V.create $ do
-        ini <- V.unsafeThaw initial
-        fin <- V.unsafeThaw final
-        mat <- VM.replicate (rows * cols) emptyCell
-        for_ [0 .. rows - 1] $ \y -> do
-            VM.copy
-                (VM.slice (y * cols) (cols - offset) mat)
-                (VM.slice (y * cols + offset) (cols - offset) ini)
-            VM.copy
-                (VM.slice (y * cols + cols - offset) offset mat)
-                (VM.slice (y * cols) offset fin)
-        pure mat
-      where
-        offset = max 0 . min cols . (round :: Double -> Int) $
-            t * fromIntegral cols
+    frame t = V.zipWith3
+        (\treshold l r -> if t < treshold then l else r)
+        noise
+        initial
+        final
 
 
 --------------------------------------------------------------------------------

@@ -18,6 +18,7 @@ import qualified Data.HashMap.Strict         as HMS
 import           Data.Text                   (Text)
 import qualified Data.Text                   as T
 import           Patat.Presentation.Settings (TransitionSettings (..))
+import qualified Patat.Transition.Dissolve   as Dissolve
 import           Patat.Transition.Internal
 import qualified Patat.Transition.SlideLeft  as SlideLeft
 
@@ -25,7 +26,8 @@ import qualified Patat.Transition.SlideLeft  as SlideLeft
 --------------------------------------------------------------------------------
 transitions :: HMS.HashMap Text Transition
 transitions = HMS.fromList
-    [ ("slideLeft", Transition SlideLeft.slideLeft)
+    [ ("dissolve",  Transition Dissolve.transition)
+    , ("slideLeft", Transition SlideLeft.transition)
     ]
 
 
