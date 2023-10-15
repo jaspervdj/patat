@@ -810,6 +810,25 @@ All transitions currently take these arguments:
  -  `frameRate`: number of frames per second.  Defaults to 24.
  -  `duration`: duration of the animation in seconds.  Defaults to 1.
 
+#### Random transitions
+
+You can set `type` to `random` to randomly pick a transition effect.
+
+```yaml
+patat:
+  transition:
+    type: random
+    items:
+    - type: dissolve
+      duration: 3
+    - type: slideLeft
+      frameRate: 10
+```
+
+You can optionally set `items` to a non-empty list of transition effects to
+randomly sample from.  If `items` is not set, `patat` will simply sample from
+all transition effects using their respective default settings.
+
 Trivia
 ------
 

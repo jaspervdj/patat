@@ -16,7 +16,7 @@ module Patat.Presentation.Read
 import           Control.Monad.Except           (ExceptT (..), runExceptT,
                                                  throwError)
 import           Control.Monad.Trans            (liftIO)
-import qualified Data.Aeson                     as A
+import qualified Data.Aeson.Extended            as A
 import qualified Data.Aeson.KeyMap              as AKM
 import           Data.Bifunctor                 (first)
 import           Data.Maybe                     (fromMaybe)
@@ -166,13 +166,9 @@ readMetaSettings src = case parseMetadataBlock src of
     Nothing -> Right mempty
     Just (Left err) -> Left err
     Just (Right (A.Object obj)) | Just val <- AKM.lookup "patat" obj ->
-       resultToEither $! A.fromJSON val
+       first (\err -> "Error parsing patat settings from metadata: " ++ err) $!
+       A.resultToEither $! A.fromJSON val
     Just (Right _) -> Right mempty
-  where
-    resultToEither :: A.Result a -> Either String a
-    resultToEither (A.Success x) = Right x
-    resultToEither (A.Error   e) = Left $!
-        "Error parsing patat settings from metadata: " ++ e
 
 
 --------------------------------------------------------------------------------
