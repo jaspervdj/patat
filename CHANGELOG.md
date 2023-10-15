@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.10.1.0 (2023-10-15)
+
+ *  Add dissolve transition effect (#150)
+
+ *  Add random transitions (#151)
+
+    Set transition `type` to `random` to randomly sample transition effects
+
 ## 0.10.0.0 (2023-10-12)
 
  *  Add transition effects (#149)
