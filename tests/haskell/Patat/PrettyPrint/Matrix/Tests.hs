@@ -49,6 +49,13 @@ testDocToMatrix = Tasty.testGroup "docToMatrix"
         , c 'r', c 'f', c 'l'
         , c 'o', c 'w', c 'e'
         ]
+    , Tasty.testCase "wrap in middle of wide character" $
+        docToMatrix
+            (Size 2 5)
+            (string "溢れる") @?=
+        [ c '溢', e, c 'れ', e, e
+        , c 'る', e, e     , e, e
+        ]
     ]
   where
     green = Ansi.SetColor Ansi.Foreground Ansi.Vivid Ansi.Green
