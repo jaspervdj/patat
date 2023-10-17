@@ -40,13 +40,13 @@ docToMatrix size doc = V.create $ do
     go matrix 0 0 $ docToChunks doc
     pure matrix
   where
+    go r y x (StringChunk _ [] : cs)                 = go r y x cs
     go _ _ _ []                                      = pure ()
     go _ y _ _  | y >= sRows size                    = pure ()
     go r y _ (NewlineChunk : cs)                     = go r (y + 1) 0 cs
-    go r y x cs | x > sCols size                     = go r (y + 1) 0 cs
+    go r y x cs | x >= sCols size                    = go r (y + 1) 0 cs
     go r y x (ControlChunk ClearScreenControl  : cs) = go r y x cs  -- ?
     go r _ x (ControlChunk (GoToLineControl y) : cs) = go r y x cs
-    go r y x (StringChunk _      []      : cs)       = go r y x cs
     go r y x (StringChunk codes (z : zs) : cs)       = do
         VM.write r (y * sCols size + x) (Cell codes z)
         go r y (x + wcwidth z) (StringChunk codes zs : cs)

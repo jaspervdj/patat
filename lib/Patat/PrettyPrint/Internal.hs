@@ -49,7 +49,7 @@ import qualified System.IO                  as IO
 data Control
     = ClearScreenControl
     | GoToLineControl Int
-    deriving (Eq)
+    deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -58,7 +58,7 @@ data Chunk
     = StringChunk [Ansi.SGR] String
     | NewlineChunk
     | ControlChunk Control
-    deriving (Eq)
+    deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------

@@ -145,9 +145,11 @@ Test-suite patat-tests
   Other-modules:
     Patat.Presentation.Interactive.Tests
     Patat.Presentation.Read.Tests
+    Patat.PrettyPrint.Matrix.Tests
 
   Build-depends:
     patat,
+    ansi-terminal    >= 0.6  && < 1.1,
     base             >= 4.8  && < 5,
     directory        >= 1.2  && < 1.4,
     pandoc           >= 3.1  && < 3.2,
