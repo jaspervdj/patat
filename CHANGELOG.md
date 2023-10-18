@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.10.1.1 (2023-10-18)
+
+ *  Fix issues in text wrapping when starting a transition
+
+    This could show transitions using different wrapping or dropped characters
+    when a line extends past the terminal width.
+
 ## 0.10.1.0 (2023-10-15)
 
  *  Add dissolve transition effect (#150)
