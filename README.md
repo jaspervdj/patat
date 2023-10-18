@@ -75,10 +75,11 @@ You can also find generic Linux and Mac OS binaries here:
 
 ### Homebrew
 
-[Homebrew] packages are offered by a third-party repository.  **Unfortunately
-this repo has been archived, and the latest version that can be installed from
-there is v0.8.7.0**.  If you would like to contribute here, please contact us by
-opening an issue.
+[Homebrew] packages are offered by a
+[third-party repository](https://github.com/nicholasdille/homebrew-tap).
+**Unfortunately this repo has been archived, and the latest version that can
+be installed from there is v0.8.7.0**.  If you would like to contribute here,
+please contact us by opening an issue.
 
 1. Run `brew tap nicholasdille/tap`.
 2. Run `brew install patat-bin` to receive the official binaries or
