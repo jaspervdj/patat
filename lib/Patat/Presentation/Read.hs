@@ -48,7 +48,7 @@ import qualified Text.Pandoc.Extended           as Pandoc
 readPresentation :: FilePath -> IO (Either String Presentation)
 readPresentation filePath = runExceptT $ do
     -- We need to read the settings first.
-    fileExecutable <- liftIO $ readIsExecutable filePath
+    fileExecutable <- liftIO $ readExecutableFlag filePath
     (enc, src)     <- liftIO $ EncodingFallback.readFile filePath
     homeSettings   <- ExceptT readHomeSettings
     xdgSettings    <- ExceptT readXdgSettings
@@ -77,12 +77,12 @@ readPresentation filePath = runExceptT $ do
 
 
 --------------------------------------------------------------------------------
-readIsExecutable :: FilePath -> IO IsExecutable
-readIsExecutable path
-    | System.Info.os == "mingw32" = pure IsExecutable
+readExecutableFlag :: FilePath -> IO ExecutableFlag
+readExecutableFlag path
+    | System.Info.os == "mingw32" = pure MaybeExecutable
     | otherwise                   = do
         perms <- Dir.getPermissions path
-        pure $ if Dir.executable perms then IsExecutable else IsNotExecutable
+        pure $ if Dir.executable perms then Executable else NotExecutable
 
 
 --------------------------------------------------------------------------------
@@ -130,7 +130,7 @@ readExtension (ExtensionList extensions) fileExt = case fileExt of
 
 --------------------------------------------------------------------------------
 pandocToPresentation
-    :: FilePath -> IsExecutable -> EncodingFallback -> PresentationSettings
+    :: FilePath -> ExecutableFlag -> EncodingFallback -> PresentationSettings
     -> Skylighting.SyntaxMap -> Pandoc.Pandoc -> Either String Presentation
 pandocToPresentation
         pFilePath pFileExecutable pEncodingFallback pSettings pSyntaxMap

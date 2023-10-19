@@ -37,9 +37,9 @@ eval pres = case psEval (pSettings pres) of
 
 --------------------------------------------------------------------------------
 data EvalEnv = EvalEnv
-    { eeFilePath       :: FilePath
-    , eeFileExecutable :: IsExecutable
-    , eeEvalSettings   :: EvalSettingsMap
+    { eeFilePath       :: !FilePath
+    , eeFileExecutable :: !ExecutableFlag
+    , eeEvalSettings   :: !EvalSettingsMap
     }
 
 
@@ -77,7 +77,7 @@ evalBlock
     -> ExceptT String IO [Instruction Pandoc.Block]
 evalBlock ee orig@(Pandoc.CodeBlock attr@(_, classes, _) txt)
     | _ : _ <- lookupSettings ee classes
-    , eeFileExecutable ee == IsNotExecutable = throwError $
+    , eeFileExecutable ee == NotExecutable = throwError $
         "The file " <> eeFilePath ee <>
         " contains eval settings but is not executable. " <>
         "You can use `chmod +x " <> eeFilePath ee <>

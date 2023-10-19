@@ -4,7 +4,7 @@
 {-# LANGUAGE TemplateHaskell            #-}
 module Patat.Presentation.Internal
     ( Breadcrumbs
-    , IsExecutable (..)
+    , ExecutableFlag (..)
     , Presentation (..)
     , PresentationSettings (..)
     , defaultPresentationSettings
@@ -62,13 +62,15 @@ type Breadcrumbs = [(Int, [Pandoc.Inline])]
 
 
 --------------------------------------------------------------------------------
-data IsExecutable = IsExecutable | IsNotExecutable deriving (Eq, Show)
+data ExecutableFlag
+    = Executable | NotExecutable | MaybeExecutable
+    deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
 data Presentation = Presentation
     { pFilePath         :: !FilePath
-    , pFileExecutable   :: !IsExecutable
+    , pFileExecutable   :: !ExecutableFlag
     , pEncodingFallback :: !EncodingFallback
     , pTitle            :: ![Pandoc.Inline]
     , pAuthor           :: ![Pandoc.Inline]
