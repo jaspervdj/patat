@@ -680,9 +680,9 @@ _evaluator_ by specifying this in the YAML metadata:
 An arbitrary amount of evaluators can be specified, and whenever a a class
 attribute on a code block matches the evaluator, it will be used.
 
-**Note that executing arbitrary code is always dangerous**, so double check the
-code of presentations downloaded from the internet before running them if they
-contain `eval` settings.
+**Note that executing arbitrary code is always dangerous**, so as a security
+measure `patat` requires the presentation file to be executable (think
+`chmod +x`) when it detects that it would run any code.
 
 Aside from the command, there are two more options:
 
