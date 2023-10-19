@@ -1,0 +1,13 @@
+[33m                               eval06.md                                [0m
+
+[34m# Slide 1[0m
+
+[mThis file does not have the executable bit set.[0m
+
+[mThat is fine, since none of the code snippets here match an evaluator.[0m
+
+[m   [0m[40;37m                        [0m
+[m   [0m[40;37m print([0m[40;37;31m"Hello, world!"[0m[40;37m) [0m
+[m   [0m[40;37m                        [0m
+
+[33m                                                                  1 / 1 [0m
