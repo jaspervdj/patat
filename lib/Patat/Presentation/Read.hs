@@ -36,12 +36,10 @@ import           Patat.Presentation.Internal
 import           Patat.Transition               (parseTransitionSettings)
 import           Prelude
 import qualified Skylighting                    as Skylighting
-import           System.Directory               (XdgDirectory (XdgConfig),
-                                                 doesFileExist,
-                                                 getHomeDirectory,
-                                                 getXdgDirectory)
+import qualified System.Directory               as Dir
 import           System.FilePath                (splitFileName, takeExtension,
                                                  (</>))
+import qualified System.Info
 import qualified Text.Pandoc.Error              as Pandoc
 import qualified Text.Pandoc.Extended           as Pandoc
 
@@ -50,10 +48,11 @@ import qualified Text.Pandoc.Extended           as Pandoc
 readPresentation :: FilePath -> IO (Either String Presentation)
 readPresentation filePath = runExceptT $ do
     -- We need to read the settings first.
-    (enc, src)   <- liftIO $ EncodingFallback.readFile filePath
-    homeSettings <- ExceptT readHomeSettings
-    xdgSettings  <- ExceptT readXdgSettings
-    metaSettings <- ExceptT $ return $ readMetaSettings src
+    fileExecutable <- liftIO $ readIsExecutable filePath
+    (enc, src)     <- liftIO $ EncodingFallback.readFile filePath
+    homeSettings   <- ExceptT readHomeSettings
+    xdgSettings    <- ExceptT readXdgSettings
+    metaSettings   <- ExceptT $ return $ readMetaSettings src
     let settings =
             metaSettings <>
             xdgSettings  <>
@@ -71,10 +70,19 @@ readPresentation filePath = runExceptT $ do
         Right x -> return x
 
     pres <- ExceptT $ pure $
-        pandocToPresentation filePath enc settings syntaxMap doc
-    liftIO $ eval pres
+        pandocToPresentation filePath fileExecutable enc settings syntaxMap doc
+    ExceptT $ eval pres
   where
     ext = takeExtension filePath
+
+
+--------------------------------------------------------------------------------
+readIsExecutable :: FilePath -> IO IsExecutable
+readIsExecutable path
+    | System.Info.os == "mingw32" = pure IsExecutable
+    | otherwise                   = do
+        perms <- Dir.getPermissions path
+        pure $ if Dir.executable perms then IsExecutable else IsNotExecutable
 
 
 --------------------------------------------------------------------------------
@@ -122,9 +130,10 @@ readExtension (ExtensionList extensions) fileExt = case fileExt of
 
 --------------------------------------------------------------------------------
 pandocToPresentation
-    :: FilePath -> EncodingFallback -> PresentationSettings
+    :: FilePath -> IsExecutable -> EncodingFallback -> PresentationSettings
     -> Skylighting.SyntaxMap -> Pandoc.Pandoc -> Either String Presentation
-pandocToPresentation pFilePath pEncodingFallback pSettings pSyntaxMap
+pandocToPresentation
+        pFilePath pFileExecutable pEncodingFallback pSettings pSyntaxMap
         pandoc@(Pandoc.Pandoc meta _) = do
     let !pTitle          = case Pandoc.docTitle meta of
             []    -> [Pandoc.Str . T.pack . snd $ splitFileName pFilePath]
@@ -175,7 +184,7 @@ readMetaSettings src = case parseMetadataBlock src of
 -- | Read settings from "$HOME/.patat.yaml".
 readHomeSettings :: IO (Either String PresentationSettings)
 readHomeSettings = do
-    home <- getHomeDirectory
+    home <- Dir.getHomeDirectory
     readSettings $ home </> ".patat.yaml"
 
 
@@ -183,14 +192,15 @@ readHomeSettings = do
 -- | Read settings from "$XDG_CONFIG_DIRECTORY/patat/config.yaml".
 readXdgSettings :: IO (Either String PresentationSettings)
 readXdgSettings =
-    getXdgDirectory XdgConfig ("patat" </> "config.yaml") >>= readSettings
+    Dir.getXdgDirectory Dir.XdgConfig ("patat" </> "config.yaml") >>=
+    readSettings
 
 
 --------------------------------------------------------------------------------
 -- | Read settings from the specified path, if it exists.
 readSettings :: FilePath -> IO (Either String PresentationSettings)
 readSettings path = do
-    exists <- doesFileExist path
+    exists <- Dir.doesFileExist path
     if not exists
         then return (Right mempty)
         else do
