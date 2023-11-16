@@ -7,7 +7,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macOS-latest]
-        ghc: ["9.2.5"]
+        ghc: ["9.2.8", "9.4.7", "9.6.3"]
 
     steps:
     - run: echo "$HOME/.local/bin" >> $GITHUB_PATH
