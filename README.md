@@ -34,8 +34,7 @@ Table of Contents
 
 -   [Table of Contents](#table-of-contents)
 -   [Installation](#installation)
-    -   [Pre-built-packages](#pre-built-packages)
-    -   [Homebrew](#homebrew)
+    -   [Pre-built packages](#pre-built-packages)
     -   [From source](#from-source)
 -   [Running](#running)
 -   [Options](#options)
@@ -63,13 +62,18 @@ Installation
 
 ### Pre-built-packages
 
+Linux:
+
 - Archlinux: <https://aur.archlinux.org/packages/patat-bin>
 - Debian: <https://packages.debian.org/unstable/patat>
 - Fedora: <https://src.fedoraproject.org/rpms/patat>
-- Homebrew: <https://formulae.brew.sh/formula/patat>
 - NixOS: <https://search.nixos.org/packages?show=haskellPackages.patat>
 - openSUSE: <https://build.opensuse.org/package/show/openSUSE:Factory:ARM/patat>
 - Ubuntu: <https://packages.ubuntu.com/bionic/patat>
+
+Mac OS:
+
+- Homebrew: <https://formulae.brew.sh/formula/patat>
 
 You can also find generic Linux and Mac OS binaries here:
 <https://github.com/jaspervdj/patat/releases>.
