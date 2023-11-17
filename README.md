@@ -65,27 +65,14 @@ Installation
 
 - Archlinux: <https://aur.archlinux.org/packages/patat-bin>
 - Debian: <https://packages.debian.org/unstable/patat>
-- Ubuntu: <https://packages.ubuntu.com/bionic/patat>
-- openSUSE: <https://build.opensuse.org/package/show/openSUSE:Factory:ARM/patat>
 - Fedora: <https://src.fedoraproject.org/rpms/patat>
+- Homebrew: <https://formulae.brew.sh/formula/patat>
 - NixOS: <https://search.nixos.org/packages?show=haskellPackages.patat>
+- openSUSE: <https://build.opensuse.org/package/show/openSUSE:Factory:ARM/patat>
+- Ubuntu: <https://packages.ubuntu.com/bionic/patat>
 
 You can also find generic Linux and Mac OS binaries here:
 <https://github.com/jaspervdj/patat/releases>.
-
-### Homebrew
-
-[Homebrew] packages are offered by a
-[third-party repository](https://github.com/nicholasdille/homebrew-tap).
-**Unfortunately this repo has been archived, and the latest version that can
-be installed from there is v0.8.7.0**.  If you would like to contribute here,
-please contact us by opening an issue.
-
-1. Run `brew tap nicholasdille/tap`.
-2. Run `brew install patat-bin` to receive the official binaries or
-   `brew install patat` for pre-built ("bottled") binaries.
-
-[Homebrew]: https://brew.sh/
 
 ### From source
 
