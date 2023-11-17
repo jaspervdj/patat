@@ -5,6 +5,7 @@ jobs:
     name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macOS-latest]
         ghc: ["9.2.8", "9.4.7", "9.6.3"]
