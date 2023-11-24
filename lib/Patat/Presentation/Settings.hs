@@ -14,6 +14,7 @@ module Patat.Presentation.Settings
     , ImageSettings (..)
 
     , EvalSettingsMap
+    , EvalSettingsWrap (..)
     , EvalSettings (..)
 
     , SpeakerNotesSettings (..)
@@ -23,18 +24,18 @@ module Patat.Presentation.Settings
 
 
 --------------------------------------------------------------------------------
-import           Control.Monad                  (mplus)
-import qualified Data.Aeson.Extended            as A
-import qualified Data.Aeson.TH.Extended         as A
-import qualified Data.Foldable                  as Foldable
-import           Data.Function                  (on)
-import qualified Data.HashMap.Strict            as HMS
-import           Data.List                      (intercalate)
-import qualified Data.Text                      as T
-import qualified Patat.Theme                    as Theme
+import           Control.Monad          (mplus)
+import qualified Data.Aeson.Extended    as A
+import qualified Data.Aeson.TH.Extended as A
+import qualified Data.Foldable          as Foldable
+import           Data.Function          (on)
+import qualified Data.HashMap.Strict    as HMS
+import           Data.List              (intercalate)
+import qualified Data.Text              as T
+import qualified Patat.Theme            as Theme
 import           Prelude
-import qualified Text.Pandoc                    as Pandoc
-import           Text.Read                      (readMaybe)
+import qualified Text.Pandoc            as Pandoc
+import           Text.Read              (readMaybe)
 
 
 --------------------------------------------------------------------------------
@@ -196,10 +197,28 @@ type EvalSettingsMap = HMS.HashMap T.Text EvalSettings
 
 
 --------------------------------------------------------------------------------
+data EvalSettingsWrap
+    = EvalWrapCode
+    | EvalWrapRaw
+    | EvalWrapRawInline
+    deriving (Show)
+
+
+--------------------------------------------------------------------------------
+instance A.FromJSON EvalSettingsWrap where
+    parseJSON = A.withText "FromJSON EvalSettingsWrap" $ \txt -> case txt of
+        "code"      -> pure EvalWrapCode
+        "raw"       -> pure EvalWrapRaw
+        "rawInline" -> pure EvalWrapRawInline
+        _           -> fail $ "unknown wrap: " <> show txt
+
+
+--------------------------------------------------------------------------------
 data EvalSettings = EvalSettings
     { evalCommand  :: !T.Text
     , evalReplace  :: !Bool
     , evalFragment :: !Bool
+    , evalWrap     :: !EvalSettingsWrap
     } deriving (Show)
 
 
@@ -207,8 +226,9 @@ data EvalSettings = EvalSettings
 instance A.FromJSON EvalSettings where
     parseJSON = A.withObject "FromJSON EvalSettings" $ \o -> EvalSettings
         <$> o A..: "command"
-        <*> o A..:? "replace" A..!= False
+        <*> o A..:? "replace"  A..!= False
         <*> o A..:? "fragment" A..!= True
+        <*> o A..:? "wrap"     A..!= EvalWrapCode
 
 
 --------------------------------------------------------------------------------

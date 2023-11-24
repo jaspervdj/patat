@@ -15,6 +15,7 @@ import qualified Data.Text                      as T
 import qualified Data.Text.IO                   as T
 import           Patat.Presentation.Instruction
 import           Patat.Presentation.Internal
+import           Patat.Presentation.Settings
 import           System.Exit                    (ExitCode (..))
 import qualified System.IO                      as IO
 import           System.IO.Unsafe               (unsafeInterleaveIO)
@@ -70,15 +71,20 @@ evalBlock settings orig@(Pandoc.CodeBlock attr@(_, classes, _) txt)
                 ExitFailure i ->
                     evalCommand <> ": exit code " <> T.pack (show i) <> "\n" <>
                     erStderr
+        let fmt = "eval"
+            blocks = case evalWrap of
+                EvalWrapCode      -> [Pandoc.CodeBlock attr out]
+                EvalWrapRaw       -> [Pandoc.RawBlock fmt out]
+                EvalWrapRawInline -> [Pandoc.Plain [Pandoc.RawInline fmt out]]
         pure $ case (evalFragment, evalReplace) of
-            (False, True) -> [Append [Pandoc.CodeBlock attr out]]
-            (False, False) -> [Append [orig, Pandoc.CodeBlock attr out]]
+            (False, True) -> [Append blocks]
+            (False, False) -> [Append (orig : blocks)]
             (True, True) ->
                 [ Append [orig], Pause
-                , Delete, Append [Pandoc.CodeBlock attr out]
+                , Delete, Append blocks
                 ]
             (True, False) ->
-                [Append [orig], Pause, Append [Pandoc.CodeBlock attr out]]
+                [Append [orig], Pause, Append blocks]
     | _ : _ : _ <- lookupSettings classes settings =
         let msg = "patat eval matched multiple settings for " <>
                 T.intercalate "," classes in

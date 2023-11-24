@@ -586,6 +586,8 @@ empty list `[]`.
 
 ### Images
 
+#### Native Images support
+
 `patat-0.8.0.0` and newer include images support for some terminal emulators.
 
 ```markdown
@@ -624,6 +626,33 @@ patat:
     path: '/home/jasper/.local/bin/w3mimgdisplay'
     ```
 
+#### Images using Evaluation
+
+Rather than using the built-in image support, you can also use programs that
+write ASCII escape codes directly to the screen with
+[code evaluation](#evaluating-code).
+
+In order to do that, for example, we could configure `kitten` code snippets
+to evaluate using [Kitty]'s command `icat`.  This uses the `rawInline` code
+setting to ensure that the resulting output is not wrapped in a code block,
+and the `fragment` and `replace` settings immediately replace the snippet.
+
+    ---
+    patat:
+      eval:
+        kitten:
+          command: sed 's/^/kitten /' | bash
+          replace: true
+          fragment: false
+          wrap: rawInline
+    ...
+
+    See, for example:
+
+    ```kitten
+    icat --align left dank-meme.jpg
+    ```
+
 ### Breadcrumbs
 
 By default, `patat` will print a breadcrumbs-style header, e.g.:
@@ -660,6 +689,7 @@ _evaluator_ by specifying this in the YAML metadata:
           command: irb --noecho --noverbose
           fragment: true  # Optional
           replace: false  # Optional
+          wrap: code  # Optional
     ...
 
     Here is an example of a code block that is evaluated:
@@ -681,6 +711,12 @@ Aside from the command, there are two more options:
     between showing the original code block and the output.  Defaults to `true`.
  -  `replace`: Remove the original code block and replace it with the output
     rather than appending the output in a new code block.  Defaults to `false`.
+ -  `wrap`: By default, the output is wrapped in a code block again with the
+    original syntax highlighting.  You can customize this behaviour by setting
+    `wrap` to:
+     *  `code`: the default setting.
+     *  `raw`: no formatting applied.
+     *  `rawInline`: no formatting applied and no trailing newline.
 
 Setting `fragment: false` and `replace: true` offers a way to "filter" code
 blocks, which can be used to render ASCII graphics.

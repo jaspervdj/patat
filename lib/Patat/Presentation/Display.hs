@@ -352,10 +352,11 @@ prettyInline ds (Pandoc.Image _attrs text (target, _title)) =
     "![" <> themed ds themeImageText (prettyInlines ds text) <> "](" <>
     themed ds themeImageTarget (PP.text target) <> ")"
 
+prettyInline _ (Pandoc.RawInline _ t) = PP.text t
+
 -- These elements aren't really supported.
 prettyInline ds  (Pandoc.Cite      _ t) = prettyInlines ds t
 prettyInline ds  (Pandoc.Span      _ t) = prettyInlines ds t
-prettyInline _ds (Pandoc.RawInline _ t) = PP.text t
 prettyInline ds  (Pandoc.Note        t) = prettyBlocks  ds t
 prettyInline ds  (Pandoc.Superscript t) = prettyInlines ds t
 prettyInline ds  (Pandoc.Subscript   t) = prettyInlines ds t
