@@ -1,5 +1,42 @@
 # Changelog
 
+## 0.10.2.0 (2023-11-25)
+
+ *  Add eval.wrap option
+
+    This adds a new `wrap` section to the `eval` configuration.
+
+    By default, the output is wrapped in a code block again with the original syntax
+    highlighting.  You can customize this behaviour by setting `wrap` to:
+
+     *  `code`: the default setting.
+     *  `raw`: no formatting applied.
+     *  `rawInline`: no formatting applied and no trailing newline.
+
+    You can use `rawInline` to draw graphics.  In order to do that, for example,
+    we could configure `kitten` code snippets to evaluate using [Kitty]'s
+    command `icat`.  This uses the `rawInline` code setting to ensure that the
+    resulting output is not wrapped in a code block, and the `fragment` and
+    `replace` settings immediately replace the snippet:
+
+        ---
+        patat:
+          eval:
+            kitten:
+              command: sed 's/^/kitten /' | bash
+              replace: true
+              fragment: false
+              wrap: rawInline
+        ...
+
+        See, for example:
+
+        ```kitten
+        icat --align left dank-meme.jpg
+        ```
+
+[Kitty]: https://sw.kovidgoyal.net/kitty/
+
 ## 0.10.1.1 (2023-10-18)
 
  *  Fix issues in text wrapping when starting a transition
