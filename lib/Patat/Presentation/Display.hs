@@ -10,11 +10,12 @@ module Patat.Presentation.Display
 
 
 --------------------------------------------------------------------------------
-import           Control.Monad                        (guard)
+import           Control.Monad                        (guard, mplus)
 import qualified Data.Aeson.Extended                  as A
 import           Data.Char.WCWidth.Extended           (wcstrwidth)
 import           Data.Data.Extended                   (grecQ)
 import qualified Data.List                            as L
+import qualified Data.Map                             as M
 import           Data.Maybe                           (fromMaybe, maybeToList)
 import qualified Data.Sequence.Extended               as Seq
 import qualified Data.Text                            as T
@@ -23,7 +24,7 @@ import           Patat.Presentation.Display.CodeBlock
 import           Patat.Presentation.Display.Internal
 import           Patat.Presentation.Display.Table
 import           Patat.Presentation.Internal
-import           Patat.PrettyPrint                    ((<$$>), (<+>))
+import           Patat.PrettyPrint                    ((<$$>))
 import qualified Patat.PrettyPrint                    as PP
 import           Patat.Size
 import           Patat.Theme                          (Theme (..))
@@ -206,9 +207,21 @@ prettyBlock ds (Pandoc.Plain inlines) = prettyInlines ds inlines
 prettyBlock ds (Pandoc.Para inlines) =
     prettyInlines ds inlines <> PP.hardline
 
-prettyBlock ds (Pandoc.Header i _ inlines) =
-    themed ds themeHeader (PP.string (replicate i '#') <+> prettyInlines ds inlines) <>
-    PP.hardline
+prettyBlock ds (Pandoc.Header n _ inlines) =
+    themed ds style content <> PP.hardline <>
+    (case underline of
+        Nothing -> mempty
+        Just t  ->
+            themed ds style (PP.string $ take cols $ cycle $ T.unpack t) <>
+            PP.hardline)
+  where
+    prefix    = fromMaybe mempty $ config (dsTheme ds) >>= Theme.htPrefix
+    content   = PP.text prefix <> prettyInlines ds inlines
+    (_, cols) = PP.dimensions content
+    underline = config (dsTheme ds) >>= Theme.htUnderline
+
+    style  t = (config t >>= Theme.htStyle) `mplus` themeHeader t
+    config t = themeHeaders t >>= M.lookup ("h" ++ show n)
 
 prettyBlock ds (Pandoc.CodeBlock (_, classes, _) txt) =
     prettyCodeBlock ds classes txt
