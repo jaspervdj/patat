@@ -6,6 +6,7 @@ module Patat.Presentation.Settings
     ( PresentationSettings (..)
     , defaultPresentationSettings
 
+    , AutoOr (..)
     , MarginSettings (..)
 
     , ExtensionList (..)
@@ -101,10 +102,20 @@ defaultPresentationSettings = mempty
 
 
 --------------------------------------------------------------------------------
+data AutoOr a = Auto | NotAuto a deriving (Show)
+
+
+--------------------------------------------------------------------------------
+instance A.FromJSON a => A.FromJSON (AutoOr a) where
+    parseJSON (A.String "auto") = pure Auto
+    parseJSON val               = NotAuto <$> A.parseJSON val
+
+
+--------------------------------------------------------------------------------
 data MarginSettings = MarginSettings
-    { msTop   :: !(Maybe (A.FlexibleNum Int))
-    , msLeft  :: !(Maybe (A.FlexibleNum Int))
-    , msRight :: !(Maybe (A.FlexibleNum Int))
+    { msTop   :: !(Maybe (AutoOr (A.FlexibleNum Int)))
+    , msLeft  :: !(Maybe (AutoOr (A.FlexibleNum Int)))
+    , msRight :: !(Maybe (AutoOr (A.FlexibleNum Int)))
     } deriving (Show)
 
 

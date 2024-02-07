@@ -11,5 +11,5 @@ flags:
 
 nix:
   packages:
-  - 'pkgconfig'
+  - 'pkg-config'
   - 'zlib'

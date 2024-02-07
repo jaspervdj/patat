@@ -23,6 +23,7 @@ import           Patat.Presentation.Display.CodeBlock
 import           Patat.Presentation.Display.Internal
 import           Patat.Presentation.Display.Table
 import           Patat.Presentation.Internal
+import           Patat.Presentation.Settings
 import           Patat.PrettyPrint                    ((<$$>), (<+>))
 import qualified Patat.PrettyPrint                    as PP
 import           Patat.Size
@@ -49,7 +50,6 @@ displayWithBorders (Size rows columns) pres@Presentation {..} f =
             let titleRemainder = columns - titleWidth - titleOffset
                 wrappedTitle = PP.spaces titleOffset <> PP.string title <> PP.spaces titleRemainder in
         borders wrappedTitle <> PP.hardline) <>
-    mconcat (replicate topMargin PP.hardline) <>
     formatWith settings (f canvasSize ds) <> PP.hardline <>
     PP.goToLine (rows - 2) <>
     borders (PP.space <> PP.string author <> middleSpaces <> PP.string active <> PP.space) <>
@@ -82,7 +82,9 @@ displayWithBorders (Size rows columns) pres@Presentation {..} f =
     borders     = themed ds themeBorders
 
     -- Room left for content
-    topMargin  = mTop $ margins settings
+    topMargin  = case mTop $ margins settings of
+        Auto -> error "auto"
+        NotAuto x -> x
     canvasSize = Size (rows - 2 - topMargin) columns
 
     -- Compute footer.
@@ -113,7 +115,13 @@ displayPresentation size pres@Presentation {..} =
                 (prows, pcols) = PP.dimensions pblock
                 Margins {..}   = margins (activeSettings pres)
                 offsetRow      = (sRows canvasSize `div` 2) - (prows `div` 2)
-                offsetCol      = ((sCols canvasSize - mLeft - mRight) `div` 2) - (pcols `div` 2)
+                left           = case mLeft of
+                    Auto -> error "auto"
+                    NotAuto x -> x
+                right           = case mRight of
+                    Auto -> error "auto"
+                    NotAuto x -> x
+                offsetCol      = ((sCols canvasSize - left - right) `div` 2) - (pcols `div` 2)
                 spaces         = PP.NotTrimmable $ PP.spaces offsetCol in
             mconcat (replicate (offsetRow - 3) PP.hardline) <$$>
             PP.indent spaces spaces pblock
@@ -149,8 +157,7 @@ dumpPresentation pres@Presentation {..} =
     dumpSlide :: Int -> [PP.Doc]
     dumpSlide i = do
         slide <- maybeToList $ getSlide i pres
-        map (formatWith (getSettings i pres)) $
-            dumpComment slide <> L.intercalate ["{fragment}"]
+        dumpComment slide <> L.intercalate ["{fragment}"]
                 [ dumpFragment (i, j)
                 | j <- [0 .. numFragments slide - 1]
                 ]
@@ -179,13 +186,22 @@ dumpPresentation pres@Presentation {..} =
 
 --------------------------------------------------------------------------------
 formatWith :: PresentationSettings -> PP.Doc -> PP.Doc
-formatWith ps = wrap . indent
+formatWith ps doc = wrap . indent $
+    mconcat (replicate topMargin PP.hardline) <> doc
   where
     Margins {..} = margins ps
+    right = case mRight of
+        Auto -> error "auto"
+        NotAuto x -> x
+    topMargin  = case mTop of
+        Auto -> error "auto"
+        NotAuto x -> x
     wrap = case (psWrap ps, psColumns ps) of
-        (Just True,  Just (A.FlexibleNum col)) -> PP.wrapAt (Just $ col - mRight)
+        (Just True,  Just (A.FlexibleNum col)) -> PP.wrapAt (Just $ col - right)
         _                                      -> id
-    spaces = PP.NotTrimmable $ PP.spaces mLeft
+    spaces = PP.NotTrimmable $ PP.spaces $ case mLeft of
+        Auto      -> error "auto"
+        NotAuto x -> x
     indent = PP.indent spaces spaces
 
 
