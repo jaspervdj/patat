@@ -158,9 +158,9 @@ dumpPresentation pres@Presentation {..} =
     dumpSlide i = do
         slide <- maybeToList $ getSlide i pres
         dumpComment slide <> L.intercalate ["{fragment}"]
-                [ dumpFragment (i, j)
-                | j <- [0 .. numFragments slide - 1]
-                ]
+            [ dumpFragment (i, j)
+            | j <- [0 .. numFragments slide - 1]
+            ]
 
     dumpComment :: Slide -> [PP.Doc]
     dumpComment slide = do
@@ -186,15 +186,16 @@ dumpPresentation pres@Presentation {..} =
 
 --------------------------------------------------------------------------------
 formatWith :: PresentationSettings -> PP.Doc -> PP.Doc
-formatWith ps doc = wrap . indent $
-    mconcat (replicate topMargin PP.hardline) <> doc
+formatWith ps doc =
+    mconcat (replicate topMargin PP.hardline) <>
+    wrap (indent doc)
   where
     Margins {..} = margins ps
-    right = case mRight of
-        Auto -> error "auto"
-        NotAuto x -> x
     topMargin  = case mTop of
         Auto -> error "auto"
+        NotAuto x -> x
+    right = case mRight of
+        Auto      -> error "auto"
         NotAuto x -> x
     wrap = case (psWrap ps, psColumns ps) of
         (Just True,  Just (A.FlexibleNum col)) -> PP.wrapAt (Just $ col - right)
