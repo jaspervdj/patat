@@ -42,24 +42,26 @@ data Display = DisplayDoc PP.Doc | DisplayImage FilePath deriving (Show)
 -- | Display something within the presentation borders that draw the title and
 -- the active slide number and so on.
 displayWithBorders
-    :: Size -> Presentation -> (Size -> DisplaySettings -> PP.Doc) -> PP.Doc
-displayWithBorders (Size rows columns) pres@Presentation {..} f =
+    :: Size -> Presentation -> (DisplaySettings -> PP.Doc) -> PP.Doc
+displayWithBorders size@(Size rows columns) pres@Presentation {..} f =
     (if null title
         then mempty
         else
             let titleRemainder = columns - titleWidth - titleOffset
                 wrappedTitle = PP.spaces titleOffset <> PP.string title <> PP.spaces titleRemainder in
         borders wrappedTitle <> PP.hardline) <>
-    formatWith settings (f canvasSize ds) <> PP.hardline <>
+    mconcat (replicate topMargin PP.hardline) <>
+    formatWith size (activeSettings pres) body <> PP.hardline <>
     PP.goToLine (rows - 2) <>
     borders (PP.space <> PP.string author <> middleSpaces <> PP.string active <> PP.space) <>
     PP.hardline
   where
     -- Get terminal width/title
-    (sidx, _)   = pActiveFragment
-    settings    = (activeSettings pres) {psColumns = Just $ A.FlexibleNum columns}
-    ds          = DisplaySettings
-        { dsTheme     = fromMaybe Theme.defaultTheme (psTheme settings)
+    (sidx, _) = pActiveFragment
+    settings  = activeSettings pres
+    ds        = DisplaySettings
+        { dsSize      = canvasSize
+        , dsTheme     = fromMaybe Theme.defaultTheme (psTheme settings)
         , dsSyntaxMap = pSyntaxMap
         }
 
@@ -82,10 +84,12 @@ displayWithBorders (Size rows columns) pres@Presentation {..} f =
     borders     = themed ds themeBorders
 
     -- Room left for content
-    topMargin  = case mTop $ margins settings of
-        Auto -> error "auto"
+    topMargin = case mTop $ margins settings of
+        Auto -> let (r, _) = PP.dimensions body in (rows - 4 - r) `div` 2
         NotAuto x -> x
     canvasSize = Size (rows - 2 - topMargin) columns
+
+    body = f ds
 
     -- Compute footer.
     active
@@ -107,19 +111,20 @@ displayPresentation size pres@Presentation {..} =
                 , Just image <- onlyImage fragment ->
             DisplayImage $ T.unpack image
         Just (ActiveContent fragment) -> DisplayDoc $
-            displayWithBorders size pres $ \_canvasSize theme ->
+            displayWithBorders size pres $ \theme ->
                 prettyFragment theme fragment
         Just (ActiveTitle block) -> DisplayDoc $
-            displayWithBorders size pres $ \canvasSize theme ->
-            let pblock         = prettyBlock theme block
+            displayWithBorders size pres $ \theme ->
+            let canvasSize     = dsSize theme
+                pblock         = prettyBlock theme block
                 (prows, pcols) = PP.dimensions pblock
                 Margins {..}   = margins (activeSettings pres)
                 offsetRow      = (sRows canvasSize `div` 2) - (prows `div` 2)
                 left           = case mLeft of
-                    Auto -> error "auto"
+                    Auto      -> 0
                     NotAuto x -> x
                 right           = case mRight of
-                    Auto -> error "auto"
+                    Auto      -> 0
                     NotAuto x -> x
                 offsetCol      = ((sCols canvasSize - left - right) `div` 2) - (pcols `div` 2)
                 spaces         = PP.NotTrimmable $ PP.spaces offsetCol in
@@ -140,11 +145,10 @@ displayPresentation size pres@Presentation {..} =
 -- | Displays an error in the place of the presentation.  This is useful if we
 -- want to display an error but keep the presentation running.
 displayPresentationError :: Size -> Presentation -> String -> PP.Doc
-displayPresentationError size pres err =
-    displayWithBorders size pres $ \_ ds ->
-        themed ds themeStrong "Error occurred in the presentation:" <$$>
-        "" <$$>
-        (PP.string err)
+displayPresentationError size pres err = displayWithBorders size pres $ \ds ->
+    themed ds themeStrong "Error occurred in the presentation:" <$$>
+    "" <$$>
+    (PP.string err)
 
 
 --------------------------------------------------------------------------------
@@ -185,24 +189,23 @@ dumpPresentation pres@Presentation {..} =
 
 
 --------------------------------------------------------------------------------
-formatWith :: PresentationSettings -> PP.Doc -> PP.Doc
-formatWith ps doc =
-    mconcat (replicate topMargin PP.hardline) <>
-    wrap (indent doc)
+formatWith :: Size -> PresentationSettings -> PP.Doc -> PP.Doc
+formatWith (Size _ columns) ps doc = wrap $ indent doc
   where
     Margins {..} = margins ps
-    topMargin  = case mTop of
-        Auto -> error "auto"
-        NotAuto x -> x
-    right = case mRight of
-        Auto      -> error "auto"
-        NotAuto x -> x
-    wrap = case (psWrap ps, psColumns ps) of
-        (Just True,  Just (A.FlexibleNum col)) -> PP.wrapAt (Just $ col - right)
-        _                                      -> id
+    (_, dcols) = PP.dimensions doc
+    wrap = case psWrap ps of
+        Just True ->
+            let right = case mRight of
+                    Auto      -> 0
+                    NotAuto x -> x in
+            PP.wrapAt (Just $ columns - right)
+        _ -> id
     spaces = PP.NotTrimmable $ PP.spaces $ case mLeft of
-        Auto      -> error "auto"
         NotAuto x -> x
+        Auto      -> case mRight of
+            NotAuto _ -> 0
+            Auto      -> (columns - dcols) `div` 2
     indent = PP.indent spaces spaces
 
 
