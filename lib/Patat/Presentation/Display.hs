@@ -88,8 +88,10 @@ displayWithBorders (Size rows columns) pres@Presentation {..} f =
     -- Room left for content
     body = f ds
     topMargin = case mTop $ margins settings of
-        Auto -> let (r, _) = PP.dimensions body in (rows - 4 - r) `div` 2
+        Auto -> let (r, _) = PP.dimensions body in (rows - 2 - r) `div` 2
         NotAuto x -> x
+    -- NOTE: rows in canvasSize seems incorrect, but maybe it's not used?
+    -- topMargin here should match offsetRow in 'displayPresentation'
     canvasSize = Size (rows - 2 - topMargin) columns
 
     -- Compute footer.
