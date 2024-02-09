@@ -76,7 +76,7 @@ prettyCodeBlock ds classes rawCodeBlock =
     blockified :: Skylighting.SourceLine -> PP.Doc
     blockified line =
         let len    = sourceLineLength line
-            indent = PP.NotTrimmable "   " in
+            indent = PP.Indentation 3 mempty in
         PP.indent indent indent $
         themed ds themeCodeBlock $
             " " <>

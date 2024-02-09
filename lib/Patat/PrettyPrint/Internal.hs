@@ -15,10 +15,10 @@ module Patat.PrettyPrint.Internal
     , DocE (..)
     , chunkToDocE
 
+    , Indentation (..)
+
     , Doc (..)
     , docToChunks
-
-    , Trimmable (..)
 
     , toString
     , dimensions
@@ -119,8 +119,8 @@ data DocE d
         , ansiDoc  :: d
         }
     | Indent
-        { indentFirstLine  :: LineBuffer
-        , indentOtherLines :: LineBuffer
+        { indentFirstLine  :: Indentation [Chunk]
+        , indentOtherLines :: Indentation [Chunk]
         , indentDoc        :: d
         }
     | Control Control
@@ -151,9 +151,9 @@ instance IsString Doc where
 
 --------------------------------------------------------------------------------
 data DocEnv = DocEnv
-    { deCodes  :: [Ansi.SGR]  -- ^ Most recent ones first in the list
-    , deIndent :: LineBuffer  -- ^ Don't need to store first-line indent
-    , deWrap   :: Maybe Int   -- ^ Wrap at columns
+    { deCodes  :: [Ansi.SGR]             -- ^ Most recent ones first in the list
+    , deIndent :: [Indentation [Chunk]]  -- ^ No need to store first-line indent
+    , deWrap   :: Maybe Int              -- ^ Wrap at columns
     }
 
 
@@ -162,33 +162,34 @@ type DocM = RWS DocEnv Chunks LineBuffer
 
 
 --------------------------------------------------------------------------------
-data Trimmable a
-    = NotTrimmable !a
-    | Trimmable    !a
+-- | Note that these are reversed so we have fast append
+data LineBuffer = LineBuffer [Indentation [Chunk]] [Chunk]
+
+
+--------------------------------------------------------------------------------
+data Indentation a = Indentation Int a
     deriving (Foldable, Functor, Traversable)
 
 
 --------------------------------------------------------------------------------
--- | Note that this is reversed so we have fast append
-type LineBuffer = [Trimmable Chunk]
-
-
---------------------------------------------------------------------------------
 bufferToChunks :: LineBuffer -> Chunks
-bufferToChunks = map trimmableToChunk . reverse . dropWhile isTrimmable
+bufferToChunks (LineBuffer ind chunks) = case chunks of
+    [] -> concatMap indentationToChunks $ reverse $
+        dropWhile emptyIndentation ind
+    _ -> concatMap indentationToChunks (reverse ind) ++ reverse chunks
   where
-    isTrimmable (NotTrimmable _) = False
-    isTrimmable (Trimmable    _) = True
+    emptyIndentation (Indentation _ []) = True
+    emptyIndentation _                  = False
 
-    trimmableToChunk (NotTrimmable c) = c
-    trimmableToChunk (Trimmable    c) = c
+    indentationToChunks (Indentation 0 c) = c
+    indentationToChunks (Indentation n c) = StringChunk [] (replicate n ' ') : c
 
 
 --------------------------------------------------------------------------------
 docToChunks :: Doc -> Chunks
 docToChunks doc0 =
     let env0        = DocEnv [] [] Nothing
-        ((), b, cs) = runRWS (go $ unDoc doc0) env0 mempty in
+        ((), b, cs) = runRWS (go $ unDoc doc0) env0 (LineBuffer [] []) in
     optimizeChunks (cs <> bufferToChunks b)
   where
     go :: [DocE Doc] -> DocM ()
@@ -197,7 +198,7 @@ docToChunks doc0 =
 
     go (String str : docs) = do
         chunk <- makeChunk str
-        modify (NotTrimmable chunk :)
+        appendChunk chunk
         go docs
 
     go (Softspace : docs) = do
@@ -206,7 +207,7 @@ docToChunks doc0 =
 
     go (Hardspace : docs) = do
         chunk <- makeChunk " "
-        modify (NotTrimmable chunk :)
+        appendChunk chunk
         go docs
 
     go (Softline : docs) = do
@@ -217,7 +218,7 @@ docToChunks doc0 =
         buffer <- get
         tell $ bufferToChunks buffer <> [NewlineChunk]
         indentation <- asks deIndent
-        modify $ \_ -> if L.null docs then [] else indentation
+        modify $ \_ -> LineBuffer (if L.null docs then [] else indentation) []
         go docs
 
     go (WrapAt {..} : docs) = do
@@ -230,8 +231,8 @@ docToChunks doc0 =
         go docs
 
     go (Indent {..} : docs) = do
-        local (\env -> env {deIndent = indentOtherLines ++ deIndent env}) $ do
-            modify (indentFirstLine ++)
+        local (\env -> env {deIndent = indentOtherLines : deIndent env}) $ do
+            modify $ \(LineBuffer i c) -> LineBuffer (indentFirstLine : i) c
             go (unDoc indentDoc)
         go docs
 
@@ -244,6 +245,9 @@ docToChunks doc0 =
     makeChunk str = do
         codes <- asks deCodes
         return $ StringChunk codes str
+
+    appendChunk :: Chunk -> DocM ()
+    appendChunk c = modify $ \(LineBuffer i cs) -> LineBuffer i (c : cs)
 
     -- Convert 'Softspace' or 'Softline' to 'Hardspace' or 'Hardline'
     softConversion :: DocE Doc -> [DocE Doc] -> DocM (DocE Doc)
@@ -316,4 +320,5 @@ mkDoc e = Doc [e]
 
 --------------------------------------------------------------------------------
 string :: String -> Doc
-string = mkDoc . String  -- TODO (jaspervdj): Newline conversion?
+string ""  = Doc []
+string str = mkDoc $ String str  -- TODO (jaspervdj): Newline conversion?

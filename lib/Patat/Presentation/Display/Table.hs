@@ -30,7 +30,7 @@ data Table = Table
 --------------------------------------------------------------------------------
 prettyTable :: DisplaySettings -> Table -> PP.Doc
 prettyTable ds Table {..} =
-    PP.indent (PP.Trimmable "  ") (PP.Trimmable "  ") $
+    PP.indent indentation indentation $
         lineIf (not isHeaderLess) (hcat2 headerHeight
             [ themed ds themeTableHeader $
                 PP.align w a (vpad headerHeight header)
@@ -48,6 +48,8 @@ prettyTable ds Table {..} =
         lineIf
             (not $ PP.null tCaption) (PP.hardline <> "Table: " <> tCaption)
   where
+    indentation = PP.Indentation 2 mempty
+
     lineIf cond line = if cond then line <> PP.hardline else mempty
 
     joinRows
