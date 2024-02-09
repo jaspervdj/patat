@@ -18,8 +18,8 @@ feature-rich presentation tool that runs in the terminal.
 - [Transition effects](#transitions).
 - Supports [smart slide splitting](#input-format).
 - [Auto advancing](#auto-advancing) with configurable delay.
-- Optionally [re-wrapping](#line-wrapping) text to terminal width with proper
-  indentation.
+- [Centering](#centering) and [re-wrapping](#line-wrapping) text to terminal
+  width with proper indentation.
 - [Theming](#theming) support including 24-bit RGB.
 - Hihgly portable as it only requires an ANSI terminal as opposed to
   something like `ncurses`.
@@ -332,6 +332,25 @@ margin.
 
 By default, the `left` and `right` margin are set to 0, and the `top` margin is
 set to 1.
+
+#### Centering
+
+To vertically center content, use `top: auto`. horizontally center content, use
+To both both `left: auto` and `right: auto`.  For example:
+
+```markdown
+---
+title: Centered presentation
+author: John Doe
+patat:
+    margins:
+        left: auto
+        right: auto
+        top: auto
+...
+
+Hello world
+```
 
 ### Auto advancing
 
