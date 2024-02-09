@@ -35,7 +35,7 @@
 [m  [0m[35m--------[0m[m  [0m[35m-------[0m[m  [0m[35m-------[0m[m  [0m[35m------------------------[0m
 [m    First   row         12.0  Example of a row that   [0m
 [m                              spans multiple lines.   [0m
-[m  [0m
+
 [m   Second   row          5.0  Here's another one. Note[0m
 [m                              the blank line between  [0m
 [m                              rows.                   [0m
@@ -53,7 +53,7 @@
 [m  [0m[35m------[0m[m  [0m[35m---[0m[m  [0m[35m----[0m[m  [0m[35m------------------------[0m
 [m   First  row  12.0  Example of a row that   [0m
 [m                     spans multiple lines.   [0m
-[m  [0m
+
 [m  Second  row   5.0  Here's another one. Note[0m
 [m                     the blank line between  [0m
 [m                     rows.                   [0m
