@@ -43,7 +43,7 @@ data Display = DisplayDoc PP.Doc | DisplayImage FilePath deriving (Show)
 -- the active slide number and so on.
 displayWithBorders
     :: Size -> Presentation -> (DisplaySettings -> PP.Doc) -> PP.Doc
-displayWithBorders size@(Size rows columns) pres@Presentation {..} f =
+displayWithBorders (Size rows columns) pres@Presentation {..} f =
     (if null title
         then mempty
         else
@@ -51,7 +51,7 @@ displayWithBorders size@(Size rows columns) pres@Presentation {..} f =
                 wrappedTitle = PP.spaces titleOffset <> PP.string title <> PP.spaces titleRemainder in
         borders wrappedTitle <> PP.hardline) <>
     mconcat (replicate topMargin PP.hardline) <>
-    formatWith size (activeSettings pres) body <> PP.hardline <>
+    body <> PP.hardline <>
     PP.goToLine (rows - 2) <>
     borders (PP.space <> PP.string author <> middleSpaces <> PP.string active <> PP.space) <>
     PP.hardline
@@ -60,9 +60,11 @@ displayWithBorders size@(Size rows columns) pres@Presentation {..} f =
     (sidx, _) = pActiveFragment
     settings  = activeSettings pres
     ds        = DisplaySettings
-        { dsSize      = canvasSize
-        , dsTheme     = fromMaybe Theme.defaultTheme (psTheme settings)
-        , dsSyntaxMap = pSyntaxMap
+        { dsSize          = canvasSize
+        , dsWrap          = fromMaybe False $ psWrap settings
+        , dsMargins       = margins settings
+        , dsTheme         = fromMaybe Theme.defaultTheme (psTheme settings)
+        , dsSyntaxMap     = pSyntaxMap
         }
 
     -- Compute title.
@@ -84,12 +86,11 @@ displayWithBorders size@(Size rows columns) pres@Presentation {..} f =
     borders     = themed ds themeBorders
 
     -- Room left for content
+    body = f ds
     topMargin = case mTop $ margins settings of
         Auto -> let (r, _) = PP.dimensions body in (rows - 4 - r) `div` 2
         NotAuto x -> x
     canvasSize = Size (rows - 2 - topMargin) columns
-
-    body = f ds
 
     -- Compute footer.
     active
@@ -189,33 +190,30 @@ dumpPresentation pres@Presentation {..} =
 
 
 --------------------------------------------------------------------------------
-formatWith :: Size -> PresentationSettings -> PP.Doc -> PP.Doc
-formatWith (Size _ columns) ps doc = wrap $ indent doc
+prettyFragment :: DisplaySettings -> Fragment -> PP.Doc
+prettyFragment ds (Fragment blocks) =
+    PP.vcat (map (wrapAndMargin . prettyBlock ds) blocks) <>
+    case prettyReferences ds blocks of
+        []   -> mempty
+        refs -> PP.hardline <> PP.vcat (map wrapAndMargin refs)
   where
-    Margins {..} = margins ps
-    (_, dcols) = PP.dimensions doc
-    wrap = case psWrap ps of
-        Just True ->
+    wrapAndMargin doc = wrap $ indent doc
+      where
+        (Size _ columns) = dsSize ds
+        Margins {..} = dsMargins ds
+        (_, dcols) = PP.dimensions doc
+        wrap =
             let right = case mRight of
                     Auto      -> 0
                     NotAuto x -> x in
-            PP.wrapAt (Just $ columns - right)
-        _ -> id
-    spaces = PP.NotTrimmable $ PP.spaces $ case mLeft of
-        NotAuto x -> x
-        Auto      -> case mRight of
-            NotAuto _ -> 0
-            Auto      -> (columns - dcols) `div` 2
-    indent = PP.indent spaces spaces
+            if dsWrap ds then PP.wrapAt (Just $ columns - right) else id
 
-
---------------------------------------------------------------------------------
-prettyFragment :: DisplaySettings -> Fragment -> PP.Doc
-prettyFragment ds (Fragment blocks) =
-    prettyBlocks ds blocks <>
-    case prettyReferences ds blocks of
-        []   -> mempty
-        refs -> PP.hardline <> PP.vcat refs
+        spaces = PP.NotTrimmable $ PP.spaces $ case mLeft of
+            NotAuto x -> x
+            Auto      -> case mRight of
+                NotAuto _ -> 0
+                Auto      -> (columns - dcols) `div` 2
+        indent = PP.indent spaces spaces
 
 
 --------------------------------------------------------------------------------
@@ -241,7 +239,7 @@ prettyBlock ds (Pandoc.BulletList bss) = PP.vcat
     | bs <- bss
     ] <> PP.hardline
   where
-    prefix = "  " <> PP.string [marker] <> " "
+    prefix = PP.string [marker] <> " "
     marker = case T.unpack <$> themeBulletListMarkers theme of
         Just (x : _) -> x
         _            -> '-'

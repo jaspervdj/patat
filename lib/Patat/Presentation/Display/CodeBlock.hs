@@ -77,7 +77,7 @@ prettyCodeBlock ds classes rawCodeBlock =
     blockified line =
         let len    = sourceLineLength line
             indent = PP.NotTrimmable "   " in
-        PP.indent indent indent $
+        -- PP.indent indent indent $
         themed ds themeCodeBlock $
             " " <>
             prettySourceLine line <>
