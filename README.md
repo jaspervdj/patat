@@ -335,14 +335,15 @@ set to 1.
 
 #### Centering
 
-To vertically center content, use `top: auto`. horizontally center content, use
-To both both `left: auto` and `right: auto`.  For example:
+To vertically center content, use `top: auto`. To horizontally center content,
+use both `left: auto` and `right: auto`.  For example:
 
 ```markdown
 ---
 title: Centered presentation
 author: John Doe
 patat:
+    wrap: true
     margins:
         left: auto
         right: auto
@@ -351,6 +352,9 @@ patat:
 
 Hello world
 ```
+
+Setting `wrap: true` is recommended when vertically centering content if there
+are any lines that are too wide for the terminal.
 
 ### Auto advancing
 
