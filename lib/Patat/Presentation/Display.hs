@@ -239,7 +239,7 @@ prettyBlock ds (Pandoc.BulletList bss) = PP.vcat
     | bs <- bss
     ] <> PP.hardline
   where
-    prefix = PP.string [marker] <> " "
+    prefix = "  " <> PP.string [marker] <> " "
     marker = case T.unpack <$> themeBulletListMarkers theme of
         Just (x : _) -> x
         _            -> '-'
