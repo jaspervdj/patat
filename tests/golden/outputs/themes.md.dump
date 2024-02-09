@@ -1,9 +1,9 @@
 [33m                               themes.md                                [0m
 
-[35m  - [0m[mThis is a simple list.[0m
-[m    [0m[35m  + [0m[mWith [0m[4;101mnested[0m[m items.[0m
-[m    [0m[35m  + [0m[mOne or two [0m[48;2;16;16;96;38;2;240;128;0mbold[0m[m.[0m
+[m  [0m[35m- [0m[mThis is a simple list.[0m
+[m      [0m[35m+ [0m[mWith [0m[4;101mnested[0m[m items.[0m
+[m      [0m[35m+ [0m[mOne or two [0m[48;2;16;16;96;38;2;240;128;0mbold[0m[m.[0m
 
-[35m  - [0m[mThe list theming is customized a bit.[0m
+[m  [0m[35m- [0m[mThe list theming is customized a bit.[0m
 
 [33m                                                                  1 / 1 [0m

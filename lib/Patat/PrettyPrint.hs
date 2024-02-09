@@ -24,7 +24,7 @@ module Patat.PrettyPrint
 
     , wrapAt
 
-    , Trimmable (..)
+    , Indentation (..)
     , indent
 
     , ansi
@@ -91,10 +91,10 @@ wrapAt wrapAtCol wrapDoc = mkDoc WrapAt {..}
 
 
 --------------------------------------------------------------------------------
-indent :: Trimmable Doc -> Trimmable Doc -> Doc -> Doc
+indent :: Indentation Doc -> Indentation Doc -> Doc -> Doc
 indent firstLineDoc otherLinesDoc doc = mkDoc $ Indent
-    { indentFirstLine  = traverse docToChunks firstLineDoc
-    , indentOtherLines = traverse docToChunks otherLinesDoc
+    { indentFirstLine  = fmap docToChunks firstLineDoc
+    , indentOtherLines = fmap docToChunks otherLinesDoc
     , indentDoc        = doc
     }
 
