@@ -197,11 +197,14 @@ prettyFragment ds (Fragment blocks) =
         []   -> mempty
         refs -> PP.hardline <> PP.vcat (map wrapAndMargin refs)
   where
-    wrapAndMargin doc = wrap $ indent doc
+    wrapAndMargin doc0 = wrap $ indent doc1
       where
         (Size _ columns) = dsSize ds
         Margins {..} = dsMargins ds
-        (_, dcols) = PP.dimensions doc
+        doc1 = case (mLeft, mRight) of
+            (Auto, Auto) -> PP.deindent doc0
+            _            -> doc0
+        (_, dcols) = PP.dimensions doc1
         wrap =
             let right = case mRight of
                     Auto      -> 0
