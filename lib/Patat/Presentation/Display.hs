@@ -114,7 +114,7 @@ displayPresentation size pres@Presentation {..} =
                 Margins {..}   = margins (activeSettings pres)
                 offsetRow      = (sRows canvasSize `div` 2) - (prows `div` 2)
                 offsetCol      = ((sCols canvasSize - mLeft - mRight) `div` 2) - (pcols `div` 2)
-                spaces         = PP.NotTrimmable $ PP.spaces offsetCol in
+                spaces         = PP.Indentation offsetCol mempty in
             mconcat (replicate (offsetRow - 3) PP.hardline) <$$>
             PP.indent spaces spaces pblock
 
@@ -185,7 +185,7 @@ formatWith ps = wrap . indent
     wrap = case (psWrap ps, psColumns ps) of
         (Just True,  Just (A.FlexibleNum col)) -> PP.wrapAt (Just $ col - mRight)
         _                                      -> id
-    spaces = PP.NotTrimmable $ PP.spaces mLeft
+    spaces = PP.Indentation mLeft mempty
     indent = PP.indent spaces spaces
 
 
@@ -215,13 +215,13 @@ prettyBlock ds (Pandoc.CodeBlock (_, classes, _) txt) =
 
 prettyBlock ds (Pandoc.BulletList bss) = PP.vcat
     [ PP.indent
-        (PP.NotTrimmable $ themed ds themeBulletList prefix)
-        (PP.Trimmable "    ")
+        (PP.Indentation 2 $ themed ds themeBulletList prefix)
+        (PP.Indentation 4 mempty)
         (prettyBlocks ds' bs)
     | bs <- bss
     ] <> PP.hardline
   where
-    prefix = "  " <> PP.string [marker] <> " "
+    prefix = PP.string [marker] <> " "
     marker = case T.unpack <$> themeBulletListMarkers theme of
         Just (x : _) -> x
         _            -> '-'
@@ -236,8 +236,8 @@ prettyBlock ds (Pandoc.BulletList bss) = PP.vcat
 
 prettyBlock ds (Pandoc.OrderedList _ bss) = PP.vcat
     [ PP.indent
-        (PP.NotTrimmable $ themed ds themeOrderedList $ PP.string prefix)
-        (PP.Trimmable "    ")
+        (PP.Indentation 0 $ themed ds themeOrderedList $ PP.string prefix)
+        (PP.Indentation 4 mempty)
         (prettyBlocks ds bs)
     | (prefix, bs) <- zip padded bss
     ] <> PP.hardline
@@ -253,7 +253,7 @@ prettyBlock _ds (Pandoc.RawBlock _ t) = PP.text t <> PP.hardline
 prettyBlock _ds Pandoc.HorizontalRule = "---"
 
 prettyBlock ds (Pandoc.BlockQuote bs) =
-    let quote = PP.NotTrimmable (themed ds themeBlockQuote "> ") in
+    let quote = PP.Indentation 0 (themed ds themeBlockQuote "> ") in
     PP.indent quote quote (themed ds themeBlockQuote $ prettyBlocks ds bs)
 
 prettyBlock ds (Pandoc.DefinitionList terms) =
@@ -263,8 +263,8 @@ prettyBlock ds (Pandoc.DefinitionList terms) =
         themed ds themeDefinitionTerm (prettyInlines ds term) <$$>
         PP.hardline <> PP.vcat
         [ PP.indent
-            (PP.NotTrimmable (themed ds themeDefinitionList ":   "))
-            (PP.Trimmable "    ") $
+            (PP.Indentation 0 (themed ds themeDefinitionList ":   "))
+            (PP.Indentation 4 mempty) $
             prettyBlocks ds (Pandoc.plainToPara definition)
         | definition <- definitions
         ]
@@ -289,7 +289,7 @@ prettyBlock ds (Pandoc.Table _ caption specs thead tbodies tfoot) =
 prettyBlock ds (Pandoc.Div _attrs blocks) = prettyBlocks ds blocks
 
 prettyBlock ds (Pandoc.LineBlock inliness) =
-    let ind = PP.NotTrimmable (themed ds themeLineBlock "| ") in
+    let ind = PP.Indentation 0 (themed ds themeLineBlock "| ") in
     PP.wrapAt Nothing $
     PP.indent ind ind $
     PP.vcat $
