@@ -50,8 +50,7 @@ displayWithBorders (Size rows columns) pres@Presentation {..} f =
             let titleRemainder = columns - titleWidth - titleOffset
                 wrappedTitle = PP.spaces titleOffset <> PP.string title <> PP.spaces titleRemainder in
         borders wrappedTitle <> PP.hardline) <>
-    mconcat (replicate topMargin PP.hardline) <>
-    body <> PP.hardline <>
+    f ds <> PP.hardline <>
     PP.goToLine (rows - 2) <>
     borders (PP.space <> PP.string author <> middleSpaces <> PP.string active <> PP.space) <>
     PP.hardline
@@ -86,13 +85,7 @@ displayWithBorders (Size rows columns) pres@Presentation {..} f =
     borders     = themed ds themeBorders
 
     -- Room left for content
-    body = f ds
-    topMargin = case mTop $ margins settings of
-        Auto -> let (r, _) = PP.dimensions body in (rows - 2 - r) `div` 2
-        NotAuto x -> x
-    -- NOTE: rows in canvasSize seems incorrect, but maybe it's not used?
-    -- topMargin here should match offsetRow in 'displayPresentation'
-    canvasSize = Size (rows - 2 - topMargin) columns
+    canvasSize = Size (rows - 3) columns
 
     -- Compute footer.
     active
@@ -117,22 +110,9 @@ displayPresentation size pres@Presentation {..} =
             displayWithBorders size pres $ \theme ->
                 prettyFragment theme fragment
         Just (ActiveTitle block) -> DisplayDoc $
-            displayWithBorders size pres $ \theme ->
-            let canvasSize     = dsSize theme
-                pblock         = prettyBlock theme block
-                (prows, pcols) = PP.dimensions pblock
-                Margins {..}   = margins (activeSettings pres)
-                offsetRow      = (sRows canvasSize `div` 2) - (prows `div` 2)
-                left           = case mLeft of
-                    Auto      -> 0
-                    NotAuto x -> x
-                right           = case mRight of
-                    Auto      -> 0
-                    NotAuto x -> x
-                offsetCol      = ((sCols canvasSize - left - right) `div` 2) - (pcols `div` 2)
-                spaces         = PP.Indentation offsetCol mempty in
-            mconcat (replicate (offsetRow - 3) PP.hardline) <$$>
-            PP.indent spaces spaces pblock
+            displayWithBorders size pres $ \ds ->
+                let auto = Margins {mTop = Auto, mRight = Auto, mLeft = Auto} in
+                prettyFragment ds {dsMargins = auto} $ Fragment [block]
 
   where
     -- Check if the fragment consists of "just a single image".  Discard
@@ -193,13 +173,21 @@ dumpPresentation pres@Presentation {..} =
 
 --------------------------------------------------------------------------------
 prettyFragment :: DisplaySettings -> Fragment -> PP.Doc
-prettyFragment ds (Fragment blocks) =
-    PP.vcat (map (wrapAndMargin . prettyBlock ds) blocks) <>
+prettyFragment ds (Fragment blocks) = vertical $
+    PP.vcat (map (horizontal . prettyBlock ds) blocks) <>
     case prettyReferences ds blocks of
         []   -> mempty
-        refs -> PP.hardline <> PP.vcat (map wrapAndMargin refs)
+        refs -> PP.hardline <> PP.vcat (map horizontal refs)
   where
-    wrapAndMargin doc0 = wrap $ indent doc1
+    vertical doc0 =
+        mconcat (replicate top PP.hardline) <> doc0
+      where
+        (Size rows _) = dsSize ds
+        top = case mTop (dsMargins ds) of
+            Auto -> let (r, _) = PP.dimensions doc0 in (rows - r) `div` 2
+            NotAuto x -> x
+
+    horizontal doc0 = wrap $ indent doc1
       where
         (Size _ columns) = dsSize ds
         Margins {..} = dsMargins ds
@@ -207,12 +195,10 @@ prettyFragment ds (Fragment blocks) =
             (Auto, Auto) -> PP.deindent doc0
             _            -> doc0
         (_, dcols) = PP.dimensions doc1
-        wrap =
-            let right = case mRight of
-                    Auto      -> 0
-                    NotAuto x -> x in
-            if dsWrap ds then PP.wrapAt (Just $ columns - right) else id
-
+        wrap = if dsWrap ds then PP.wrapAt (Just $ columns - right) else id
+        right = case mRight of
+            Auto      -> 0
+            NotAuto x -> x
         left = case mLeft of
             NotAuto x -> x
             Auto      -> case mRight of
