@@ -1,5 +1,32 @@
 # Changelog
 
+## unreleased
+
+ *  Add  Support centering content with auto margins #164
+
+    Configuration is done through the existing `margins` setting.
+
+    To vertically center content, use `top: auto`. To horizontally center
+    content, use both `left: auto` and `right: auto`.  For example:
+
+    ```markdown
+    ---
+    title: Centered presentation
+    author: John Doe
+    patat:
+        wrap: true
+        margins:
+            left: auto
+            right: auto
+            top: auto
+    ...
+
+    Hello world
+    ```
+
+    Setting `wrap: true` is recommended when vertically centering content if
+    there are any lines that are too wide for the terminal.
+
 ## 0.10.2.0 (2023-11-25)
 
  *  Add eval.wrap option
