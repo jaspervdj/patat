@@ -3,7 +3,8 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE TemplateHaskell            #-}
 module Patat.Theme
-    ( Theme (..)
+    ( HeaderTheme (..)
+    , Theme (..)
     , defaultTheme
 
     , Style (..)
@@ -32,9 +33,18 @@ import           Text.Read              (readMaybe)
 
 
 --------------------------------------------------------------------------------
+data HeaderTheme = HeaderTheme
+    { htStyle     :: !(Maybe Style)
+    , htPrefix    :: !(Maybe T.Text)
+    , htUnderline :: !(Maybe T.Text)
+    } deriving (Show)
+
+
+--------------------------------------------------------------------------------
 data Theme = Theme
     { themeBorders            :: !(Maybe Style)
     , themeHeader             :: !(Maybe Style)
+    , themeHeaders            :: !(Maybe (M.Map String HeaderTheme))
     , themeCodeBlock          :: !(Maybe Style)
     , themeBulletList         :: !(Maybe Style)
     , themeBulletListMarkers  :: !(Maybe T.Text)
@@ -65,6 +75,7 @@ instance Semigroup Theme where
     l <> r = Theme
         { themeBorders            = mplusOn   themeBorders
         , themeHeader             = mplusOn   themeHeader
+        , themeHeaders            = mappendOn themeHeaders
         , themeCodeBlock          = mplusOn   themeCodeBlock
         , themeBulletList         = mplusOn   themeBulletList
         , themeBulletListMarkers  = mplusOn   themeBulletListMarkers
@@ -99,13 +110,17 @@ instance Monoid Theme where
     mempty  = Theme
         Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
         Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-        Nothing Nothing Nothing Nothing Nothing Nothing
+        Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 --------------------------------------------------------------------------------
 defaultTheme :: Theme
 defaultTheme = Theme
     { themeBorders            = dull Ansi.Yellow
     , themeHeader             = dull Ansi.Blue
+    , themeHeaders            = Just $ M.fromList $ do
+        n <- [1 .. 6]
+        let prefix = T.replicate n "#" <> " "
+        pure ("h" <> show n, HeaderTheme Nothing (Just prefix) Nothing)
     , themeCodeBlock          = dull Ansi.White `mappend` ondull Ansi.Black
     , themeBulletList         = dull Ansi.Magenta
     , themeBulletListMarkers  = Just "-*"
@@ -322,4 +337,5 @@ syntaxHighlight theme tokenType = do
 
 
 --------------------------------------------------------------------------------
+$(A.deriveJSON A.dropPrefixOptions ''HeaderTheme)
 $(A.deriveJSON A.dropPrefixOptions ''Theme)

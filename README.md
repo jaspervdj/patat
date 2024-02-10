@@ -502,6 +502,22 @@ and `onRgb#101060` for a deep purple background).  Naturally, your terminal
 needs to support 24-bit RGB for this to work.  When creating portable
 presentations, it might be better to stick with the named colours listed above.
 
+#### Theming headers
+
+In addition to `header`, individual headers can also be customized.  The
+configuration blocks under `headers` accepts a `style` list, a `prefix` string
+and an `underline` string that is repeated match the width of the header.
+
+```yaml
+patat:
+  theme:
+    headers:
+      h3:
+        style: [vividRed]
+        prefix: '### '
+        underline: '-~-~'
+```
+
 ### Syntax Highlighting
 
 `patat` uses [Kate] Syntax Highlighting files.  `patat` ships with support for

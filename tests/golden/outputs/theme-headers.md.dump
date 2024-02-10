@@ -1,0 +1,48 @@
+[33m                            theme-headers.md                            [0m
+
+
+
+
+
+
+
+
+[m                                [0m[34mHeader 1[0m
+[m                                [0m[34m=~=~=~=~[0m
+
+[33m                                                                  1 / 4 [0m
+
+[m{slide}[0m
+[33m                      theme-headers.md > Header 1                       [0m
+
+
+
+
+
+
+
+
+
+[m                               [0m[34m## Header 2[0m
+
+[33m                                                                  2 / 4 [0m
+
+[m{slide}[0m
+[33m                 theme-headers.md > Header 1 > Header 2                 [0m
+
+[91m== Header 3[0m
+[91m^ ^ ^ ^ ^ ^[0m
+
+[mSome Content[0m
+
+[33m                                                                  3 / 4 [0m
+
+[m{slide}[0m
+[33m                 theme-headers.md > Header 1 > Header 2                 [0m
+
+[91m== A long Header 3[0m
+[91m^ ^ ^ ^ ^ ^ ^ ^ ^ [0m
+
+[mMore Content[0m
+
+[33m                                                                  4 / 4 [0m
