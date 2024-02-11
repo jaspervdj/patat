@@ -172,6 +172,12 @@ data Indentation a = Indentation Int a
 
 
 --------------------------------------------------------------------------------
+indentationToChunks :: Indentation [Chunk] -> [Chunk]
+indentationToChunks (Indentation 0 c) = c
+indentationToChunks (Indentation n c) = StringChunk [] (replicate n ' ') : c
+
+
+--------------------------------------------------------------------------------
 bufferToChunks :: LineBuffer -> Chunks
 bufferToChunks (LineBuffer ind chunks) = case chunks of
     [] -> concatMap indentationToChunks $ reverse $
@@ -180,9 +186,6 @@ bufferToChunks (LineBuffer ind chunks) = case chunks of
   where
     emptyIndentation (Indentation _ []) = True
     emptyIndentation _                  = False
-
-    indentationToChunks (Indentation 0 c) = c
-    indentationToChunks (Indentation n c) = StringChunk [] (replicate n ' ') : c
 
 
 --------------------------------------------------------------------------------
@@ -222,7 +225,8 @@ docToChunks doc0 =
         go docs
 
     go (WrapAt {..} : docs) = do
-        local (\env -> env {deWrap = wrapAtCol}) $ go (unDoc wrapDoc)
+        il <- asks $ wcchunkswidth . concatMap indentationToChunks . deIndent
+        local (\env -> env {deWrap = fmap (+ il) wrapAtCol}) $ go (unDoc wrapDoc)
         go docs
 
     go (Ansi {..} : docs) = do
@@ -231,7 +235,7 @@ docToChunks doc0 =
         go docs
 
     go (Indent {..} : docs) = do
-        local (\env -> env {deIndent = indentOtherLines : deIndent env}) $ do
+        local (\e -> e {deIndent = indentOtherLines : deIndent e}) $ do
             modify $ \(LineBuffer i c) -> LineBuffer (indentFirstLine : i) c
             go (unDoc indentDoc)
         go docs
@@ -257,8 +261,8 @@ docToChunks doc0 =
             Nothing     -> return hard
             Just maxCol -> do
                 -- Slow.
-                currentLine <- gets (concatMap chunkToString . bufferToChunks)
-                let currentCol = wcstrwidth currentLine
+                currentLine <- gets bufferToChunks
+                let currentCol = wcchunkswidth currentLine
                 case nextWordLength docs of
                     Nothing                            -> return hard
                     Just l
@@ -283,6 +287,8 @@ docToChunks doc0 =
     nextWordLength (Ansi   {..} : xs) = nextWordLength (unDoc ansiDoc   ++ xs)
     nextWordLength (Indent {..} : xs) = nextWordLength (unDoc indentDoc ++ xs)
     nextWordLength (Control _ : _)    = Nothing
+
+    wcchunkswidth = wcstrwidth . concatMap chunkToString
 
 
 --------------------------------------------------------------------------------

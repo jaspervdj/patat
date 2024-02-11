@@ -179,33 +179,41 @@ prettyFragment ds (Fragment blocks) = vertical $
         []   -> mempty
         refs -> PP.hardline <> PP.vcat (map horizontal refs)
   where
+    Size rows columns = dsSize ds
+    Margins {..} = dsMargins ds
+
     vertical doc0 =
         mconcat (replicate top PP.hardline) <> doc0
       where
-        (Size rows _) = dsSize ds
-        top = case mTop (dsMargins ds) of
+        top = case mTop of
             Auto -> let (r, _) = PP.dimensions doc0 in (rows - r) `div` 2
             NotAuto x -> x
 
-    horizontal doc0 = wrap $ indent doc1
+    horizontal = horizontalIndent . horizontalWrap
+
+    horizontalIndent doc0 = PP.indent indentation indentation doc1
       where
-        (Size _ columns) = dsSize ds
-        Margins {..} = dsMargins ds
         doc1 = case (mLeft, mRight) of
             (Auto, Auto) -> PP.deindent doc0
             _            -> doc0
         (_, dcols) = PP.dimensions doc1
-        wrap = if dsWrap ds then PP.wrapAt (Just $ columns - right) else id
-        right = case mRight of
-            Auto      -> 0
-            NotAuto x -> x
         left = case mLeft of
             NotAuto x -> x
             Auto      -> case mRight of
                 NotAuto _ -> 0
                 Auto      -> (columns - dcols) `div` 2
         indentation = PP.Indentation left mempty
-        indent = PP.indent indentation indentation
+
+    horizontalWrap doc0
+        | dsWrap ds = PP.wrapAt (Just $ columns - right - left) doc0
+        | otherwise = doc0
+      where
+        right = case mRight of
+            Auto      -> 0
+            NotAuto x -> x
+        left = case mLeft of
+            Auto      -> 0
+            NotAuto x -> x
 
 
 --------------------------------------------------------------------------------
