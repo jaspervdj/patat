@@ -78,9 +78,9 @@ data Presentation = Presentation
 
 --------------------------------------------------------------------------------
 data Margins = Margins
-    { mTop   :: Int
-    , mLeft  :: Int
-    , mRight :: Int
+    { mTop   :: AutoOr Int
+    , mLeft  :: AutoOr Int
+    , mRight :: AutoOr Int
     } deriving (Show)
 
 
@@ -92,8 +92,10 @@ margins ps = Margins
     , mTop   = get 1 msTop
     }
   where
-    get def f = fromMaybe def . fmap A.unFlexibleNum $ psMargins ps >>= f
-
+    get def f = case psMargins ps >>= f of
+        Just Auto         -> Auto
+        Nothing           -> NotAuto def
+        Just (NotAuto fn) -> NotAuto $ A.unFlexibleNum fn
 
 --------------------------------------------------------------------------------
 data Slide = Slide

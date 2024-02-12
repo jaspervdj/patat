@@ -23,6 +23,7 @@ import           Patat.Presentation.Display.CodeBlock
 import           Patat.Presentation.Display.Internal
 import           Patat.Presentation.Display.Table
 import           Patat.Presentation.Internal
+import           Patat.Presentation.Settings
 import           Patat.PrettyPrint                    ((<$$>), (<+>))
 import qualified Patat.PrettyPrint                    as PP
 import           Patat.Size
@@ -41,7 +42,7 @@ data Display = DisplayDoc PP.Doc | DisplayImage FilePath deriving (Show)
 -- | Display something within the presentation borders that draw the title and
 -- the active slide number and so on.
 displayWithBorders
-    :: Size -> Presentation -> (Size -> DisplaySettings -> PP.Doc) -> PP.Doc
+    :: Size -> Presentation -> (DisplaySettings -> PP.Doc) -> PP.Doc
 displayWithBorders (Size rows columns) pres@Presentation {..} f =
     (if null title
         then mempty
@@ -49,18 +50,20 @@ displayWithBorders (Size rows columns) pres@Presentation {..} f =
             let titleRemainder = columns - titleWidth - titleOffset
                 wrappedTitle = PP.spaces titleOffset <> PP.string title <> PP.spaces titleRemainder in
         borders wrappedTitle <> PP.hardline) <>
-    mconcat (replicate topMargin PP.hardline) <>
-    formatWith settings (f canvasSize ds) <> PP.hardline <>
+    f ds <> PP.hardline <>
     PP.goToLine (rows - 2) <>
     borders (PP.space <> PP.string author <> middleSpaces <> PP.string active <> PP.space) <>
     PP.hardline
   where
     -- Get terminal width/title
-    (sidx, _)   = pActiveFragment
-    settings    = (activeSettings pres) {psColumns = Just $ A.FlexibleNum columns}
-    ds          = DisplaySettings
-        { dsTheme     = fromMaybe Theme.defaultTheme (psTheme settings)
-        , dsSyntaxMap = pSyntaxMap
+    (sidx, _) = pActiveFragment
+    settings  = activeSettings pres
+    ds        = DisplaySettings
+        { dsSize          = canvasSize
+        , dsWrap          = fromMaybe False $ psWrap settings
+        , dsMargins       = margins settings
+        , dsTheme         = fromMaybe Theme.defaultTheme (psTheme settings)
+        , dsSyntaxMap     = pSyntaxMap
         }
 
     -- Compute title.
@@ -82,8 +85,7 @@ displayWithBorders (Size rows columns) pres@Presentation {..} f =
     borders     = themed ds themeBorders
 
     -- Room left for content
-    topMargin  = mTop $ margins settings
-    canvasSize = Size (rows - 2 - topMargin) columns
+    canvasSize = Size (rows - 3) columns
 
     -- Compute footer.
     active
@@ -105,18 +107,12 @@ displayPresentation size pres@Presentation {..} =
                 , Just image <- onlyImage fragment ->
             DisplayImage $ T.unpack image
         Just (ActiveContent fragment) -> DisplayDoc $
-            displayWithBorders size pres $ \_canvasSize theme ->
+            displayWithBorders size pres $ \theme ->
                 prettyFragment theme fragment
         Just (ActiveTitle block) -> DisplayDoc $
-            displayWithBorders size pres $ \canvasSize theme ->
-            let pblock         = prettyBlock theme block
-                (prows, pcols) = PP.dimensions pblock
-                Margins {..}   = margins (activeSettings pres)
-                offsetRow      = (sRows canvasSize `div` 2) - (prows `div` 2)
-                offsetCol      = ((sCols canvasSize - mLeft - mRight) `div` 2) - (pcols `div` 2)
-                spaces         = PP.Indentation offsetCol mempty in
-            mconcat (replicate (offsetRow - 3) PP.hardline) <$$>
-            PP.indent spaces spaces pblock
+            displayWithBorders size pres $ \ds ->
+                let auto = Margins {mTop = Auto, mRight = Auto, mLeft = Auto} in
+                prettyFragment ds {dsMargins = auto} $ Fragment [block]
 
   where
     -- Check if the fragment consists of "just a single image".  Discard
@@ -132,11 +128,10 @@ displayPresentation size pres@Presentation {..} =
 -- | Displays an error in the place of the presentation.  This is useful if we
 -- want to display an error but keep the presentation running.
 displayPresentationError :: Size -> Presentation -> String -> PP.Doc
-displayPresentationError size pres err =
-    displayWithBorders size pres $ \_ ds ->
-        themed ds themeStrong "Error occurred in the presentation:" <$$>
-        "" <$$>
-        (PP.string err)
+displayPresentationError size pres err = displayWithBorders size pres $ \ds ->
+    themed ds themeStrong "Error occurred in the presentation:" <$$>
+    "" <$$>
+    (PP.string err)
 
 
 --------------------------------------------------------------------------------
@@ -149,11 +144,10 @@ dumpPresentation pres@Presentation {..} =
     dumpSlide :: Int -> [PP.Doc]
     dumpSlide i = do
         slide <- maybeToList $ getSlide i pres
-        map (formatWith (getSettings i pres)) $
-            dumpComment slide <> L.intercalate ["{fragment}"]
-                [ dumpFragment (i, j)
-                | j <- [0 .. numFragments slide - 1]
-                ]
+        dumpComment slide <> L.intercalate ["{fragment}"]
+            [ dumpFragment (i, j)
+            | j <- [0 .. numFragments slide - 1]
+            ]
 
     dumpComment :: Slide -> [PP.Doc]
     dumpComment slide = do
@@ -178,24 +172,48 @@ dumpPresentation pres@Presentation {..} =
 
 
 --------------------------------------------------------------------------------
-formatWith :: PresentationSettings -> PP.Doc -> PP.Doc
-formatWith ps = wrap . indent
-  where
-    Margins {..} = margins ps
-    wrap = case (psWrap ps, psColumns ps) of
-        (Just True,  Just (A.FlexibleNum col)) -> PP.wrapAt (Just $ col - mRight)
-        _                                      -> id
-    spaces = PP.Indentation mLeft mempty
-    indent = PP.indent spaces spaces
-
-
---------------------------------------------------------------------------------
 prettyFragment :: DisplaySettings -> Fragment -> PP.Doc
-prettyFragment ds (Fragment blocks) =
-    prettyBlocks ds blocks <>
+prettyFragment ds (Fragment blocks) = vertical $
+    PP.vcat (map (horizontal . prettyBlock ds) blocks) <>
     case prettyReferences ds blocks of
         []   -> mempty
-        refs -> PP.hardline <> PP.vcat refs
+        refs -> PP.hardline <> PP.vcat (map horizontal refs)
+  where
+    Size rows columns = dsSize ds
+    Margins {..} = dsMargins ds
+
+    vertical doc0 =
+        mconcat (replicate top PP.hardline) <> doc0
+      where
+        top = case mTop of
+            Auto -> let (r, _) = PP.dimensions doc0 in (rows - r) `div` 2
+            NotAuto x -> x
+
+    horizontal = horizontalIndent . horizontalWrap
+
+    horizontalIndent doc0 = PP.indent indentation indentation doc1
+      where
+        doc1 = case (mLeft, mRight) of
+            (Auto, Auto) -> PP.deindent doc0
+            _            -> doc0
+        (_, dcols) = PP.dimensions doc1
+        left = case mLeft of
+            NotAuto x -> x
+            Auto      -> case mRight of
+                NotAuto _ -> 0
+                Auto      -> (columns - dcols) `div` 2
+        indentation = PP.Indentation left mempty
+
+    horizontalWrap doc0
+        | dsWrap ds = PP.wrapAt (Just $ columns - right - left) doc0
+        | otherwise = doc0
+      where
+        right = case mRight of
+            Auto      -> 0
+            NotAuto x -> x
+        left = case mLeft of
+            Auto      -> 0
+            NotAuto x -> x
 
 
 --------------------------------------------------------------------------------
