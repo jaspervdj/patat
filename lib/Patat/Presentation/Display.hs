@@ -60,7 +60,7 @@ displayWithBorders (Size rows columns) pres@Presentation {..} f =
     settings  = activeSettings pres
     ds        = DisplaySettings
         { dsSize          = canvasSize
-        , dsWrap          = fromMaybe False $ psWrap settings
+        , dsWrap          = fromMaybe NoWrap $ psWrap settings
         , dsMargins       = margins settings
         , dsTheme         = fromMaybe Theme.defaultTheme (psTheme settings)
         , dsSyntaxMap     = pSyntaxMap
@@ -204,9 +204,10 @@ prettyFragment ds (Fragment blocks) = vertical $
                 Auto      -> (columns - dcols) `div` 2
         indentation = PP.Indentation left mempty
 
-    horizontalWrap doc0
-        | dsWrap ds = PP.wrapAt (Just $ columns - right - left) doc0
-        | otherwise = doc0
+    horizontalWrap doc0 = case dsWrap ds of
+        NoWrap     -> doc0
+        AutoWrap   -> PP.wrapAt (Just $ columns - right - left) doc0
+        WrapAt col -> PP.wrapAt (Just col) doc0
       where
         right = case mRight of
             Auto      -> 0
