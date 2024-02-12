@@ -2,7 +2,7 @@
 
 ## unreleased
 
- *  Add  Support centering content with auto margins #164
+ *  Support centering content with auto margins (#164)
 
     Configuration is done through the existing `margins` setting.
 
