@@ -2,6 +2,11 @@
 
 ## unreleased
 
+ *  Support wrapping at a specific column (#164)
+
+    Using a specific wrap column, e.g. `wrap: 60`, works well together with
+    `auto` margins (see below).
+
  *  Support centering content with auto margins (#164)
 
     Configuration is done through the existing `margins` setting.
