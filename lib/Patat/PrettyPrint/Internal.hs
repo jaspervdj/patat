@@ -34,7 +34,7 @@ module Patat.PrettyPrint.Internal
 --------------------------------------------------------------------------------
 import           Control.Monad.Reader       (asks, local)
 import           Control.Monad.RWS          (RWS, runRWS)
-import           Control.Monad.State        (get, gets, modify)
+import           Control.Monad.State        (get, modify)
 import           Control.Monad.Writer       (tell)
 import           Data.Char.WCWidth.Extended (wcstrwidth)
 import qualified Data.List                  as L
@@ -162,8 +162,14 @@ type DocM = RWS DocEnv Chunks LineBuffer
 
 
 --------------------------------------------------------------------------------
--- | Note that these are reversed so we have fast append
-data LineBuffer = LineBuffer [Indentation [Chunk]] [Chunk]
+-- | Note that the lists here are reversed so we have fast append.
+-- We also store the current length to avoid having to recompute it.
+data LineBuffer = LineBuffer Int [Indentation [Chunk]] [Chunk]
+
+
+--------------------------------------------------------------------------------
+emptyLineBuffer :: LineBuffer
+emptyLineBuffer = LineBuffer 0 [] []
 
 
 --------------------------------------------------------------------------------
@@ -178,8 +184,14 @@ indentationToChunks (Indentation n c) = StringChunk [] (replicate n ' ') : c
 
 
 --------------------------------------------------------------------------------
+indentationWidth :: Indentation [Chunk] -> Int
+indentationWidth (Indentation s c) =
+    s + sum (map (wcstrwidth . chunkToString) c)
+
+
+--------------------------------------------------------------------------------
 bufferToChunks :: LineBuffer -> Chunks
-bufferToChunks (LineBuffer ind chunks) = case chunks of
+bufferToChunks (LineBuffer _ ind chunks) = case chunks of
     [] -> concatMap indentationToChunks $ reverse $
         dropWhile emptyIndentation ind
     _ -> concatMap indentationToChunks (reverse ind) ++ reverse chunks
@@ -192,7 +204,7 @@ bufferToChunks (LineBuffer ind chunks) = case chunks of
 docToChunks :: Doc -> Chunks
 docToChunks doc0 =
     let env0        = DocEnv [] [] Nothing
-        ((), b, cs) = runRWS (go $ unDoc doc0) env0 (LineBuffer [] []) in
+        ((), b, cs) = runRWS (go $ unDoc doc0) env0 emptyLineBuffer in
     optimizeChunks (cs <> bufferToChunks b)
   where
     go :: [DocE Doc] -> DocM ()
@@ -220,12 +232,14 @@ docToChunks doc0 =
     go (Hardline : docs) = do
         buffer <- get
         tell $ bufferToChunks buffer <> [NewlineChunk]
-        indentation <- asks deIndent
-        modify $ \_ -> LineBuffer (if L.null docs then [] else indentation) []
+        ind <- asks deIndent
+        modify $ \_ -> case docs of
+            []    -> emptyLineBuffer
+            _ : _ -> LineBuffer (sum $ map indentationWidth ind) ind []
         go docs
 
     go (WrapAt {..} : docs) = do
-        il <- asks $ wcchunkswidth . concatMap indentationToChunks . deIndent
+        il <- asks $ sum . map indentationWidth . deIndent
         local (\env -> env {deWrap = fmap (+ il) wrapAtCol}) $ go (unDoc wrapDoc)
         go docs
 
@@ -236,7 +250,8 @@ docToChunks doc0 =
 
     go (Indent {..} : docs) = do
         local (\e -> e {deIndent = indentOtherLines : deIndent e}) $ do
-            modify $ \(LineBuffer i c) -> LineBuffer (indentFirstLine : i) c
+            modify $ \(LineBuffer w i c) -> LineBuffer
+                (w + indentationWidth indentFirstLine) (indentFirstLine : i) c
             go (unDoc indentDoc)
         go docs
 
@@ -251,7 +266,8 @@ docToChunks doc0 =
         return $ StringChunk codes str
 
     appendChunk :: Chunk -> DocM ()
-    appendChunk c = modify $ \(LineBuffer i cs) -> LineBuffer i (c : cs)
+    appendChunk c = modify $ \(LineBuffer w i cs) ->
+        LineBuffer (w + wcstrwidth (chunkToString c)) i (c : cs)
 
     -- Convert 'Softspace' or 'Softline' to 'Hardspace' or 'Hardline'
     softConversion :: DocE Doc -> [DocE Doc] -> DocM (DocE Doc)
@@ -260,9 +276,7 @@ docToChunks doc0 =
         case mbWrapCol of
             Nothing     -> return hard
             Just maxCol -> do
-                -- Slow.
-                currentLine <- gets bufferToChunks
-                let currentCol = wcchunkswidth currentLine
+                LineBuffer currentCol _ _ <- get
                 case nextWordLength docs of
                     Nothing                            -> return hard
                     Just l
@@ -287,8 +301,6 @@ docToChunks doc0 =
     nextWordLength (Ansi   {..} : xs) = nextWordLength (unDoc ansiDoc   ++ xs)
     nextWordLength (Indent {..} : xs) = nextWordLength (unDoc indentDoc ++ xs)
     nextWordLength (Control _ : _)    = Nothing
-
-    wcchunkswidth = wcstrwidth . concatMap chunkToString
 
 
 --------------------------------------------------------------------------------
