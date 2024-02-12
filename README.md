@@ -301,7 +301,8 @@ are several places where you can put your configuration.
 ### Line wrapping
 
 Line wrapping can be enabled by setting `wrap: true` in the configuration.  This
-will re-wrap all lines to fit the terminal width better.
+will re-wrap all lines to fit the terminal width better.  You can also ask patat
+to wrap at a specific column using e.g. `wrap: 60`.
 
 ### Margins
 
@@ -352,8 +353,8 @@ patat:
 Hello world
 ```
 
-Setting `wrap: true` is recommended when vertically centering content if there
-are any lines that are too wide for the terminal.
+[Line wrapping](#line-wrapping) is recommended when vertically centering content
+if there are any lines that are too wide for the terminal.
 
 ### Auto advancing
 

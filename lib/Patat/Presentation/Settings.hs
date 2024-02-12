@@ -6,6 +6,7 @@ module Patat.Presentation.Settings
     ( PresentationSettings (..)
     , defaultPresentationSettings
 
+    , Wrap (..)
     , AutoOr (..)
     , MarginSettings (..)
 
@@ -25,6 +26,7 @@ module Patat.Presentation.Settings
 
 
 --------------------------------------------------------------------------------
+import           Control.Applicative    ((<|>))
 import           Control.Monad          (mplus)
 import qualified Data.Aeson.Extended    as A
 import qualified Data.Aeson.TH.Extended as A
@@ -46,7 +48,7 @@ data PresentationSettings = PresentationSettings
     { psRows              :: !(Maybe (A.FlexibleNum Int))
     , psColumns           :: !(Maybe (A.FlexibleNum Int))
     , psMargins           :: !(Maybe MarginSettings)
-    , psWrap              :: !(Maybe Bool)
+    , psWrap              :: !(Maybe Wrap)
     , psTheme             :: !(Maybe Theme.Theme)
     , psIncrementalLists  :: !(Maybe Bool)
     , psAutoAdvanceDelay  :: !(Maybe (A.FlexibleNum Int))
@@ -99,6 +101,17 @@ defaultPresentationSettings = mempty
     { psMargins = Nothing
     , psTheme   = Just Theme.defaultTheme
     }
+
+
+--------------------------------------------------------------------------------
+data Wrap = NoWrap | AutoWrap | WrapAt Int deriving (Show)
+
+
+--------------------------------------------------------------------------------
+instance A.FromJSON Wrap where
+    parseJSON val =
+        ((\w -> if w then AutoWrap else NoWrap) <$> A.parseJSON val) <|>
+        (WrapAt <$> A.parseJSON val)
 
 
 --------------------------------------------------------------------------------
