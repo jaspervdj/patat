@@ -1,6 +1,6 @@
 # Changelog
 
-## unreleased
+## 0.11.0.0 (2024-02-14)
 
  *  Support wrapping at a specific column (#164)
 
