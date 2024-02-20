@@ -21,7 +21,7 @@ feature-rich presentation tool that runs in the terminal.
 - [Centering](#centering) and [re-wrapping](#line-wrapping) text to terminal
   width with proper indentation.
 - [Theming](#theming) support including 24-bit RGB.
-- Hihgly portable as it only requires an ANSI terminal as opposed to
+- Highly portable as it only requires an ANSI terminal as opposed to
   something like `ncurses`.
 
 ![screenshot](extra/demo.gif?raw=true)
