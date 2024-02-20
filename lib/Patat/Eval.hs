@@ -72,10 +72,10 @@ evalBlock settings orig@(Pandoc.CodeBlock attr@(_, classes, _) txt)
                     evalCommand <> ": exit code " <> T.pack (show i) <> "\n" <>
                     erStderr
         let fmt = "eval"
-            blocks = case evalWrap of
-                EvalWrapCode      -> [Pandoc.CodeBlock attr out]
-                EvalWrapRaw       -> [Pandoc.RawBlock fmt out]
-                EvalWrapRawInline -> [Pandoc.Plain [Pandoc.RawInline fmt out]]
+            blocks = case evalContainer of
+                EvalContainerCode   -> [Pandoc.CodeBlock attr out]
+                EvalContainerNone   -> [Pandoc.RawBlock fmt out]
+                EvalContainerInline -> [Pandoc.Plain [Pandoc.RawInline fmt out]]
         pure $ case (evalFragment, evalReplace) of
             (False, True) -> [Append blocks]
             (False, False) -> [Append (orig : blocks)]

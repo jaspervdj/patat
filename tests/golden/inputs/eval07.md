@@ -7,17 +7,17 @@ patat:
       fragment: false
     shCode:
       command: sh
-      wrap: code
+      container: code
       replace: true
       fragment: false
-    shRaw:
+    shNone:
       command: sh
-      wrap: raw
+      container: none
       replace: true
       fragment: false
     shInline:
       command: sh
-      wrap: rawInline
+      container: inline
       replace: true
       fragment: false
 ...
@@ -34,15 +34,15 @@ printf '\e[1;34m%-6s\e[m' "This is text"
 printf '\e[1;34m%-6s\e[m' "This is text"
 ~~~
 
-# Raw eval slide
+# None eval slide
 
-~~~{.shRaw}
+~~~{.shNone}
 printf '\e[1;34m%-6s\e[m' "This is text"
 ~~~
 
 Newline here...
 
-# Raw Inline eval slide
+# Inline eval slide
 
 ~~~{.shInline}
 printf '\e[1;34m%-6s\e[m' "This is text"
