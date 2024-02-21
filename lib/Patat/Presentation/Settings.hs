@@ -16,7 +16,7 @@ module Patat.Presentation.Settings
     , ImageSettings (..)
 
     , EvalSettingsMap
-    , EvalSettingsWrap (..)
+    , EvalSettingsContainer (..)
     , EvalSettings (..)
 
     , SpeakerNotesSettings (..)
@@ -221,38 +221,52 @@ type EvalSettingsMap = HMS.HashMap T.Text EvalSettings
 
 
 --------------------------------------------------------------------------------
-data EvalSettingsWrap
-    = EvalWrapCode
-    | EvalWrapRaw
-    | EvalWrapRawInline
+data EvalSettingsContainer
+    = EvalContainerCode
+    | EvalContainerNone
+    | EvalContainerInline
     deriving (Show)
 
 
 --------------------------------------------------------------------------------
-instance A.FromJSON EvalSettingsWrap where
-    parseJSON = A.withText "FromJSON EvalSettingsWrap" $ \txt -> case txt of
-        "code"      -> pure EvalWrapCode
-        "raw"       -> pure EvalWrapRaw
-        "rawInline" -> pure EvalWrapRawInline
-        _           -> fail $ "unknown wrap: " <> show txt
+instance A.FromJSON EvalSettingsContainer where
+    parseJSON = A.withText "FromJSON EvalSettingsContainer" $ \t -> case t of
+        "code"      -> pure EvalContainerCode
+        "none"      -> pure EvalContainerNone
+        "inline"    -> pure EvalContainerInline
+        -- Deprecated names
+        "raw"       -> pure EvalContainerNone
+        "rawInline" -> pure EvalContainerInline
+        _           -> fail $ "unknown container: " <> show t
 
 
 --------------------------------------------------------------------------------
 data EvalSettings = EvalSettings
-    { evalCommand  :: !T.Text
-    , evalReplace  :: !Bool
-    , evalFragment :: !Bool
-    , evalWrap     :: !EvalSettingsWrap
+    { evalCommand   :: !T.Text
+    , evalReplace   :: !Bool
+    , evalFragment  :: !Bool
+    , evalContainer :: !EvalSettingsContainer
     } deriving (Show)
 
 
 --------------------------------------------------------------------------------
 instance A.FromJSON EvalSettings where
     parseJSON = A.withObject "FromJSON EvalSettings" $ \o -> EvalSettings
-        <$> o A..: "command"
+        <$> o A..:  "command"
         <*> o A..:? "replace"  A..!= False
         <*> o A..:? "fragment" A..!= True
-        <*> o A..:? "wrap"     A..!= EvalWrapCode
+        <*> deprecated "wrap" "container" EvalContainerCode o
+      where
+        deprecated old new def obj = do
+            mo <- obj A..:? old
+            mn <- obj A..:? new
+            case (mo, mn) of
+                (Just _, Just _)   -> fail $
+                    show old ++ " (deprecated) and " ++ show new ++ " " ++
+                    "are both specified, please remove " ++ show old
+                (Just o, Nothing)  -> pure o
+                (Nothing, Just n)  -> pure n
+                (Nothing, Nothing) -> pure def
 
 
 --------------------------------------------------------------------------------

@@ -611,7 +611,7 @@ empty list `[]`.
 
 #### Native Images support
 
-`patat-0.8.0.0` and newer include images support for some terminal emulators.
+Version 0.8 and later include images support for some terminal emulators.
 
 ```markdown
 ---
@@ -656,7 +656,7 @@ write ASCII escape codes directly to the screen with
 [code evaluation](#evaluating-code).
 
 In order to do that, for example, we could configure `kitten` code snippets
-to evaluate using [Kitty]'s command `icat`.  This uses the `rawInline` code
+to evaluate using [Kitty]'s command `icat`.  This uses the `none` container
 setting to ensure that the resulting output is not wrapped in a code block,
 and the `fragment` and `replace` settings immediately replace the snippet.
 
@@ -667,7 +667,7 @@ and the `fragment` and `replace` settings immediately replace the snippet.
           command: sed 's/^/kitten /' | bash
           replace: true
           fragment: false
-          wrap: rawInline
+          container: none
     ...
 
     See, for example:
@@ -712,7 +712,7 @@ _evaluator_ by specifying this in the YAML metadata:
           command: irb --noecho --noverbose
           fragment: true  # Optional
           replace: false  # Optional
-          wrap: code  # Optional
+          container: code  # Optional
     ...
 
     Here is an example of a code block that is evaluated:
@@ -728,18 +728,20 @@ attribute on a code block matches the evaluator, it will be used.
 code of presentations downloaded from the internet before running them if they
 contain `eval` settings.
 
-Aside from the command, there are two more options:
+Aside from the command, there are three more options:
 
  -  `fragment`: Introduce a pause (see [fragments](#fragmented-slides)) in
     between showing the original code block and the output.  Defaults to `true`.
  -  `replace`: Remove the original code block and replace it with the output
     rather than appending the output in a new code block.  Defaults to `false`.
- -  `wrap`: By default, the output is wrapped in a code block again with the
-    original syntax highlighting.  You can customize this behaviour by setting
-    `wrap` to:
+ -  `container`: By default, the output is wrapped in a code block again with
+    the original syntax highlighting.  You can customize this behaviour by
+    setting `container` to:
      *  `code`: the default setting.
-     *  `raw`: no formatting applied.
-     *  `rawInline`: no formatting applied and no trailing newline.
+     *  `none`: no formatting applied.
+     *  `inline`: no formatting applied and no trailing newline.
+ -  `wrap`: this is a deprecated name for `container`, used in version 0.11 and
+    earlier.
 
 Setting `fragment: false` and `replace: true` offers a way to "filter" code
 blocks, which can be used to render ASCII graphics.
