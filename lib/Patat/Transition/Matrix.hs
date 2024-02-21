@@ -62,11 +62,12 @@ transition config (Size rows cols) initial final rgen =
     initialParticles = do
         (x, y, cell) <- posCells initial
         let idx = y * cols + x
+        speed <- [speeds V.! idx, speeds V.! idx * 1.5, speeds V.! idx * 2]
         pure Particle
             { pX        = fromIntegral x
             , pInitialY = fromIntegral y
             , pFinalY   = if up V.! idx then 0 else fromIntegral rows
-            , pSpeed    = speeds V.! idx
+            , pSpeed    = speed
             , pCell     = cell
             }
 
@@ -74,11 +75,12 @@ transition config (Size rows cols) initial final rgen =
     finalParticles = do
         (x, y, cell) <- posCells final
         let idx = y * cols + x
+        speed <- [speeds V.! idx, speeds V.! idx * 1.5, speeds V.! idx * 2]
         pure Particle
             { pX        = fromIntegral x
-            , pInitialY = if up V.! idx then 0 else fromIntegral rows
+            , pInitialY = if up V.! idx then -1 else fromIntegral rows
             , pFinalY   = fromIntegral y
-            , pSpeed    = speeds V.! idx
+            , pSpeed    = speed
             , pCell     = cell
             }
 
