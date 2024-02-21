@@ -255,19 +255,18 @@ instance A.FromJSON EvalSettings where
         <$> o A..:  "command"
         <*> o A..:? "replace"  A..!= False
         <*> o A..:? "fragment" A..!= True
-        <*> containerOrWrap o
+        <*> deprecated "wrap" "container" EvalContainerCode o
       where
-        -- "wrap" is the deprecated name for "container".
-        containerOrWrap o = do
-            mw <- o A..:? "wrap"
-            mc <- o A..:? "container"
-            case (mw, mc) of
+        deprecated old new def obj = do
+            mo <- obj A..:? old
+            mn <- obj A..:? new
+            case (mo, mn) of
                 (Just _, Just _)   -> fail $
-                    "EvalSettings: \"wrap\" (deprecated) and \"container\" " ++
-                    "are both specified, please remove \"wrap\""
-                (Just w, Nothing)  -> pure w
-                (Nothing, Just c)  -> pure c
-                (Nothing, Nothing) -> pure EvalContainerCode  -- Default
+                    show old ++ " (deprecated) and " ++ show new ++ " " ++
+                    "are both specified, please remove " ++ show old
+                (Just o, Nothing)  -> pure o
+                (Nothing, Just n)  -> pure n
+                (Nothing, Nothing) -> pure def
 
 
 --------------------------------------------------------------------------------
