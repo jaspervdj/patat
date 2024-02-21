@@ -611,7 +611,7 @@ empty list `[]`.
 
 #### Native Images support
 
-`patat-0.8.0.0` and newer include images support for some terminal emulators.
+Version 0.8 and later include images support for some terminal emulators.
 
 ```markdown
 ---
@@ -740,7 +740,8 @@ Aside from the command, there are three more options:
      *  `code`: the default setting.
      *  `none`: no formatting applied.
      *  `inline`: no formatting applied and no trailing newline.
- -  `wrap`: this is a deprecated name for `container`.
+ -  `wrap`: this is a deprecated name for `container`, used in version 0.11 and
+    earlier.
 
 Setting `fragment: false` and `replace: true` offers a way to "filter" code
 blocks, which can be used to render ASCII graphics.
