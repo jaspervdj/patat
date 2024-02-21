@@ -266,7 +266,8 @@ are several places where you can put your configuration.
     Hello world.
     ```
 
-3.  Within a slide, using a comment starting with `<!--config:`.  These
+3.  In version 0.10 and later slides can be individually configured.
+    Within a slide, using a comment starting with `<!--config:`.  These
     settings can override configuration for that specific slide only.
     There should not be any whitespace between `<!--` and `config:`.
 
@@ -336,8 +337,12 @@ set to 1.
 
 #### Centering
 
-To vertically center content, use `top: auto`. To horizontally center content,
-use both `left: auto` and `right: auto`.  For example:
+Version 0.11 and later can center content.
+
+ -  To vertically center content, use `top: auto`.
+ -  To horizontally center content, use both `left: auto` and `right: auto`.
+
+For example:
 
 ```markdown
 ---
@@ -768,7 +773,7 @@ This feature works by simply by:
 
 ### Speaker Notes
 
-`patat` supports comments which can be used as speaker notes.
+Version 0.9 and later support comments which can be used as speaker notes.
 
 ```markdown
 ---
@@ -819,10 +824,10 @@ to start with `<!-- config:`; the lack of whitespace matters.
 
 ### Transitions
 
-`patat` supports transitions in between slides.  A relatively fast terminal
-emulator (e.g. [Alacritty], [Kitty], [iTerm2])
-is suggested when enabling this, to avoid too much flickering -- some
-flickering is unavoidable since we redraw the entire screen on each frame.
+Version 0.10 and later support transitions in between slides.  A relatively
+fast terminal emulator (e.g. [Alacritty], [Kitty], [iTerm2]) is suggested when
+enabling this, to avoid too much flickering -- some flickering is unavoidable
+since we redraw the entire screen on each frame.
 
 ```yaml
 patat:
