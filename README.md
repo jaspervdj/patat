@@ -303,7 +303,13 @@ are several places where you can put your configuration.
 
 Line wrapping can be enabled by setting `wrap: true` in the configuration.  This
 will re-wrap all lines to fit the terminal width better.  You can also ask patat
-to wrap at a specific column using e.g. `wrap: 60`.
+to wrap at a specific column using `wrap: number`, e.g. `wrap: 60`.
+
+### Tab stop
+
+In version 0.12 and later, the amount of spaces a `\t` character in a code block
+aligns to can be customized by setting `tabStop: number` in the configuration.
+The default is `4`.
 
 ### Margins
 

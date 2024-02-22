@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.0.0 (unreleased)
+
+ *  Render tabs in code blocks by expanding them to spaces.  The amount of
+    spaces a tab character aligns to is customizable using `tabStop`, e.g.
+    `tabStop: 8`.  The default is 4.
+
 ## 0.11.0.0 (2024-02-14)
 
  *  Support wrapping at a specific column (#164)

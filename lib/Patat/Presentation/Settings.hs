@@ -49,6 +49,7 @@ data PresentationSettings = PresentationSettings
     , psColumns           :: !(Maybe (A.FlexibleNum Int))
     , psMargins           :: !(Maybe MarginSettings)
     , psWrap              :: !(Maybe Wrap)
+    , psTabStop           :: !(Maybe (A.FlexibleNum Int))
     , psTheme             :: !(Maybe Theme.Theme)
     , psIncrementalLists  :: !(Maybe Bool)
     , psAutoAdvanceDelay  :: !(Maybe (A.FlexibleNum Int))
@@ -71,6 +72,7 @@ instance Semigroup PresentationSettings where
         , psColumns           = on mplus psColumns           l r
         , psMargins           = on (<>)  psMargins           l r
         , psWrap              = on mplus psWrap              l r
+        , psTabStop           = on mplus psTabStop           l r
         , psTheme             = on (<>)  psTheme             l r
         , psIncrementalLists  = on mplus psIncrementalLists  l r
         , psAutoAdvanceDelay  = on mplus psAutoAdvanceDelay  l r
@@ -90,9 +92,9 @@ instance Semigroup PresentationSettings where
 instance Monoid PresentationSettings where
     mappend = (<>)
     mempty  = PresentationSettings
-                    Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-                    Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-                    Nothing Nothing
+                Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+                Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+                Nothing
 
 
 --------------------------------------------------------------------------------
