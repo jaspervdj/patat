@@ -6,6 +6,21 @@
     spaces a tab character aligns to is customizable using `tabStop`, e.g.
     `tabStop: 8`.  The default is 4.
 
+ *  Rename eval.wrap to eval.container (#167)
+
+    `wrap` is used at the top-level of settings for wrapping at a certain
+    column, and inside `eval` to determine the type in which the result
+    is "wrapped". Using the same name for both is confusing, so this adds
+    `eval.container` as the new name for `eval.wrap`. `eval.wrap` will continue
+    to be supported for the forseeable future, but its use will be discouraged.
+
+    This also changes the values (again keeping the original ones for
+    backwards-compat), so the complete changes to a configuration would be:
+
+     -   `wrap: code` becomes `container: code`
+     -   `wrap: raw` becomes `container: none`
+     -   `wrap: rawInline` becomes `container: inline`
+
 ## 0.11.0.0 (2024-02-14)
 
  *  Support wrapping at a specific column (#164)

@@ -42,6 +42,7 @@ Table of Contents
 -   [Input format](#input-format)
 -   [Configuration](#configuration)
     -   [Line wrapping](#line-wrapping)
+    -   [Tab stop](#tab-stop)
     -   [Margins](#margins)
     -   [Auto advancing](#auto-advancing)
     -   [Advanced slide splitting](#advanced-slide-splitting)
