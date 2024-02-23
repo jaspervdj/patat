@@ -18,6 +18,7 @@ import qualified Skylighting                 as Skylighting
 data DisplaySettings = DisplaySettings
     { dsSize      :: !Size
     , dsWrap      :: !Wrap
+    , dsTabStop   :: !Int
     , dsMargins   :: !Margins
     , dsTheme     :: !Theme.Theme
     , dsSyntaxMap :: !Skylighting.SyntaxMap

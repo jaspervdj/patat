@@ -60,8 +60,9 @@ displayWithBorders (Size rows columns) pres@Presentation {..} f =
     settings  = activeSettings pres
     ds        = DisplaySettings
         { dsSize          = canvasSize
-        , dsWrap          = fromMaybe NoWrap $ psWrap settings
         , dsMargins       = margins settings
+        , dsWrap          = fromMaybe NoWrap $ psWrap settings
+        , dsTabStop       = maybe 4 A.unFlexibleNum $ psTabStop settings
         , dsTheme         = fromMaybe Theme.defaultTheme (psTheme settings)
         , dsSyntaxMap     = pSyntaxMap
         }
