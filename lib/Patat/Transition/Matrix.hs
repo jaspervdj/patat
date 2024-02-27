@@ -43,6 +43,20 @@ particleY p t = pInitialY p * (1 - t') + pFinalY p * t'
 
 
 --------------------------------------------------------------------------------
+-- | Maximum speed of a particle, expressed as a factor of the minimum speed of
+-- a particle.
+particleMaxSpeed :: Double
+particleMaxSpeed = 2
+
+
+--------------------------------------------------------------------------------
+-- | Number of ghosts a particle leaves behind.  Currently hardcoded but could
+-- be moved to config.
+particleGhosts :: Int
+particleGhosts = 3
+
+
+--------------------------------------------------------------------------------
 transition :: Config -> TransitionGen
 transition config (Size rows cols) initial final rgen =
     first frame <$>
@@ -52,17 +66,23 @@ transition config (Size rows cols) initial final rgen =
   where
     speeds :: V.Vector Double
     speeds = runStateGen_ rgen $ \g ->
-        V.replicateM (rows * cols) (uniformRM (1, 3) g)
+        V.replicateM (rows * cols) (uniformRM (1, particleMaxSpeed) g)
 
     up :: V.Vector Bool
     up = runStateGen_ rgen $ \g ->
         V.replicateM (rows * cols) (uniformM g)
 
+    ghosts :: Double -> [Double]
+    ghosts baseSpeed =
+        [ baseSpeed * (1 + fromIntegral i / fromIntegral particleGhosts)
+        | i <- [0 .. particleGhosts]
+        ]
+
     initialParticles :: [Particle]
     initialParticles = do
         (x, y, cell) <- posCells initial
         let idx = y * cols + x
-        speed <- [speeds V.! idx, speeds V.! idx * 1.5, speeds V.! idx * 2]
+        speed <- ghosts $ speeds V.! idx
         pure Particle
             { pX        = fromIntegral x
             , pInitialY = fromIntegral y
@@ -75,7 +95,7 @@ transition config (Size rows cols) initial final rgen =
     finalParticles = do
         (x, y, cell) <- posCells final
         let idx = y * cols + x
-        speed <- [speeds V.! idx, speeds V.! idx * 1.5, speeds V.! idx * 2]
+        speed <- ghosts $ speeds V.! idx
         pure Particle
             { pX        = fromIntegral x
             , pInitialY = if up V.! idx then -1 else fromIntegral rows
