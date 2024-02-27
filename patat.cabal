@@ -97,6 +97,7 @@ Library
     Patat.Transition
     Patat.Transition.Internal
     Patat.Transition.Dissolve
+    Patat.Transition.Matrix
     Patat.Transition.SlideLeft
 
   Other-modules:

@@ -865,6 +865,7 @@ Supported transitions `type`s:
 
  -  `slideLeft`: slides the new slide in from right to left.
  -  `dissolve`: changes characters over time.
+ -  `matrix`: loosely inspired by the 1999 science fiction movie.
 
 All transitions currently take these arguments:
 

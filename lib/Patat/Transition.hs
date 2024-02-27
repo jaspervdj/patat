@@ -29,6 +29,7 @@ import           Data.Traversable            (for)
 import           Patat.Presentation.Settings (TransitionSettings (..))
 import qualified Patat.Transition.Dissolve   as Dissolve
 import           Patat.Transition.Internal
+import qualified Patat.Transition.Matrix     as Matrix
 import qualified Patat.Transition.SlideLeft  as SlideLeft
 import           System.Random               (uniformR)
 
@@ -54,6 +55,7 @@ random items size matrix0 matrix1 rg0 =
 transitions :: NonEmpty (Text, Transition)
 transitions =
     ("dissolve",  Transition Dissolve.transition) :|
+    ("matrix",    Transition Matrix.transition) :
     ("slideLeft", Transition SlideLeft.transition) : []
 
 
