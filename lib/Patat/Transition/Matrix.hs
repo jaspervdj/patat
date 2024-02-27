@@ -112,7 +112,6 @@ transition config (Size rows cols) initial final rgen =
         guard . not $ cell == emptyCell
         pure (x, y, cell)
 
-    -- Select the initial or final value depending on the noise.
     frame :: Double -> Matrix
     frame t = V.create $ do
         mat <- VM.replicate (rows * cols) emptyCell
