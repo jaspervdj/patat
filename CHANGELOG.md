@@ -21,6 +21,9 @@
      -   `wrap: raw` becomes `container: none`
      -   `wrap: rawInline` becomes `container: inline`
 
+ *  Add a `type: matrix` transition effect, loosely inspired by the 1999 science
+    fiction movie.
+
 ## 0.11.0.0 (2024-02-14)
 
  *  Support wrapping at a specific column (#164)
