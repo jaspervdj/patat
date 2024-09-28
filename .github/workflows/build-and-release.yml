@@ -45,11 +45,11 @@ jobs:
       env:
         PATAT_TAG: ${{ steps.get_version.outputs.version }}
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       if: startsWith(github.ref, 'refs/tags')
       with:
         path: artifacts/*
-        name: artifacts
+        name: artifacts-${{ runner.os }}-${{ matrix.ghc }}
 
   release:
     name: Release
@@ -60,12 +60,13 @@ jobs:
     steps:
     - uses: actions/download-artifact@v4
       with:
-        name: artifacts
+        pattern: artifacts-*
 
-    - run: 'sha256sum patat-*'
+    - run: ls -R
+    - run: 'sha256sum artifacts-*/patat-*'
 
     - uses: softprops/action-gh-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        files: 'patat-*'
+        files: 'artifacts-*/patat-*'

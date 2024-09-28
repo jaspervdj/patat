@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.12.0.1 (unreleased)
+## 0.12.0.1 (2024-09-28)
 
  *  Fix width of code blocks when using wide characters (#171)
  *  Bump `pandoc` upper bound to 3.3.
