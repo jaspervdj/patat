@@ -8,7 +8,7 @@ module Patat.Presentation.Display.CodeBlock
 
 
 --------------------------------------------------------------------------------
-import           Data.Char.WCWidth                   (wcwidth)
+import           Data.Char.WCWidth.Extended          (wcstrwidth, wcwidth)
 import           Data.Maybe                          (mapMaybe)
 import qualified Data.Text                           as T
 import           Patat.Presentation.Display.Internal
@@ -88,7 +88,8 @@ prettyCodeBlock ds classes rawCodeBlock =
         (PP.text str)
 
     sourceLineLength :: Skylighting.SourceLine -> Int
-    sourceLineLength line = sum [T.length str | (_, str) <- line]
+    sourceLineLength line =
+        sum [wcstrwidth (T.unpack str) | (_, str) <- line]
 
     blockWidth :: Int
     blockWidth = foldr max 0 (map sourceLineLength sourceLines)

@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.12.0.0 (unreleased)
+## Unreleased
+
+ *  Fix width of code blocks when using wide characters (#171)
+
+## 0.12.0.0 (2024-02-27)
 
  *  Render tabs in code blocks by expanding them to spaces.  The amount of
     spaces a tab character aligns to is customizable using `tabStop`, e.g.
