@@ -20,20 +20,17 @@ jobs:
 
     - uses: actions/checkout@v4
 
-    - uses: actions/cache@v3
-      with:
-        path: ~/.stack
-        key: "${{ runner.os }}-${{ matrix.ghc }}-v8-${{ hashFiles('patat.cabal', 'stack.yaml', 'stack.yaml.lock') }}"
-        restore-keys: |
-          ${{ runner.os }}-${{ matrix.ghc }}-v8-
-
     - uses: haskell-actions/setup@v2
+      id: setup
       with:
         ghc-version: ${{ matrix.ghc }}
-        enable-stack: true
-        stack-version: 'latest'
-        stack-no-global: true
-        stack-setup-ghc: true
+
+    - uses: actions/cache@v3
+      with:
+        path: ${{ steps.setup.outputs.cabal-store }}
+        key: ${{ runner.os }}-${{ matrix.ghc }}-v9-${{ hashFiles('patat.cabal') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ matrix.ghc }}-v9-
 
     - run: make build
       id: build

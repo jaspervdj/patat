@@ -160,3 +160,15 @@ Test-suite patat-tests
     tasty-quickcheck >= 0.10 && < 0.11,
     text             >= 1.2  && < 2.2,
     QuickCheck       >= 2.8  && < 2.15
+
+Test-suite patat-goldplate
+  Main-is:            Main.hs
+  Ghc-options:        -Wall
+  Hs-source-dirs:     tests/golden
+  Type:               exitcode-stdio-1.0
+  Default-language:   Haskell2010
+  Build-tool-depends: patat:patat
+
+  Build-depends:
+    base      >= 4.8     && < 5,
+    goldplate >= 0.2.2.1 && < 0.3

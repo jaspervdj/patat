@@ -1,7 +1,7 @@
 ---
 patat:
   syntaxDefinitions:
-  - 'golden/syntax-definitions/impurescript.xml'
+  - 'syntax-definitions/impurescript.xml'
 ...
 
 Hello

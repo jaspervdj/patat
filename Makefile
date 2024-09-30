@@ -19,15 +19,7 @@ ARCHIVE_CREATE=tar czf
 ARCHIVE_EXTRACT=tar xvzf
 endif
 
-ifeq ($(UNAME), darwin)
-# We use `?=` to set SOURCE_DATE_EPOCH only if it is not present.  Unfortunately
-# we can't use `git --date=unix` since only very recent git versions support
-# that, so we need to make a round trip through `date`.
 SOURCE_DATE_EPOCH?=$(shell git log -1 --format=%cd --date=unix)
-else
-SOURCE_DATE_EPOCH?=$(shell date '+%s' \
-                       --date="$(shell git log -1 --format=%cd --date=rfc)")
-endif
 
 ifeq ($(UNAME), darwin)
 COMPRESS_BIN_DEPS=
@@ -36,8 +28,6 @@ else
 COMPRESS_BIN_DEPS=$(UPX_BINARY)
 COMPRESS_BIN=upx
 endif
-
-STACK=stack
 
 # Default target.
 .PHONY: build
@@ -60,7 +50,7 @@ $(PATAT_PACKAGE).$(ARCHIVE): $(PATAT_BINARY) extra/patat.1 $(COMPRESS_BIN_DEPS)
 	$(ARCHIVE_CREATE) $(PATAT_PACKAGE).$(ARCHIVE) $(PATAT_PACKAGE)
 
 $(PATAT_BINARY):
-	$(STACK) build --copy-bins
+	cabal install --installdir="$(dir $(PATAT_BINARY))"
 
 # UPX is used to compress the resulting binary.  We currently don't use this on
 # Mac OS.
@@ -73,11 +63,11 @@ $(UPX_BINARY):
 
 # Man page.
 extra/patat.1: README.md $(PATAT_BINARY)
-	SOURCE_DATE_EPOCH="$(SOURCE_DATE_EPOCH)" patat-make-man >$@
+	SOURCE_DATE_EPOCH="$(SOURCE_DATE_EPOCH)" cabal exec -- patat-make-man >$@
 
 # Bash completion.
-extra/patat.bash-completion:
-	patat --bash-completion-script patat >$@
+extra/patat.bash-completion: $(PATAT_BINARY)
+	cabal exec -- patat --bash-completion-script patat >$@
 
 .PHONY: completion
 completion: extra/patat.bash-completion
@@ -88,8 +78,7 @@ man: extra/patat.1
 # Also check if we can generate the manual.
 .PHONY: test
 test: man
-	$(STACK) install goldplate
-	goldplate --pretty-diff tests
+	cabal test
 
 .PHONY: clean
 clean:
