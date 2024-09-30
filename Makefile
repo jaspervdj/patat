@@ -50,7 +50,7 @@ $(PATAT_PACKAGE).$(ARCHIVE): $(PATAT_BINARY) extra/patat.1 $(COMPRESS_BIN_DEPS)
 	$(ARCHIVE_CREATE) $(PATAT_PACKAGE).$(ARCHIVE) $(PATAT_PACKAGE)
 
 $(PATAT_BINARY):
-	cabal install --installdir="$(dir $(PATAT_BINARY))" -fpatat-make-man
+	cabal install --installdir="$(dir $(PATAT_BINARY))"
 
 # UPX is used to compress the resulting binary.  We currently don't use this on
 # Mac OS.
