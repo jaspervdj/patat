@@ -30,6 +30,7 @@ fragmentInstructions fs = fromList . concatMap fragmentInstruction . toList
     fragmentInstruction Pause = [Pause]
     fragmentInstruction (Append []) = [Append []]
     fragmentInstruction (Append xs) = fragmentBlocks fs xs
+    fragmentInstruction (AppendVar v) = [AppendVar v]
     fragmentInstruction Delete = [Delete]
     fragmentInstruction (ModifyLast f) = map ModifyLast $ fragmentInstruction f
 

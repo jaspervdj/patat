@@ -15,15 +15,19 @@ module Patat.Presentation.Instruction
     , freshVar
 
     , Instruction (..)
+    , beforePause
     , numFragments
+    , variables
 
     , Fragment (..)
     , renderFragment
     ) where
 
+import           Data.List   (foldl')
 import qualified Text.Pandoc as Pandoc
 
-newtype Instructions a = Instructions [Instruction a] deriving (Show)
+newtype Instructions a = Instructions {unInstructions :: [Instruction a]}
+    deriving (Show)
 
 -- A smart constructor that guarantees some invariants:
 --
@@ -77,18 +81,27 @@ isPause (ModifyLast i) = isPause i
 numPauses :: Instructions a -> Int
 numPauses (Instructions xs) = length $ filter isPause xs
 
+beforePause :: Int -> Instructions a -> Instructions a
+beforePause n = Instructions . go 0 . unInstructions
+  where
+    go _ []          = []
+    go i (Pause : t) = if i >= n then [] else go (i + 1) t
+    go i (h     : t) = h : go i t
+
+variables :: Instructions a -> [Var]
+variables (Instructions []               ) = []
+variables (Instructions (AppendVar v : t)) = v : variables (Instructions t)
+variables (Instructions (_           : t)) = variables (Instructions t)
+
 numFragments :: Instructions a -> Int
 numFragments = succ . numPauses
 
 newtype Fragment = Fragment [Pandoc.Block] deriving (Show)
 
 renderFragment
-    :: (Var -> [Pandoc.Block]) -> Int -> Instructions Pandoc.Block -> Fragment
-renderFragment resolve = \n (Instructions instrs) -> Fragment $ go [] n instrs
-  where
-    go acc _ []               = acc
-    go acc n (Pause : instrs) = if n <= 0 then acc else go acc (n - 1) instrs
-    go acc n (instr : instrs) = go (goBlocks resolve instr acc) n instrs
+    :: (Var -> [Pandoc.Block]) -> Instructions Pandoc.Block -> Fragment
+renderFragment resolve = \instrs -> Fragment $ foldl'
+    (\acc instr -> goBlocks resolve instr acc) [] (unInstructions instrs)
 
 goBlocks
     :: (Var -> [Pandoc.Block]) -> Instruction Pandoc.Block -> [Pandoc.Block]
