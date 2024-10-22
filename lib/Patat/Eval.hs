@@ -57,6 +57,9 @@ evalInstruction settings instr = case instr of
     ModifyLast i  -> map ModifyLast <$> evalInstruction settings i
     Append []     -> pure [Append []]
     Append blocks -> concat <$> traverse (evalBlock settings) blocks
+    AppendVar v   ->
+        -- Should not happen since we don't do recursive evaluation.
+        pure [AppendVar v]
     Delete        -> pure [Delete]
 
 

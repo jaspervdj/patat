@@ -144,7 +144,9 @@ activeFragment presentation = do
         TitleSlide lvl is -> ActiveTitle $
             Pandoc.Header lvl Pandoc.nullAttr is
         ContentSlide instrs -> ActiveContent $
-            Instruction.renderFragment fidx instrs
+            Instruction.renderFragment resolve fidx instrs
+  where
+    resolve _ = [Pandoc.Para [Pandoc.Str "implement resolve"]]
 
 
 --------------------------------------------------------------------------------
