@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.13.0.0 (unreleased)
+
+ *  Incrementally display output of `eval` commands (#132)
+
+    Rather than waiting for the process to complete and then displaying its
+    output, `patat` now fetches the `stdout` and `stderr` as it becomes
+    available and refreshes the display.
+
+    This means that by default, **stderr is now displayed as well**.
+    To disable displaying `stderr`, you can add `stderr: false` to the eval
+    configuration, e.g.:
+
+    ```yaml
+    patat:
+      eval:
+        bash:
+          command: bash
+          stderr: false
+    ```
+
 ## 0.12.0.1 (2024-09-28)
 
  *  Fix width of code blocks when using wide characters (#171)

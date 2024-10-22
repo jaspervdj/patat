@@ -248,6 +248,7 @@ data EvalSettings = EvalSettings
     , evalReplace   :: !Bool
     , evalFragment  :: !Bool
     , evalContainer :: !EvalSettingsContainer
+    , evalStderr    :: !Bool
     } deriving (Show)
 
 
@@ -258,6 +259,7 @@ instance A.FromJSON EvalSettings where
         <*> o A..:? "replace"  A..!= False
         <*> o A..:? "fragment" A..!= True
         <*> deprecated "wrap" "container" EvalContainerCode o
+        <*> o A..:? "stderr" A..!= True
       where
         deprecated old new def obj = do
             mo <- obj A..:? old

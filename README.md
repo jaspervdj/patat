@@ -720,7 +720,7 @@ attribute on a code block matches the evaluator, it will be used.
 code of presentations downloaded from the internet before running them if they
 contain `eval` settings.
 
-Aside from the command, there are three more options:
+Aside from the command, there are four more options:
 
  -  `fragment`: Introduce a pause (see [fragments](#fragmented-slides)) in
     between showing the original code block and the output.  Defaults to `true`.
@@ -732,6 +732,7 @@ Aside from the command, there are three more options:
      *  `code`: the default setting.
      *  `none`: no formatting applied.
      *  `inline`: no formatting applied and no trailing newline.
+ -  `stderr`: Include output from standard error.  Defaults to `true`.
  -  `wrap`: this is a deprecated name for `container`, used in version 0.11 and
     earlier.
 

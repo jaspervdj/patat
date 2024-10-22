@@ -28,10 +28,11 @@ import           Data.Traversable               (for)
 import qualified Data.Yaml                      as Yaml
 import           Patat.EncodingFallback         (EncodingFallback)
 import qualified Patat.EncodingFallback         as EncodingFallback
-import           Patat.Eval                     (eval)
+import qualified Patat.Eval                     as Eval
 import qualified Patat.Presentation.Comments    as Comments
 import           Patat.Presentation.Fragment
 import qualified Patat.Presentation.Instruction as Instruction
+import           Patat.Presentation.Instruction (VarGen)
 import           Patat.Presentation.Internal
 import           Patat.Transition               (parseTransitionSettings)
 import           Prelude
@@ -47,8 +48,8 @@ import qualified Text.Pandoc.Extended           as Pandoc
 
 
 --------------------------------------------------------------------------------
-readPresentation :: FilePath -> IO (Either String Presentation)
-readPresentation filePath = runExceptT $ do
+readPresentation :: VarGen -> FilePath -> IO (Either String Presentation)
+readPresentation varGen filePath = runExceptT $ do
     -- We need to read the settings first.
     (enc, src)   <- liftIO $ EncodingFallback.readFile filePath
     homeSettings <- ExceptT readHomeSettings
@@ -71,8 +72,8 @@ readPresentation filePath = runExceptT $ do
         Right x -> return x
 
     pres <- ExceptT $ pure $
-        pandocToPresentation filePath enc settings syntaxMap doc
-    liftIO $ eval pres
+        pandocToPresentation varGen filePath enc settings syntaxMap doc
+    pure $ Eval.parseEvalBlocks pres
   where
     ext = takeExtension filePath
 
@@ -122,9 +123,9 @@ readExtension (ExtensionList extensions) fileExt = case fileExt of
 
 --------------------------------------------------------------------------------
 pandocToPresentation
-    :: FilePath -> EncodingFallback -> PresentationSettings
+    :: VarGen -> FilePath -> EncodingFallback -> PresentationSettings
     -> Skylighting.SyntaxMap -> Pandoc.Pandoc -> Either String Presentation
-pandocToPresentation pFilePath pEncodingFallback pSettings pSyntaxMap
+pandocToPresentation pVarGen pFilePath pEncodingFallback pSettings pSyntaxMap
         pandoc@(Pandoc.Pandoc meta _) = do
     let !pTitle          = case Pandoc.docTitle meta of
             []    -> [Pandoc.Str . T.pack . snd $ splitFileName pFilePath]
@@ -133,6 +134,8 @@ pandocToPresentation pFilePath pEncodingFallback pSettings pSyntaxMap
         !pBreadcrumbs    = collectBreadcrumbs pSlides
         !pActiveFragment = (0, 0)
         !pAuthor         = concat (Pandoc.docAuthors meta)
+        !pEvalBlocks     = mempty
+        !pVars           = mempty
     pSlideSettings <- Seq.traverseWithIndex
         (\i ->
             first (\err -> "on slide " ++ show (i + 1) ++ ": " ++ err) .

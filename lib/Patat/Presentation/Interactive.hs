@@ -13,11 +13,13 @@ module Patat.Presentation.Interactive
 
 
 --------------------------------------------------------------------------------
-import           Data.Char                   (isDigit)
+import           Data.Char                      (isDigit)
+import           Patat.Presentation.Instruction (Var)
 import           Patat.Presentation.Internal
 import           Patat.Presentation.Read
-import qualified System.IO                   as IO
-import           Text.Read                   (readMaybe)
+import qualified System.IO                      as IO
+import qualified Text.Pandoc                    as Pandoc
+import           Text.Read                      (readMaybe)
 
 
 --------------------------------------------------------------------------------
@@ -31,6 +33,7 @@ data PresentationCommand
     | Last
     | Reload
     | Seek Int
+    | UpdateVar Var [Pandoc.Block]
     | UnknownCommand String
     deriving (Eq, Show)
 
@@ -96,16 +99,17 @@ updatePresentation
     :: PresentationCommand -> Presentation -> IO UpdatedPresentation
 
 updatePresentation cmd presentation = case cmd of
-    Exit             -> return ExitedPresentation
-    Forward          -> return $ goToSlide $ \(s, f) -> (s, f + 1)
-    Backward         -> return $ goToSlide $ \(s, f) -> (s, f - 1)
-    SkipForward      -> return $ goToSlide $ \(s, _) -> (s + 10, 0)
-    SkipBackward     -> return $ goToSlide $ \(s, _) -> (s - 10, 0)
-    First            -> return $ goToSlide $ \_ -> (0, 0)
-    Last             -> return $ goToSlide $ \_ -> (numSlides presentation, 0)
-    Seek n           -> return $ goToSlide $ \_ -> (n - 1, 0)
+    Exit             -> pure ExitedPresentation
+    Forward          -> pure $ goToSlide $ \(s, f) -> (s, f + 1)
+    Backward         -> pure $ goToSlide $ \(s, f) -> (s, f - 1)
+    SkipForward      -> pure $ goToSlide $ \(s, _) -> (s + 10, 0)
+    SkipBackward     -> pure $ goToSlide $ \(s, _) -> (s - 10, 0)
+    First            -> pure $ goToSlide $ \_ -> (0, 0)
+    Last             -> pure $ goToSlide $ \_ -> (numSlides presentation, 0)
+    Seek n           -> pure $ goToSlide $ \_ -> (n - 1, 0)
     Reload           -> reloadPresentation
-    UnknownCommand _ -> return (UpdatedPresentation presentation)
+    UnknownCommand _ -> pure $ UpdatedPresentation presentation
+    UpdateVar v b    -> pure $ UpdatedPresentation $ updateVar v b presentation
   where
     numSlides :: Presentation -> Int
     numSlides pres = length (pSlides pres)
@@ -133,7 +137,7 @@ updatePresentation cmd presentation = case cmd of
         }
 
     reloadPresentation = do
-        errOrPres <- readPresentation (pFilePath presentation)
+        errOrPres <- readPresentation (pVarGen presentation) (pFilePath presentation)
         return $ case errOrPres of
             Left  err  -> ErroredPresentation err
             Right pres -> UpdatedPresentation $ pres

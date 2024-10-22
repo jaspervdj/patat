@@ -31,21 +31,27 @@ module Patat.Presentation.Internal
     , ActiveFragment (..)
     , activeFragment
     , activeSpeakerNotes
+    , activeVars
 
     , getSettings
     , activeSettings
 
     , Size
     , getPresentationSize
+
+    , updateVar
     ) where
 
 
 --------------------------------------------------------------------------------
 import qualified Data.Aeson.Extended            as A
+import qualified Data.HashMap.Strict            as HMS
+import qualified Data.HashSet                   as HS
 import           Data.Maybe                     (fromMaybe)
 import           Data.Sequence.Extended         (Seq)
 import qualified Data.Sequence.Extended         as Seq
 import           Patat.EncodingFallback         (EncodingFallback)
+import qualified Patat.Eval.Internal            as Eval
 import qualified Patat.Presentation.Comments    as Comments
 import qualified Patat.Presentation.Instruction as Instruction
 import           Patat.Presentation.Settings
@@ -73,6 +79,9 @@ data Presentation = Presentation
     , pTransitionGens   :: !(Seq (Maybe TransitionGen))  -- One for each slide.
     , pActiveFragment   :: !Index
     , pSyntaxMap        :: !Skylighting.SyntaxMap
+    , pEvalBlocks       :: !Eval.EvalBlocks
+    , pVarGen           :: !Instruction.VarGen
+    , pVars             :: !(HMS.HashMap Instruction.Var [Pandoc.Block])
     }
 
 
@@ -144,7 +153,10 @@ activeFragment presentation = do
         TitleSlide lvl is -> ActiveTitle $
             Pandoc.Header lvl Pandoc.nullAttr is
         ContentSlide instrs -> ActiveContent $
-            Instruction.renderFragment fidx instrs
+            Instruction.renderFragment resolve $
+            Instruction.beforePause fidx instrs
+  where
+    resolve var = fromMaybe [] $ HMS.lookup var (pVars presentation)
 
 
 --------------------------------------------------------------------------------
@@ -153,6 +165,17 @@ activeSpeakerNotes presentation = fromMaybe mempty $ do
     let (sidx, _) = pActiveFragment presentation
     slide <- getSlide sidx presentation
     pure . Comments.cSpeakerNotes $ slideComment slide
+
+
+--------------------------------------------------------------------------------
+activeVars :: Presentation -> HS.HashSet Instruction.Var
+activeVars presentation = fromMaybe HS.empty $ do
+    let (sidx, fidx) = pActiveFragment presentation
+    slide <- getSlide sidx presentation
+    case slideContent slide of
+        TitleSlide _ _ -> Nothing
+        ContentSlide instrs -> pure $ Instruction.variables $
+            Instruction.beforePause fidx instrs
 
 
 --------------------------------------------------------------------------------
@@ -177,3 +200,8 @@ getPresentationSize pres = do
     pure $ Size {sRows = rows, sCols = cols}
   where
     settings = activeSettings pres
+
+
+--------------------------------------------------------------------------------
+updateVar :: Instruction.Var -> [Pandoc.Block] -> Presentation -> Presentation
+updateVar var blocks pres = pres {pVars = HMS.insert var blocks $ pVars pres}

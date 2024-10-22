@@ -24,6 +24,7 @@ import qualified Options.Applicative              as OA
 import qualified Options.Applicative.Help.Pretty  as OA.PP
 import           Patat.AutoAdvance
 import qualified Patat.EncodingFallback           as EncodingFallback
+import qualified Patat.Eval                       as Eval
 import qualified Patat.Images                     as Images
 import           Patat.Presentation
 import qualified Patat.Presentation.Comments      as Comments
@@ -160,15 +161,15 @@ main = do
             OA.parserFailure parserPrefs parserInfo
             (OA.ShowHelpText Nothing) mempty
 
-    errOrPres <- readPresentation filePath
+    errOrPres <- readPresentation zeroVarGen filePath
     pres      <- either (errorAndExit . return) return errOrPres
     let settings = pSettings pres
 
     unless (oForce options) assertAnsiFeatures
 
     if oDump options then
-        EncodingFallback.withHandle IO.stdout (pEncodingFallback pres) $
-        dumpPresentation pres
+        EncodingFallback.withHandle IO.stdout (pEncodingFallback pres) $ do
+        Eval.evalAllVars pres >>= dumpPresentation
     else
         -- (Maybe) initialize images backend.
         withMaybeHandle Images.withHandle (psImages settings) $ \images ->
@@ -209,15 +210,20 @@ loop app@App {..} = do
         (pEncodingFallback aPresentation)
         (activeSpeakerNotes aPresentation)
 
-    size <- getPresentationSize aPresentation
+    -- Start necessary eval blocks
+    presentation <- Eval.evalActiveVars
+        (\v -> Chan.writeChan aCommandChan . PresentationCommand . UpdateVar v)
+        aPresentation
+
+    size <- getPresentationSize presentation
     Ansi.clearScreen
     Ansi.setCursorPosition 0 0
     cleanup <- case aView of
-        PresentationView -> case displayPresentation size aPresentation of
+        PresentationView -> case displayPresentation size presentation of
             DisplayDoc doc    -> drawDoc doc
             DisplayImage path -> drawImg size path
         ErrorView err -> drawDoc $
-                displayPresentationError size aPresentation err
+                displayPresentationError size presentation err
         TransitionView tr -> do
             drawMatrix (tiSize tr) . fst . NonEmpty.head $ tiFrames tr
             pure mempty
@@ -234,11 +240,11 @@ loop app@App {..} = do
                     loop app {aView = TransitionView tr1}
                 Nothing -> loop app {aView = PresentationView}
         PresentationCommand c -> do
-            update <- updatePresentation c aPresentation
+            update <- updatePresentation c presentation
             case update of
                 ExitedPresentation       -> return ()
                 UpdatedPresentation pres
-                    | Just tgen <- mbTransition c size aPresentation pres -> do
+                    | Just tgen <- mbTransition c size presentation pres -> do
                         tr <- tgen
                         scheduleTransitionTick tr
                         loop app
@@ -251,7 +257,7 @@ loop app@App {..} = do
     drawDoc doc = EncodingFallback.withHandle
         IO.stdout (pEncodingFallback aPresentation) $
         PP.putDoc doc $> mempty
-    drawImg size path =case aImages of
+    drawImg size path = case aImages of
         Nothing -> drawDoc $ displayPresentationError
             size aPresentation "image backend not initialized"
         Just img -> do

@@ -161,7 +161,7 @@ dumpPresentation pres@Presentation {..} =
     dumpFragment :: Index -> [PP.Doc]
     dumpFragment idx =
         case displayPresentation (getSize idx) pres {pActiveFragment = idx} of
-            DisplayDoc doc        -> [doc]
+            DisplayDoc   doc      -> [doc]
             DisplayImage filepath -> [PP.string $ "{image: " ++ filepath ++ "}"]
 
     getSize :: Index -> Size
@@ -187,7 +187,7 @@ prettyFragment ds (Fragment blocks) = vertical $
         mconcat (replicate top PP.hardline) <> doc0
       where
         top = case mTop of
-            Auto -> let (r, _) = PP.dimensions doc0 in (rows - r) `div` 2
+            Auto      -> let (r, _) = PP.dimensions doc0 in (rows - r) `div` 2
             NotAuto x -> x
 
     horizontal = horizontalIndent . horizontalWrap
