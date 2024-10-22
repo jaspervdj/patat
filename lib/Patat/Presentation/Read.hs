@@ -133,6 +133,7 @@ pandocToPresentation pFilePath pEncodingFallback pSettings pSyntaxMap
         !pBreadcrumbs    = collectBreadcrumbs pSlides
         !pActiveFragment = (0, 0)
         !pAuthor         = concat (Pandoc.docAuthors meta)
+        !pVarGen         = Instruction.zeroVarGen
     pSlideSettings <- Seq.traverseWithIndex
         (\i ->
             first (\err -> "on slide " ++ show (i + 1) ++ ": " ++ err) .

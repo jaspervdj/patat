@@ -9,6 +9,8 @@ module Patat.Eval
 --------------------------------------------------------------------------------
 import qualified Control.Concurrent.Async       as Async
 import           Control.Exception              (finally)
+import           Control.Monad.State            (StateT, runStateT)
+import           Control.Monad.Trans            (liftIO)
 import qualified Data.HashMap.Strict            as HMS
 import           Data.Maybe                     (maybeToList)
 import qualified Data.Text                      as T
@@ -25,11 +27,15 @@ import qualified Text.Pandoc.Definition         as Pandoc
 
 --------------------------------------------------------------------------------
 eval :: Presentation -> IO Presentation
-eval presentation = case psEval (pSettings presentation) of
-    Nothing -> pure presentation
-    Just settings -> do
-        slides <- traverse (evalSlide settings) (pSlides presentation)
-        pure presentation {pSlides = slides}
+eval presentation = do
+    (pres, varGen) <- runStateT work (pVarGen presentation)
+    pure pres {pVarGen = varGen}
+  where
+    work = case psEval (pSettings presentation) of
+        Nothing -> pure presentation
+        Just settings -> do
+            slides <- traverse (evalSlide settings) (pSlides presentation)
+            pure presentation {pSlides = slides}
 
 
 --------------------------------------------------------------------------------
@@ -40,7 +46,7 @@ lookupSettings classes settings = do
 
 
 --------------------------------------------------------------------------------
-evalSlide :: EvalSettingsMap -> Slide -> IO Slide
+evalSlide :: EvalSettingsMap -> Slide -> StateT VarGen IO Slide
 evalSlide settings slide = case slideContent slide of
     TitleSlide _ _ -> pure slide
     ContentSlide instrs0 -> do
@@ -51,7 +57,7 @@ evalSlide settings slide = case slideContent slide of
 --------------------------------------------------------------------------------
 evalInstruction
     :: EvalSettingsMap -> Instruction Pandoc.Block
-    -> IO [Instruction Pandoc.Block]
+    -> StateT VarGen IO [Instruction Pandoc.Block]
 evalInstruction settings instr = case instr of
     Pause         -> pure [Pause]
     ModifyLast i  -> map ModifyLast <$> evalInstruction settings i
@@ -64,10 +70,12 @@ evalInstruction settings instr = case instr of
 
 
 --------------------------------------------------------------------------------
-evalBlock :: EvalSettingsMap -> Pandoc.Block -> IO [Instruction Pandoc.Block]
+evalBlock
+    :: EvalSettingsMap -> Pandoc.Block
+    -> StateT VarGen IO [Instruction Pandoc.Block]
 evalBlock settings orig@(Pandoc.CodeBlock attr@(_, classes, _) txt)
     | [s@EvalSettings {..}] <- lookupSettings classes settings = do
-        out <- unsafeInterleaveIO $ do
+        out <- liftIO $ unsafeInterleaveIO $ do
             EvalResult {..} <-  evalCode s txt
             pure $ case erExitCode of
                 ExitSuccess -> erStdout

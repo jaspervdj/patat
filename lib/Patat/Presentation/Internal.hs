@@ -73,6 +73,8 @@ data Presentation = Presentation
     , pTransitionGens   :: !(Seq (Maybe TransitionGen))  -- One for each slide.
     , pActiveFragment   :: !Index
     , pSyntaxMap        :: !Skylighting.SyntaxMap
+    -- | Used to generate new variables inside the presentation.
+    , pVarGen           :: Instruction.VarGen
     }
 
 
