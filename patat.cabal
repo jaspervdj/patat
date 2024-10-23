@@ -43,6 +43,7 @@ Library
     containers           >= 0.5  && < 0.7,
     directory            >= 1.2  && < 1.4,
     filepath             >= 1.4  && < 1.6,
+    hashable             >= 1.4  && < 1.5,
     mtl                  >= 2.2  && < 2.4,
     optparse-applicative >= 0.16 && < 0.19,
     pandoc               >= 3.1  && < 3.3,
@@ -71,6 +72,7 @@ Library
     Patat.Cleanup
     Patat.EncodingFallback
     Patat.Eval
+    Patat.Eval.Internal
     Patat.Images
     Patat.Images.Internal
     Patat.Images.ITerm2

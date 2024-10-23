@@ -2,20 +2,24 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 module Patat.Eval
-    ( eval
+    ( Handle
+    , emptyHandle
+    , eval
     ) where
 
 
 --------------------------------------------------------------------------------
 import qualified Control.Concurrent.Async       as Async
 import           Control.Exception              (finally)
-import           Control.Monad.State            (StateT, runStateT, state)
+import           Control.Monad.State            (StateT, evalStateT, state)
 import           Control.Monad.Trans            (liftIO)
 import           Control.Monad.Writer           (WriterT, runWriterT, tell)
 import qualified Data.HashMap.Strict            as HMS
+import qualified Data.IORef                     as IORef
 import           Data.Maybe                     (maybeToList)
 import qualified Data.Text                      as T
 import qualified Data.Text.IO                   as T
+import           Patat.Eval.Internal
 import           Patat.Presentation.Instruction
 import           Patat.Presentation.Internal
 import           Patat.Presentation.Settings
@@ -29,9 +33,9 @@ import qualified Text.Pandoc.Definition         as Pandoc
 --------------------------------------------------------------------------------
 eval :: Presentation -> IO Presentation
 eval presentation = do
-    ((pres, varGen), evalBlocks) <- runWriterT $
-        runStateT work (pVarGen presentation)
-    pure pres {pVarGen = varGen}
+    (pres, evalBlocks) <- runWriterT $ evalStateT work zeroVarGen
+    outputs <- traverse (\_ -> IORef.newIORef mempty) evalBlocks
+    pure pres {pEval = Handle evalBlocks outputs}
   where
     work = case psEval (pSettings presentation) of
         Nothing -> pure presentation
@@ -45,11 +49,6 @@ lookupSettings :: [T.Text] -> EvalSettingsMap -> [EvalSettings]
 lookupSettings classes settings = do
     c <- classes
     maybeToList $ HMS.lookup c settings
-
-
---------------------------------------------------------------------------------
--- | Block that needs to be evaluated.
-data EvalBlock = EvalBlock EvalSettings T.Text
 
 
 --------------------------------------------------------------------------------
@@ -89,7 +88,8 @@ evalBlock
 evalBlock settings orig@(Pandoc.CodeBlock attr@(_, classes, _) txt)
     | [s@EvalSettings {..}] <- lookupSettings classes settings = do
         var <- state freshVar
-        tell $ HMS.singleton var $ EvalBlock s txt
+        running <- liftIO $ IORef.newIORef NotRunning
+        tell $ HMS.singleton var $ EvalBlock s txt running
         out <- liftIO $ unsafeInterleaveIO $ do
             EvalResult {..} <- evalCode s txt
             pure $ case erExitCode of

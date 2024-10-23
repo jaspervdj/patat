@@ -28,7 +28,7 @@ import           Data.Traversable               (for)
 import qualified Data.Yaml                      as Yaml
 import           Patat.EncodingFallback         (EncodingFallback)
 import qualified Patat.EncodingFallback         as EncodingFallback
-import           Patat.Eval                     (eval)
+import qualified Patat.Eval                     as Eval
 import qualified Patat.Presentation.Comments    as Comments
 import           Patat.Presentation.Fragment
 import qualified Patat.Presentation.Instruction as Instruction
@@ -72,7 +72,7 @@ readPresentation filePath = runExceptT $ do
 
     pres <- ExceptT $ pure $
         pandocToPresentation filePath enc settings syntaxMap doc
-    liftIO $ eval pres
+    liftIO $ Eval.eval pres
   where
     ext = takeExtension filePath
 
@@ -133,7 +133,7 @@ pandocToPresentation pFilePath pEncodingFallback pSettings pSyntaxMap
         !pBreadcrumbs    = collectBreadcrumbs pSlides
         !pActiveFragment = (0, 0)
         !pAuthor         = concat (Pandoc.docAuthors meta)
-        !pVarGen         = Instruction.zeroVarGen
+        !pEval           = Eval.emptyHandle
     pSlideSettings <- Seq.traverseWithIndex
         (\i ->
             first (\err -> "on slide " ++ show (i + 1) ++ ": " ++ err) .

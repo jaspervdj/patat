@@ -46,6 +46,7 @@ import           Data.Maybe                     (fromMaybe)
 import           Data.Sequence.Extended         (Seq)
 import qualified Data.Sequence.Extended         as Seq
 import           Patat.EncodingFallback         (EncodingFallback)
+import qualified Patat.Eval.Internal            as Eval
 import qualified Patat.Presentation.Comments    as Comments
 import qualified Patat.Presentation.Instruction as Instruction
 import           Patat.Presentation.Settings
@@ -73,8 +74,7 @@ data Presentation = Presentation
     , pTransitionGens   :: !(Seq (Maybe TransitionGen))  -- One for each slide.
     , pActiveFragment   :: !Index
     , pSyntaxMap        :: !Skylighting.SyntaxMap
-    -- | Used to generate new variables inside the presentation.
-    , pVarGen           :: Instruction.VarGen
+    , pEval             :: !Eval.Handle
     }
 
 
