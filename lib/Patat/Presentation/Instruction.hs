@@ -4,6 +4,7 @@
 --
 -- We do this by modelling a slide as a list of instructions, that manipulate
 -- the contents on a slide in a (for now) very basic way.
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Patat.Presentation.Instruction
     ( Instructions
     , fromList
@@ -23,8 +24,9 @@ module Patat.Presentation.Instruction
     , renderFragment
     ) where
 
-import           Data.List   (foldl')
-import qualified Text.Pandoc as Pandoc
+import           Data.Hashable (Hashable)
+import           Data.List     (foldl')
+import qualified Text.Pandoc   as Pandoc
 
 newtype Instructions a = Instructions {unInstructions :: [Instruction a]}
     deriving (Show)
@@ -47,7 +49,7 @@ toList (Instructions xs) = xs
 
 -- | A variable is like a placeholder in the instructions, something we don't
 -- know yet, dynamic content.  Currently this is only used for code evaluation.
-newtype Var = Var Int deriving (Show)
+newtype Var = Var Int deriving (Hashable, Eq, Ord, Show)
 
 -- | Used to generate fresh variables.
 newtype VarGen = VarGen Int deriving (Show)

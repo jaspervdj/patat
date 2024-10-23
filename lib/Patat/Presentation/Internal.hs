@@ -132,7 +132,7 @@ numFragments slide = case slideContent slide of
 
 --------------------------------------------------------------------------------
 data ActiveFragment
-    = ActiveContent Instruction.Fragment
+    = ActiveContent Instruction.Fragment [Instruction.Var]
     | ActiveTitle Pandoc.Block
     deriving (Show)
 
@@ -145,9 +145,11 @@ activeFragment presentation = do
     pure $ case slideContent slide of
         TitleSlide lvl is -> ActiveTitle $
             Pandoc.Header lvl Pandoc.nullAttr is
-        ContentSlide instrs -> ActiveContent $
-            Instruction.renderFragment resolve $
-            Instruction.beforePause fidx instrs
+        ContentSlide instrs ->
+            let active = Instruction.beforePause fidx instrs in
+            ActiveContent
+                (Instruction.renderFragment resolve active)
+                (Instruction.variables active)
   where
     resolve _ = [Pandoc.Para [Pandoc.Str "implement resolve"]]
 

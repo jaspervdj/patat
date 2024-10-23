@@ -103,11 +103,11 @@ displayPresentation :: Size -> Presentation -> Display
 displayPresentation size pres@Presentation {..} =
      case activeFragment pres of
         Nothing -> DisplayDoc $ displayWithBorders size pres mempty
-        Just (ActiveContent fragment)
+        Just (ActiveContent fragment _)
                 | Just _ <- psImages pSettings
                 , Just image <- onlyImage fragment ->
             DisplayImage $ T.unpack image
-        Just (ActiveContent fragment) -> DisplayDoc $
+        Just (ActiveContent fragment _) -> DisplayDoc $
             displayWithBorders size pres $ \theme ->
                 prettyFragment theme fragment
         Just (ActiveTitle block) -> DisplayDoc $
