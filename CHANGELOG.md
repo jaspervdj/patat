@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.13.0.0 (unreleased)
+## 0.13.0.0 (2024-10-30)
 
  *  Incrementally display output of `eval` commands (#132)
 
