@@ -3,5 +3,5 @@
 add to `$PS1`:
 
 ```
-🐘 $(php -v | grep "^PHP" | cut -d " " -f2)
+象 $(php -v | grep "^PHP" | cut -d " " -f2)
 ```
