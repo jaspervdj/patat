@@ -791,13 +791,11 @@ patat:
 ```
 
 Then, you can display these in a second terminal (presumably on a second
-monitor) by just displaying this file whenever it changes.  [entr] is one
-way to do that:
-
-[entr]: http://eradman.com/entrproject/
+monitor) by just displaying this file whenever it changes. `tail` is a primitive
+way of doing that:
 
 ```bash
-echo /tmp/notes.txt | entr -s 'clear; cat /tmp/notes.txt'
+tail -F /tmp/notes.txt
 ```
 
 Alternatively, just use a second `patat` instance with `--watch` enabled:

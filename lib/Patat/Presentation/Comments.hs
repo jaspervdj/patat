@@ -35,7 +35,8 @@ import qualified Data.Yaml                   as Yaml
 import           Patat.EncodingFallback      (EncodingFallback)
 import qualified Patat.EncodingFallback      as EncodingFallback
 import           Patat.Presentation.Settings
-import           System.Directory            (removeFile)
+import           System.Directory            (removeFile, renameFile)
+import           System.FilePath             (splitFileName, (</>))
 import qualified System.IO                   as IO
 import qualified Text.Pandoc                 as Pandoc
 
@@ -136,9 +137,20 @@ writeSpeakerNotes
     :: SpeakerNotesHandle -> EncodingFallback -> SpeakerNotes -> IO ()
 writeSpeakerNotes h encodingFallback sn = do
     change <- IORef.atomicModifyIORef' (snhActive h) $ \old -> (sn, old /= sn)
-    when change $ IO.withFile (snsFile $ snhSettings h) IO.WriteMode $ \ioh ->
-        EncodingFallback.withHandle ioh encodingFallback $
-        T.hPutStr ioh $ speakerNotesToText sn
+    when change $ do
+        -- Write the file and then rename it to get atomic replace.
+        IO.withFile speakerNotesTmpPath IO.WriteMode $ \ioh ->
+            EncodingFallback.withHandle ioh encodingFallback $
+            T.hPutStr ioh $ speakerNotesToText sn
+        renameFile speakerNotesTmpPath speakerNotesPath
+  where
+    speakerNotesPath = snsFile $ snhSettings h
+    speakerNotesTmpPath =
+        -- We only get atomic rename if we're on the same filesystem.  I think
+        -- we can assume that the directory the speaker notes are in is
+        --  | entr -s 'clear; cat /tmp/notes.txt'writable.
+        let (dir, name) = splitFileName speakerNotesPath in
+        dir </> ".tmp." <> name
 
 
 --------------------------------------------------------------------------------

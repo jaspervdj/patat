@@ -1,5 +1,13 @@
 # Changelog
 
+## unreleased
+
+ *  Use a temporary file to atomically write speaker notes.
+
+    We weren't writing the file all-at-once before, so if you were using a
+    simple tool like `tail -F` before, this could cause some speaker notes to
+    not be displayed.
+
 ## 0.13.0.0 (2024-10-30)
 
  *  Incrementally display output of `eval` commands (#132)
