@@ -14,7 +14,6 @@ module Patat.Presentation.Display
 import           Control.Monad                        (guard)
 import qualified Data.Aeson.Extended                  as A
 import           Data.Char.WCWidth.Extended           (wcstrwidth)
-import           Data.Data.Extended                   (grecQ)
 import qualified Data.List                            as L
 import           Data.Maybe                           (fromMaybe, maybeToList)
 import qualified Data.Sequence.Extended               as Seq
@@ -121,7 +120,7 @@ displayPresentation size pres@Presentation {..} =
     -- headers.
     onlyImage (Fragment (Header{} : bs)) = onlyImage (Fragment bs)
     onlyImage (Fragment bs) = case bs of
-        [Figure _ _ bs']                      -> onlyImage (Fragment bs')
+        [Figure _ bs']                        -> onlyImage (Fragment bs')
         [Para [Pandoc.Image _ _ (target, _)]] -> Just target
         _                                     -> Nothing
 
@@ -319,7 +318,7 @@ prettyBlock ds (LineBlock inliness) =
     PP.vcat $
     map (prettyInlines ds) inliness
 
-prettyBlock ds (Figure _attr _caption blocks) =
+prettyBlock ds (Figure _attr blocks) =
     -- TODO: the fromPandoc conversion here is weird
     prettyBlocks ds blocks
 
@@ -352,8 +351,8 @@ prettyInline ds (Pandoc.Code _ txt) =
     themed ds themeCode $
     PP.text (" " <> txt <> " ")
 
-prettyInline ds link@(Pandoc.Link _attrs text (target, _title))
-    | isReferenceLink link =
+prettyInline ds link@(Pandoc.Link _attrs _text (target, _title))
+    | Just (text, _, _) <- toReferenceLink link =
         "[" <> themed ds themeLinkText (prettyInlines ds text) <> "]"
     | otherwise =
         "<" <> themed ds themeLinkTarget (PP.text target) <> ">"
@@ -402,11 +401,12 @@ prettyReferences :: DisplaySettings -> [Block] -> [PP.Doc]
 prettyReferences ds =
     map prettyReference . getReferences
   where
-    getReferences :: [Block] -> [Pandoc.Inline]
-    getReferences = filter isReferenceLink . grecQ
+    getReferences :: [Block] -> [([Pandoc.Inline], T.Text, T.Text)]
+    getReferences = foldMap $
+        foldBlock (const mempty) (maybeToList . toReferenceLink)
 
-    prettyReference :: Pandoc.Inline -> PP.Doc
-    prettyReference (Pandoc.Link _attrs text (target, title)) =
+    prettyReference :: ([Pandoc.Inline], T.Text, T.Text) -> PP.Doc
+    prettyReference (text, target, title) =
         "[" <>
         themed ds themeLinkText
             (prettyInlines ds $ Pandoc.newlineToSpace text) <>
@@ -416,11 +416,10 @@ prettyReferences ds =
             then mempty
             else PP.space <> "\"" <> PP.text title <> "\"")
         <> ")"
-    prettyReference _ = mempty
 
 
 --------------------------------------------------------------------------------
-isReferenceLink :: Pandoc.Inline -> Bool
-isReferenceLink (Pandoc.Link _attrs text (target, _)) =
-    [Pandoc.Str target] /= text
-isReferenceLink _ = False
+toReferenceLink :: Pandoc.Inline -> Maybe ([Pandoc.Inline], T.Text, T.Text)
+toReferenceLink (Pandoc.Link _attrs text (target, title))
+    | [Pandoc.Str target] /= text = Just (text, target, title)
+toReferenceLink _ = Nothing
