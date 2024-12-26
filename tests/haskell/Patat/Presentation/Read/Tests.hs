@@ -6,9 +6,10 @@ module Patat.Presentation.Read.Tests
 
 --------------------------------------------------------------------------------
 import           Patat.Presentation.Read
-import qualified Test.Tasty              as Tasty
-import qualified Test.Tasty.HUnit        as Tasty
-import qualified Text.Pandoc             as Pandoc
+import           Patat.Presentation.Syntax
+import qualified Test.Tasty                as Tasty
+import qualified Test.Tasty.HUnit          as Tasty
+import qualified Text.Pandoc               as Pandoc
 
 
 --------------------------------------------------------------------------------
@@ -46,21 +47,21 @@ testReadMetaSettings = Tasty.testCase "readMetaSettings" $
 testDetectSlideLevel :: Tasty.TestTree
 testDetectSlideLevel = Tasty.testGroup "detectSlideLevel"
     [ Tasty.testCase "01" $
-        (Tasty.@=?) 1 $ detectSlideLevel $ Pandoc.Pandoc mempty
-            [ Pandoc.Header 1 mempty [Pandoc.Str "Intro"]
-            , Pandoc.Para [Pandoc.Str "Hi"]
+        (Tasty.@=?) 1 $ detectSlideLevel
+            [ Header 1 mempty [Pandoc.Str "Intro"]
+            , Para [Pandoc.Str "Hi"]
             ]
     , Tasty.testCase "02" $
-        (Tasty.@=?) 2 $ detectSlideLevel $ Pandoc.Pandoc mempty
-            [ Pandoc.Header 1 mempty [Pandoc.Str "Intro"]
-            , Pandoc.Header 2 mempty [Pandoc.Str "Detail"]
-            , Pandoc.Para [Pandoc.Str "Hi"]
+        (Tasty.@=?) 2 $ detectSlideLevel
+            [ Header 1 mempty [Pandoc.Str "Intro"]
+            , Header 2 mempty [Pandoc.Str "Detail"]
+            , Para [Pandoc.Str "Hi"]
             ]
     , Tasty.testCase "03" $
-        (Tasty.@=?) 2 $ detectSlideLevel $ Pandoc.Pandoc mempty
-            [ Pandoc.Header 1 mempty [Pandoc.Str "Intro"]
-            , Pandoc.RawBlock "html" "<!-- Some speaker notes -->"
-            , Pandoc.Header 2 mempty [Pandoc.Str "Detail"]
-            , Pandoc.Para [Pandoc.Str "Hi"]
+        (Tasty.@=?) 2 $ detectSlideLevel
+            [ Header 1 mempty [Pandoc.Str "Intro"]
+            , RawBlock "html" "<!-- Some speaker notes -->"
+            , Header 2 mempty [Pandoc.Str "Detail"]
+            , Para [Pandoc.Str "Hi"]
             ]
     ]

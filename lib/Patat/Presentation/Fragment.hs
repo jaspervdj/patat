@@ -15,6 +15,7 @@ module Patat.Presentation.Fragment
 
 import           Data.List                      (intersperse, intercalate)
 import           Patat.Presentation.Instruction
+import           Patat.Presentation.Syntax
 import           Prelude
 import qualified Text.Pandoc                    as Pandoc
 
@@ -24,7 +25,7 @@ data FragmentSettings = FragmentSettings
 
 fragmentInstructions
     :: FragmentSettings
-    -> Instructions Pandoc.Block -> Instructions Pandoc.Block
+    -> Instructions Block -> Instructions Block
 fragmentInstructions fs = fromList . concatMap fragmentInstruction . toList
   where
     fragmentInstruction Pause = [Pause]
@@ -35,47 +36,47 @@ fragmentInstructions fs = fromList . concatMap fragmentInstruction . toList
     fragmentInstruction (ModifyLast f) = map ModifyLast $ fragmentInstruction f
 
 fragmentBlocks
-    :: FragmentSettings -> [Pandoc.Block] -> [Instruction Pandoc.Block]
+    :: FragmentSettings -> [Block] -> [Instruction Block]
 fragmentBlocks = concatMap . fragmentBlock
 
-fragmentBlock :: FragmentSettings -> Pandoc.Block -> [Instruction Pandoc.Block]
-fragmentBlock _fs block@(Pandoc.Para inlines)
+fragmentBlock :: FragmentSettings -> Block -> [Instruction Block]
+fragmentBlock _fs block@(Para inlines)
     | inlines == threeDots = [Pause]
     | otherwise            = [Append [block]]
   where
     threeDots = intersperse Pandoc.Space $ replicate 3 (Pandoc.Str ".")
 
-fragmentBlock fs (Pandoc.BulletList bs0) =
-    fragmentList fs (fsIncrementalLists fs) Pandoc.BulletList bs0
+fragmentBlock fs (BulletList bs0) =
+    fragmentList fs (fsIncrementalLists fs) BulletList bs0
 
-fragmentBlock fs (Pandoc.OrderedList attr bs0) =
-    fragmentList fs (fsIncrementalLists fs) (Pandoc.OrderedList attr) bs0
+fragmentBlock fs (OrderedList attr bs0) =
+    fragmentList fs (fsIncrementalLists fs) (OrderedList attr) bs0
 
-fragmentBlock fs (Pandoc.BlockQuote [Pandoc.BulletList bs0]) =
-    fragmentList fs (not $ fsIncrementalLists fs) Pandoc.BulletList bs0
+fragmentBlock fs (BlockQuote [BulletList bs0]) =
+    fragmentList fs (not $ fsIncrementalLists fs) BulletList bs0
 
-fragmentBlock fs (Pandoc.BlockQuote [Pandoc.OrderedList attr bs0]) =
-    fragmentList fs (not $ fsIncrementalLists fs) (Pandoc.OrderedList attr) bs0
+fragmentBlock fs (BlockQuote [OrderedList attr bs0]) =
+    fragmentList fs (not $ fsIncrementalLists fs) (OrderedList attr) bs0
 
-fragmentBlock _ block@(Pandoc.BlockQuote {})     = [Append [block]]
+fragmentBlock _ block@(BlockQuote {})     = [Append [block]]
 
-fragmentBlock _ block@(Pandoc.Header {})         = [Append [block]]
-fragmentBlock _ block@(Pandoc.Plain {})          = [Append [block]]
-fragmentBlock _ block@(Pandoc.CodeBlock {})      = [Append [block]]
-fragmentBlock _ block@(Pandoc.RawBlock {})       = [Append [block]]
-fragmentBlock _ block@(Pandoc.DefinitionList {}) = [Append [block]]
-fragmentBlock _ block@(Pandoc.Table {})          = [Append [block]]
-fragmentBlock _ block@(Pandoc.Div {})            = [Append [block]]
-fragmentBlock _ block@Pandoc.HorizontalRule      = [Append [block]]
-fragmentBlock _ block@(Pandoc.LineBlock {})      = [Append [block]]
-fragmentBlock _ block@(Pandoc.Figure {})         = [Append [block]]
+fragmentBlock _ block@(Header {})         = [Append [block]]
+fragmentBlock _ block@(Plain {})          = [Append [block]]
+fragmentBlock _ block@(CodeBlock {})      = [Append [block]]
+fragmentBlock _ block@(RawBlock {})       = [Append [block]]
+fragmentBlock _ block@(DefinitionList {}) = [Append [block]]
+fragmentBlock _ block@(Table {})          = [Append [block]]
+fragmentBlock _ block@(Div {})            = [Append [block]]
+fragmentBlock _ block@HorizontalRule      = [Append [block]]
+fragmentBlock _ block@(LineBlock {})      = [Append [block]]
+fragmentBlock _ block@(Figure {})         = [Append [block]]
 
 fragmentList
-    :: FragmentSettings                    -- ^ Global settings
-    -> Bool                                -- ^ Fragment THIS list?
-    -> ([[Pandoc.Block]] -> Pandoc.Block)  -- ^ List constructor
-    -> [[Pandoc.Block]]                    -- ^ List items
-    -> [Instruction Pandoc.Block]          -- ^ Resulting list
+    :: FragmentSettings      -- ^ Global settings
+    -> Bool                  -- ^ Fragment THIS list?
+    -> ([[Block]] -> Block)  -- ^ List constructor
+    -> [[Block]]             -- ^ List items
+    -> [Instruction Block]   -- ^ Resulting list
 fragmentList fs fragmentThisList constructor items =
     -- Insert the new list, initially empty.
     (if fragmentThisList then [Pause] else []) ++
@@ -85,7 +86,7 @@ fragmentList fs fragmentThisList constructor items =
         map fragmentItem items)
   where
     -- The fragmented list per list item.
-    fragmentItem :: [Pandoc.Block] -> [Instruction Pandoc.Block]
+    fragmentItem :: [Block] -> [Instruction Block]
     fragmentItem item =
         -- Append a new item to the list so we can start adding
         -- content there.

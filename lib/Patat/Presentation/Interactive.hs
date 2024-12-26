@@ -17,8 +17,8 @@ import           Data.Char                      (isDigit)
 import           Patat.Presentation.Instruction (Var)
 import           Patat.Presentation.Internal
 import           Patat.Presentation.Read
+import           Patat.Presentation.Syntax
 import qualified System.IO                      as IO
-import qualified Text.Pandoc                    as Pandoc
 import           Text.Read                      (readMaybe)
 
 
@@ -33,7 +33,7 @@ data PresentationCommand
     | Last
     | Reload
     | Seek Int
-    | UpdateVar Var [Pandoc.Block]
+    | UpdateVar Var [Block]
     | UnknownCommand String
     deriving (Eq, Show)
 

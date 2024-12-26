@@ -24,10 +24,10 @@ module Patat.Presentation.Instruction
     , renderFragment
     ) where
 
-import           Data.Hashable (Hashable)
-import qualified Data.HashSet as HS
-import           Data.List     (foldl')
-import qualified Text.Pandoc   as Pandoc
+import           Data.Hashable             (Hashable)
+import qualified Data.HashSet              as HS
+import           Data.List                 (foldl')
+import           Patat.Presentation.Syntax
 
 newtype Instructions a = Instructions {unInstructions :: [Instruction a]}
     deriving (Show)
@@ -100,16 +100,16 @@ variables (Instructions (_           : t))  = variables (Instructions t)
 numFragments :: Instructions a -> Int
 numFragments = succ . numPauses
 
-newtype Fragment = Fragment [Pandoc.Block] deriving (Show)
+newtype Fragment = Fragment [Block] deriving (Show)
 
 renderFragment
-    :: (Var -> [Pandoc.Block]) -> Instructions Pandoc.Block -> Fragment
+    :: (Var -> [Block]) -> Instructions Block -> Fragment
 renderFragment resolve = \instrs -> Fragment $ foldl'
     (\acc instr -> goBlocks resolve instr acc) [] (unInstructions instrs)
 
 goBlocks
-    :: (Var -> [Pandoc.Block]) -> Instruction Pandoc.Block -> [Pandoc.Block]
-    -> [Pandoc.Block]
+    :: (Var -> [Block]) -> Instruction Block -> [Block]
+    -> [Block]
 goBlocks _ Pause xs = xs
 goBlocks _ (Append ys) xs = xs ++ ys
 goBlocks resolve (AppendVar v) xs = xs ++ resolve v
@@ -118,33 +118,29 @@ goBlocks resolve (ModifyLast f) xs
     | null xs   = xs  -- Shouldn't happen unless instructions are malformed.
     | otherwise = modifyLast (goBlock resolve f) xs
 
-goBlock
-    :: (Var -> [Pandoc.Block]) -> Instruction Pandoc.Block -> Pandoc.Block
-    -> Pandoc.Block
+goBlock :: (Var -> [Block]) -> Instruction Block -> Block -> Block
 goBlock _ Pause x = x
 goBlock _ (Append ys) block = case block of
     -- We can only append to a few specific block types for now.
-    Pandoc.BulletList xs       -> Pandoc.BulletList $ xs ++ [ys]
-    Pandoc.OrderedList attr xs -> Pandoc.OrderedList attr $ xs ++ [ys]
-    _                          -> block
+    BulletList xs       -> BulletList $ xs ++ [ys]
+    OrderedList attr xs -> OrderedList attr $ xs ++ [ys]
+    _                   -> block
 goBlock resolve (AppendVar v) block = case block of
     -- We can only append to a few specific block types for now.
-    Pandoc.BulletList xs       -> Pandoc.BulletList $ xs ++ [resolve v]
-    Pandoc.OrderedList attr xs -> Pandoc.OrderedList attr $ xs ++ [resolve v]
-    _                          -> block
+    BulletList xs       -> BulletList $ xs ++ [resolve v]
+    OrderedList attr xs -> OrderedList attr $ xs ++ [resolve v]
+    _                   -> block
 goBlock _ Delete block = case block of
     -- We can only delete from a few specific block types for now.
-    Pandoc.BulletList xs       -> Pandoc.BulletList $ sinit xs
-    Pandoc.OrderedList attr xs -> Pandoc.OrderedList attr $ sinit xs
-    _                          -> block
+    BulletList xs       -> BulletList $ sinit xs
+    OrderedList attr xs -> OrderedList attr $ sinit xs
+    _                   -> block
 goBlock resolve (ModifyLast f) block = case block of
     -- We can only modify the last content of a few specific block types for
     -- now.
-    Pandoc.BulletList xs -> Pandoc.BulletList $
-        modifyLast (goBlocks resolve f) xs
-    Pandoc.OrderedList attr xs -> Pandoc.OrderedList attr $
-        modifyLast (goBlocks resolve f) xs
-    _ -> block
+    BulletList xs       -> BulletList $ modifyLast (goBlocks resolve f) xs
+    OrderedList attr xs -> OrderedList attr $ modifyLast (goBlocks resolve f) xs
+    _                   -> block
 
 modifyLast :: (a -> a) -> [a] -> [a]
 modifyLast f (x : y : zs) = x : modifyLast f (y : zs)

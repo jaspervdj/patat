@@ -3,7 +3,6 @@
 module Text.Pandoc.Extended
     ( module Text.Pandoc
 
-    , plainToPara
     , newlineToSpace
 
     , readPlainText
@@ -17,12 +16,6 @@ import qualified Data.Text          as T
 import           Prelude
 import           Text.Pandoc
 
-
---------------------------------------------------------------------------------
-plainToPara :: [Block] -> [Block]
-plainToPara = map $ \case
-    Plain inlines -> Para inlines
-    block         -> block
 
 
 --------------------------------------------------------------------------------

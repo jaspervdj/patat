@@ -35,9 +35,9 @@ import qualified Data.Yaml                   as Yaml
 import           Patat.EncodingFallback      (EncodingFallback)
 import qualified Patat.EncodingFallback      as EncodingFallback
 import           Patat.Presentation.Settings
+import           Patat.Presentation.Syntax
 import           System.Directory            (removeFile)
 import qualified System.IO                   as IO
-import qualified Text.Pandoc                 as Pandoc
 
 
 --------------------------------------------------------------------------------
@@ -65,8 +65,9 @@ instance Monoid Comment where
 
 
 --------------------------------------------------------------------------------
-parse :: Pandoc.Block -> Maybe Comment
-parse (Pandoc.RawBlock "html" t0) =
+-- TODO: move to 'fromPandoc'
+parse :: Block -> Maybe Comment
+parse (RawBlock "html" t0) =
     (do
         t1 <- T.stripPrefix "<!--config:" t0
         t2 <- T.stripSuffix "-->" t1
@@ -81,14 +82,14 @@ parse _ = Nothing
 
 
 --------------------------------------------------------------------------------
-remove :: [Pandoc.Block] -> [Pandoc.Block]
+remove :: [Block] -> [Block]
 remove = snd . partition
 
 
 --------------------------------------------------------------------------------
 -- | Take all comments from the front of the list.  Return those and the
 -- remaining blocks.
-split :: [Pandoc.Block] -> (Comment, [Pandoc.Block])
+split :: [Block] -> (Comment, [Block])
 split = go []
   where
     go sn []                           = (mconcat (reverse sn), [])
@@ -98,7 +99,7 @@ split = go []
 
 --------------------------------------------------------------------------------
 -- | Partition the list into speaker notes and other blocks.
-partition :: [Pandoc.Block] -> (Comment, [Pandoc.Block])
+partition :: [Block] -> (Comment, [Block])
 partition = go [] []
   where
     go sn bs []                           = (mconcat (reverse sn), reverse bs)

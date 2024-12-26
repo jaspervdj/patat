@@ -2,8 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 module Patat.Presentation.Display.Table
-    ( Table (..)
-    , prettyTable
+    ( TableDisplay (..)
+    , prettyTableDisplay
 
     , themed
     ) where
@@ -19,47 +19,47 @@ import           Prelude
 
 
 --------------------------------------------------------------------------------
-data Table = Table
-    { tCaption :: PP.Doc
-    , tAligns  :: [PP.Alignment]
-    , tHeaders :: [PP.Doc]
-    , tRows    :: [[PP.Doc]]
+data TableDisplay = TableDisplay
+    { tdCaption :: PP.Doc
+    , tdAligns  :: [PP.Alignment]
+    , tdHeaders :: [PP.Doc]
+    , tdRows    :: [[PP.Doc]]
     }
 
 
 --------------------------------------------------------------------------------
-prettyTable :: DisplaySettings -> Table -> PP.Doc
-prettyTable ds Table {..} =
+prettyTableDisplay :: DisplaySettings -> TableDisplay -> PP.Doc
+prettyTableDisplay ds TableDisplay {..} =
     PP.indent indentation indentation $
         lineIf (not isHeaderLess) (hcat2 headerHeight
             [ themed ds themeTableHeader $
                 PP.align w a (vpad headerHeight header)
-            | (w, a, header) <- zip3 columnWidths tAligns tHeaders
+            | (w, a, header) <- zip3 columnWidths tdAligns tdHeaders
             ]) <>
         dashedHeaderSeparator ds columnWidths <$$>
         joinRows
             [ hcat2 rowHeight
                 [ PP.align w a (vpad rowHeight cell)
-                | (w, a, cell) <- zip3 columnWidths tAligns row
+                | (w, a, cell) <- zip3 columnWidths tdAligns row
                 ]
-            | (rowHeight, row) <- zip rowHeights tRows
+            | (rowHeight, row) <- zip rowHeights tdRows
             ] <$$>
         lineIf isHeaderLess (dashedHeaderSeparator ds columnWidths) <>
         lineIf
-            (not $ PP.null tCaption) (PP.hardline <> "Table: " <> tCaption)
+            (not $ PP.null tdCaption) (PP.hardline <> "Table: " <> tdCaption)
   where
     indentation = PP.Indentation 2 mempty
 
     lineIf cond line = if cond then line <> PP.hardline else mempty
 
     joinRows
-        | all (all isSimpleCell) tRows = PP.vcat
+        | all (all isSimpleCell) tdRows = PP.vcat
         | otherwise                    = PP.vcat . intersperse ""
 
-    isHeaderLess = all PP.null tHeaders
+    isHeaderLess = all PP.null tdHeaders
 
-    headerDimensions = map PP.dimensions tHeaders :: [(Int, Int)]
-    rowDimensions    = map (map PP.dimensions) tRows :: [[(Int, Int)]]
+    headerDimensions = map PP.dimensions tdHeaders :: [(Int, Int)]
+    rowDimensions    = map (map PP.dimensions) tdRows :: [[(Int, Int)]]
 
     columnWidths :: [Int]
     columnWidths =

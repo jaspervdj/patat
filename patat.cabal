@@ -91,6 +91,7 @@ Library
     Patat.Presentation.Internal
     Patat.Presentation.Read
     Patat.Presentation.Settings
+    Patat.Presentation.Syntax
     Patat.PrettyPrint
     Patat.PrettyPrint.Internal
     Patat.PrettyPrint.Matrix

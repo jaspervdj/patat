@@ -55,6 +55,7 @@ import qualified Patat.Eval.Internal            as Eval
 import qualified Patat.Presentation.Comments    as Comments
 import qualified Patat.Presentation.Instruction as Instruction
 import           Patat.Presentation.Settings
+import           Patat.Presentation.Syntax
 import           Patat.Size
 import           Patat.Transition               (TransitionGen)
 import           Prelude
@@ -81,7 +82,7 @@ data Presentation = Presentation
     , pSyntaxMap        :: !Skylighting.SyntaxMap
     , pEvalBlocks       :: !Eval.EvalBlocks
     , pVarGen           :: !Instruction.VarGen
-    , pVars             :: !(HMS.HashMap Instruction.Var [Pandoc.Block])
+    , pVars             :: !(HMS.HashMap Instruction.Var [Block])
     }
 
 
@@ -115,7 +116,7 @@ data Slide = Slide
 
 --------------------------------------------------------------------------------
 data SlideContent
-    = ContentSlide (Instruction.Instructions Pandoc.Block)
+    = ContentSlide (Instruction.Instructions Block)
     | TitleSlide   Int [Pandoc.Inline]
     deriving (Show)
 
@@ -140,7 +141,7 @@ numFragments slide = case slideContent slide of
 --------------------------------------------------------------------------------
 data ActiveFragment
     = ActiveContent Instruction.Fragment
-    | ActiveTitle Pandoc.Block
+    | ActiveTitle Block
     deriving (Show)
 
 
@@ -151,7 +152,7 @@ activeFragment presentation = do
     slide <- getSlide sidx presentation
     pure $ case slideContent slide of
         TitleSlide lvl is -> ActiveTitle $
-            Pandoc.Header lvl Pandoc.nullAttr is
+            Header lvl Pandoc.nullAttr is
         ContentSlide instrs -> ActiveContent $
             Instruction.renderFragment resolve $
             Instruction.beforePause fidx instrs
@@ -203,5 +204,5 @@ getPresentationSize pres = do
 
 
 --------------------------------------------------------------------------------
-updateVar :: Instruction.Var -> [Pandoc.Block] -> Presentation -> Presentation
+updateVar :: Instruction.Var -> [Block] -> Presentation -> Presentation
 updateVar var blocks pres = pres {pVars = HMS.insert var blocks $ pVars pres}

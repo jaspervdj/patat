@@ -1,4 +1,5 @@
 --------------------------------------------------------------------------------
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 module Patat.Presentation.Display
@@ -24,6 +25,7 @@ import           Patat.Presentation.Display.Internal
 import           Patat.Presentation.Display.Table
 import           Patat.Presentation.Internal
 import           Patat.Presentation.Settings
+import           Patat.Presentation.Syntax
 import           Patat.PrettyPrint                    ((<$$>), (<+>))
 import qualified Patat.PrettyPrint                    as PP
 import           Patat.Size
@@ -31,7 +33,6 @@ import           Patat.Theme                          (Theme (..))
 import qualified Patat.Theme                          as Theme
 import           Prelude
 import qualified Text.Pandoc.Extended                 as Pandoc
-import qualified Text.Pandoc.Writers.Shared           as Pandoc
 
 
 --------------------------------------------------------------------------------
@@ -118,11 +119,11 @@ displayPresentation size pres@Presentation {..} =
   where
     -- Check if the fragment consists of "just a single image".  Discard
     -- headers.
-    onlyImage (Fragment (Pandoc.Header{} : bs)) = onlyImage (Fragment bs)
+    onlyImage (Fragment (Header{} : bs)) = onlyImage (Fragment bs)
     onlyImage (Fragment bs) = case bs of
-        [Pandoc.Figure _ _ bs']                      -> onlyImage (Fragment bs')
-        [Pandoc.Para [Pandoc.Image _ _ (target, _)]] -> Just target
-        _                                            -> Nothing
+        [Figure _ _ bs']                      -> onlyImage (Fragment bs')
+        [Para [Pandoc.Image _ _ (target, _)]] -> Just target
+        _                                     -> Nothing
 
 
 --------------------------------------------------------------------------------
@@ -219,21 +220,21 @@ prettyFragment ds (Fragment blocks) = vertical $
 
 
 --------------------------------------------------------------------------------
-prettyBlock :: DisplaySettings -> Pandoc.Block -> PP.Doc
+prettyBlock :: DisplaySettings -> Block -> PP.Doc
 
-prettyBlock ds (Pandoc.Plain inlines) = prettyInlines ds inlines
+prettyBlock ds (Plain inlines) = prettyInlines ds inlines
 
-prettyBlock ds (Pandoc.Para inlines) =
+prettyBlock ds (Para inlines) =
     prettyInlines ds inlines <> PP.hardline
 
-prettyBlock ds (Pandoc.Header i _ inlines) =
+prettyBlock ds (Header i _ inlines) =
     themed ds themeHeader (PP.string (replicate i '#') <+> prettyInlines ds inlines) <>
     PP.hardline
 
-prettyBlock ds (Pandoc.CodeBlock (_, classes, _) txt) =
+prettyBlock ds (CodeBlock (_, classes, _) txt) =
     prettyCodeBlock ds classes txt
 
-prettyBlock ds (Pandoc.BulletList bss) = PP.vcat
+prettyBlock ds (BulletList bss) = PP.vcat
     [ PP.indent
         (PP.Indentation 2 $ themed ds themeBulletList prefix)
         (PP.Indentation 4 mempty)
@@ -254,7 +255,7 @@ prettyBlock ds (Pandoc.BulletList bss) = PP.vcat
         }
     ds'    = ds {dsTheme = theme'}
 
-prettyBlock ds (Pandoc.OrderedList _ bss) = PP.vcat
+prettyBlock ds (OrderedList _ bss) = PP.vcat
     [ PP.indent
         (PP.Indentation 0 $ themed ds themeOrderedList $ PP.string prefix)
         (PP.Indentation 4 mempty)
@@ -268,15 +269,15 @@ prettyBlock ds (Pandoc.OrderedList _ bss) = PP.vcat
         | i <- [1 .. length bss]
         ]
 
-prettyBlock _ds (Pandoc.RawBlock _ t) = PP.text t <> PP.hardline
+prettyBlock _ds (RawBlock _ t) = PP.text t <> PP.hardline
 
-prettyBlock _ds Pandoc.HorizontalRule = "---"
+prettyBlock _ds HorizontalRule = "---"
 
-prettyBlock ds (Pandoc.BlockQuote bs) =
+prettyBlock ds (BlockQuote bs) =
     let quote = PP.Indentation 0 (themed ds themeBlockQuote "> ") in
     PP.indent quote quote (themed ds themeBlockQuote $ prettyBlocks ds bs)
 
-prettyBlock ds (Pandoc.DefinitionList terms) =
+prettyBlock ds (DefinitionList terms) =
     PP.vcat $ map prettyDefinition terms
   where
     prettyDefinition (term, definitions) =
@@ -285,42 +286,46 @@ prettyBlock ds (Pandoc.DefinitionList terms) =
         [ PP.indent
             (PP.Indentation 0 (themed ds themeDefinitionList ":   "))
             (PP.Indentation 4 mempty) $
-            prettyBlocks ds (Pandoc.plainToPara definition)
+            prettyBlocks ds (plainToPara definition)
         | definition <- definitions
         ]
 
-prettyBlock ds (Pandoc.Table _ caption specs thead tbodies tfoot) =
+    plainToPara :: [Block] -> [Block]
+    plainToPara = map $ \case
+        Plain inlines -> Para inlines
+        block         -> block
+
+
+prettyBlock ds (Table caption aligns headers rows) =
     PP.wrapAt Nothing $
-    prettyTable ds Table
-        { tCaption = prettyInlines ds caption'
-        , tAligns  = map align aligns
-        , tHeaders = map (prettyBlocks ds) headers
-        , tRows    = map (map (prettyBlocks ds)) rows
+    prettyTableDisplay ds TableDisplay
+        { tdCaption = prettyInlines ds caption
+        , tdAligns  = map align aligns
+        , tdHeaders = map (prettyBlocks ds) headers
+        , tdRows    = map (map (prettyBlocks ds)) rows
         }
   where
-    (caption', aligns, _, headers, rows) = Pandoc.toLegacyTable
-        caption specs thead tbodies tfoot
-
     align Pandoc.AlignLeft    = PP.AlignLeft
     align Pandoc.AlignCenter  = PP.AlignCenter
     align Pandoc.AlignDefault = PP.AlignLeft
     align Pandoc.AlignRight   = PP.AlignRight
 
-prettyBlock ds (Pandoc.Div _attrs blocks) = prettyBlocks ds blocks
+prettyBlock ds (Div _attrs blocks) = prettyBlocks ds blocks
 
-prettyBlock ds (Pandoc.LineBlock inliness) =
+prettyBlock ds (LineBlock inliness) =
     let ind = PP.Indentation 0 (themed ds themeLineBlock "| ") in
     PP.wrapAt Nothing $
     PP.indent ind ind $
     PP.vcat $
     map (prettyInlines ds) inliness
 
-prettyBlock ds (Pandoc.Figure _attr _caption blocks) =
+prettyBlock ds (Figure _attr _caption blocks) =
+    -- TODO: the fromPandoc conversion here is weird
     prettyBlocks ds blocks
 
 
 --------------------------------------------------------------------------------
-prettyBlocks :: DisplaySettings -> [Pandoc.Block] -> PP.Doc
+prettyBlocks :: DisplaySettings -> [Block] -> PP.Doc
 prettyBlocks ds = PP.vcat . map (prettyBlock ds)
 
 
@@ -377,7 +382,10 @@ prettyInline _ (Pandoc.RawInline _ t) = PP.text t
 -- These elements aren't really supported.
 prettyInline ds  (Pandoc.Cite      _ t) = prettyInlines ds t
 prettyInline ds  (Pandoc.Span      _ t) = prettyInlines ds t
-prettyInline ds  (Pandoc.Note        t) = prettyBlocks  ds t
+prettyInline _   (Pandoc.Note        _) =
+    -- TODO: this requires inlines to contain our blocks, rather than
+    -- pandoc blocks.
+    mempty
 prettyInline ds  (Pandoc.Superscript t) = prettyInlines ds t
 prettyInline ds  (Pandoc.Subscript   t) = prettyInlines ds t
 prettyInline ds  (Pandoc.SmallCaps   t) = prettyInlines ds t
@@ -390,11 +398,11 @@ prettyInlines ds = mconcat . map (prettyInline ds)
 
 
 --------------------------------------------------------------------------------
-prettyReferences :: DisplaySettings -> [Pandoc.Block] -> [PP.Doc]
+prettyReferences :: DisplaySettings -> [Block] -> [PP.Doc]
 prettyReferences ds =
     map prettyReference . getReferences
   where
-    getReferences :: [Pandoc.Block] -> [Pandoc.Inline]
+    getReferences :: [Block] -> [Pandoc.Inline]
     getReferences = filter isReferenceLink . grecQ
 
     prettyReference :: Pandoc.Inline -> PP.Doc

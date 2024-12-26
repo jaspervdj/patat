@@ -26,10 +26,10 @@ import qualified Data.Text.IO                   as T
 import           Patat.Eval.Internal
 import           Patat.Presentation.Instruction
 import           Patat.Presentation.Internal
+import           Patat.Presentation.Syntax
 import           System.Exit                    (ExitCode (..))
 import qualified System.IO                      as IO
 import qualified System.Process                 as Process
-import qualified Text.Pandoc.Definition         as Pandoc
 
 
 --------------------------------------------------------------------------------
@@ -70,8 +70,8 @@ evalSlide settings slide = case slideContent slide of
 
 --------------------------------------------------------------------------------
 evalInstruction
-    :: EvalSettingsMap -> Instruction Pandoc.Block
-    -> ExtractEvalM [Instruction Pandoc.Block]
+    :: EvalSettingsMap -> Instruction Block
+    -> ExtractEvalM [Instruction Block]
 evalInstruction settings instr = case instr of
     Pause         -> pure [Pause]
     ModifyLast i  -> map ModifyLast <$> evalInstruction settings i
@@ -85,9 +85,9 @@ evalInstruction settings instr = case instr of
 
 --------------------------------------------------------------------------------
 evalBlock
-    :: EvalSettingsMap -> Pandoc.Block
-    -> ExtractEvalM [Instruction Pandoc.Block]
-evalBlock settings orig@(Pandoc.CodeBlock attr@(_, classes, _) txt)
+    :: EvalSettingsMap -> Block
+    -> ExtractEvalM [Instruction Block]
+evalBlock settings orig@(CodeBlock attr@(_, classes, _) txt)
     | [s@EvalSettings {..}] <- lookupSettings classes settings = do
         var <- state freshVar
         tell $ HMS.singleton var $ EvalBlock s attr txt Nothing
@@ -103,7 +103,7 @@ evalBlock settings orig@(Pandoc.CodeBlock attr@(_, classes, _) txt)
     | _ : _ : _ <- lookupSettings classes settings =
         let msg = "patat eval matched multiple settings for " <>
                 T.intercalate "," classes in
-        pure [Append [Pandoc.CodeBlock attr msg]]
+        pure [Append [CodeBlock attr msg]]
 evalBlock _ block =
     pure [Append [block]]
 
@@ -117,7 +117,7 @@ newAccum f = do
 
 
 --------------------------------------------------------------------------------
-evalVar :: Var -> ([Pandoc.Block] -> IO ()) -> Presentation -> IO Presentation
+evalVar :: Var -> ([Block] -> IO ()) -> Presentation -> IO Presentation
 evalVar var writeOutput presentation = case HMS.lookup var evalBlocks of
     Nothing -> pure presentation
     Just EvalBlock {..} | Just _ <- ebAsync -> pure presentation
@@ -159,7 +159,7 @@ evalVar var writeOutput presentation = case HMS.lookup var evalBlocks of
 
 --------------------------------------------------------------------------------
 evalActiveVars
-    :: (Var -> [Pandoc.Block] -> IO ()) -> Presentation -> IO Presentation
+    :: (Var -> [Block] -> IO ()) -> Presentation -> IO Presentation
 evalActiveVars update presentation = foldM
     (\p var -> evalVar var (update var) p)
     presentation

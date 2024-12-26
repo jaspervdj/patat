@@ -31,9 +31,10 @@ import qualified Patat.EncodingFallback         as EncodingFallback
 import qualified Patat.Eval                     as Eval
 import qualified Patat.Presentation.Comments    as Comments
 import           Patat.Presentation.Fragment
-import qualified Patat.Presentation.Instruction as Instruction
 import           Patat.Presentation.Instruction (VarGen)
+import qualified Patat.Presentation.Instruction as Instruction
 import           Patat.Presentation.Internal
+import           Patat.Presentation.Syntax
 import           Patat.Transition               (parseTransitionSettings)
 import           Prelude
 import qualified Skylighting                    as Skylighting
@@ -205,9 +206,10 @@ readSettings path = do
 
 --------------------------------------------------------------------------------
 pandocToSlides :: PresentationSettings -> Pandoc.Pandoc -> Seq.Seq Slide
-pandocToSlides settings pandoc =
-    let slideLevel   = fromMaybe (detectSlideLevel pandoc) (psSlideLevel settings)
-        unfragmented = splitSlides slideLevel pandoc
+pandocToSlides settings (Pandoc.Pandoc _meta pblocks) =
+    let blocks       = map fromPandoc pblocks
+        slideLevel   = fromMaybe (detectSlideLevel blocks) (psSlideLevel settings)
+        unfragmented = splitSlides slideLevel blocks
         fragmented   = map fragmentSlide unfragmented in
     Seq.fromList fragmented
   where
@@ -225,18 +227,18 @@ pandocToSlides settings pandoc =
 --------------------------------------------------------------------------------
 -- | Find level of header that starts slides.  This is defined as the least
 -- header that occurs before a non-header in the blocks.
-detectSlideLevel :: Pandoc.Pandoc -> Int
-detectSlideLevel (Pandoc.Pandoc _meta blocks0) =
+detectSlideLevel :: [Block] -> Int
+detectSlideLevel blocks0 =
     go 6 $ Comments.remove blocks0
   where
-    go level (Pandoc.Header n _ _ : x : xs)
+    go level (Header n _ _ : x : xs)
         | n < level && not (isHeader x) = go n xs
         | otherwise                     = go level (x:xs)
     go level (_ : xs)                   = go level xs
     go level []                         = level
 
-    isHeader (Pandoc.Header _ _ _) = True
-    isHeader _                     = False
+    isHeader (Header _ _ _) = True
+    isHeader _              = False
 
 
 --------------------------------------------------------------------------------
@@ -244,24 +246,24 @@ detectSlideLevel (Pandoc.Pandoc _meta blocks0) =
 -- rules, we use those as slide delimiters.  If there are no horizontal rules,
 -- we split using headers, determined by the slide level (see
 -- 'detectSlideLevel').
-splitSlides :: Int -> Pandoc.Pandoc -> [Slide]
-splitSlides slideLevel (Pandoc.Pandoc _meta blocks0)
-    | any (== Pandoc.HorizontalRule) blocks0 = splitAtRules   blocks0
-    | otherwise                              = splitAtHeaders [] blocks0
+splitSlides :: Int -> [Block] -> [Slide]
+splitSlides slideLevel blocks0
+    | any (== HorizontalRule) blocks0 = splitAtRules   blocks0
+    | otherwise                       = splitAtHeaders [] blocks0
   where
-    mkContentSlide :: [Pandoc.Block] -> [Slide]
+    mkContentSlide :: [Block] -> [Slide]
     mkContentSlide bs0 = case Comments.partition bs0 of
         (_,  [])  -> [] -- Never create empty slides
         (sn, bs1) -> pure . Slide sn . ContentSlide $
             Instruction.fromList [Instruction.Append bs1]
 
-    splitAtRules blocks = case break (== Pandoc.HorizontalRule) blocks of
+    splitAtRules blocks = case break (== HorizontalRule) blocks of
         (xs, [])           -> mkContentSlide xs
         (xs, (_rule : ys)) -> mkContentSlide xs ++ splitAtRules ys
 
     splitAtHeaders acc [] =
         mkContentSlide (reverse acc)
-    splitAtHeaders acc (b@(Pandoc.Header i _ txt) : bs0)
+    splitAtHeaders acc (b@(Header i _ txt) : bs0)
         | i > slideLevel  = splitAtHeaders (b : acc) bs0
         | i == slideLevel =
             mkContentSlide (reverse acc) ++ splitAtHeaders [b] bs0
