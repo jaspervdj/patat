@@ -11,8 +11,8 @@ module Patat.Eval.Internal
 import qualified Control.Concurrent.Async       as Async
 import qualified Data.HashMap.Strict            as HMS
 import qualified Data.Text                      as T
-import           Patat.Presentation.Instruction
 import           Patat.Presentation.Settings
+import           Patat.Presentation.Syntax
 import qualified Text.Pandoc                    as Pandoc
 
 
@@ -31,10 +31,10 @@ data EvalBlock = EvalBlock
 
 
 --------------------------------------------------------------------------------
-renderEvalBlock :: EvalBlock -> T.Text -> [Pandoc.Block]
+renderEvalBlock :: EvalBlock -> T.Text -> [Block]
 renderEvalBlock EvalBlock {..} out = case evalContainer ebSettings of
-    EvalContainerCode   -> [Pandoc.CodeBlock ebAttr out]
-    EvalContainerNone   -> [Pandoc.RawBlock fmt out]
-    EvalContainerInline -> [Pandoc.Plain [Pandoc.RawInline fmt out]]
+    EvalContainerCode   -> [CodeBlock ebAttr out]
+    EvalContainerNone   -> [RawBlock fmt out]
+    EvalContainerInline -> [Plain [RawInline fmt out]]
   where
     fmt = "eval"

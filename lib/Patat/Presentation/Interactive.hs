@@ -14,11 +14,10 @@ module Patat.Presentation.Interactive
 
 --------------------------------------------------------------------------------
 import           Data.Char                      (isDigit)
-import           Patat.Presentation.Instruction (Var)
 import           Patat.Presentation.Internal
 import           Patat.Presentation.Read
+import           Patat.Presentation.Syntax
 import qualified System.IO                      as IO
-import qualified Text.Pandoc                    as Pandoc
 import           Text.Read                      (readMaybe)
 
 
@@ -33,7 +32,7 @@ data PresentationCommand
     | Last
     | Reload
     | Seek Int
-    | UpdateVar Var [Pandoc.Block]
+    | UpdateVar Var [Block]
     | UnknownCommand String
     deriving (Eq, Show)
 
@@ -137,7 +136,9 @@ updatePresentation cmd presentation = case cmd of
         }
 
     reloadPresentation = do
-        errOrPres <- readPresentation (pVarGen presentation) (pFilePath presentation)
+        errOrPres <- readPresentation
+            (pUniqueGen presentation)
+            (pFilePath presentation)
         return $ case errOrPres of
             Left  err  -> ErroredPresentation err
             Right pres -> UpdatedPresentation $ pres

@@ -22,7 +22,6 @@ module Patat.Presentation.Internal
 
     , Slide (..)
     , SlideContent (..)
-    , Instruction.Fragment (..)
     , Index
 
     , getSlide
@@ -44,34 +43,35 @@ module Patat.Presentation.Internal
 
 
 --------------------------------------------------------------------------------
-import qualified Data.Aeson.Extended            as A
-import qualified Data.HashMap.Strict            as HMS
-import qualified Data.HashSet                   as HS
-import           Data.Maybe                     (fromMaybe)
-import           Data.Sequence.Extended         (Seq)
-import qualified Data.Sequence.Extended         as Seq
-import           Patat.EncodingFallback         (EncodingFallback)
-import qualified Patat.Eval.Internal            as Eval
-import qualified Patat.Presentation.Comments    as Comments
-import qualified Patat.Presentation.Instruction as Instruction
+import qualified Data.Aeson.Extended             as A
+import qualified Data.HashMap.Strict             as HMS
+import qualified Data.HashSet                    as HS
+import           Data.Maybe                      (fromMaybe)
+import           Data.Sequence.Extended          (Seq)
+import qualified Data.Sequence.Extended          as Seq
+import           Patat.EncodingFallback          (EncodingFallback)
+import qualified Patat.Eval.Internal             as Eval
 import           Patat.Presentation.Settings
+import qualified Patat.Presentation.SpeakerNotes as SpeakerNotes
+import           Patat.Presentation.Syntax
 import           Patat.Size
-import           Patat.Transition               (TransitionGen)
+import           Patat.Transition                (TransitionGen)
+import           Patat.Unique
 import           Prelude
-import qualified Skylighting                    as Skylighting
-import qualified Text.Pandoc                    as Pandoc
+import qualified Skylighting                     as Skylighting
+import qualified Text.Pandoc                     as Pandoc
 
 
 --------------------------------------------------------------------------------
-type Breadcrumbs = [(Int, [Pandoc.Inline])]
+type Breadcrumbs = [(Int, [Inline])]
 
 
 --------------------------------------------------------------------------------
 data Presentation = Presentation
     { pFilePath         :: !FilePath
     , pEncodingFallback :: !EncodingFallback
-    , pTitle            :: ![Pandoc.Inline]
-    , pAuthor           :: ![Pandoc.Inline]
+    , pTitle            :: ![Inline]
+    , pAuthor           :: ![Inline]
     , pSettings         :: !PresentationSettings
     , pSlides           :: !(Seq Slide)
     , pBreadcrumbs      :: !(Seq Breadcrumbs)            -- One for each slide.
@@ -80,8 +80,8 @@ data Presentation = Presentation
     , pActiveFragment   :: !Index
     , pSyntaxMap        :: !Skylighting.SyntaxMap
     , pEvalBlocks       :: !Eval.EvalBlocks
-    , pVarGen           :: !Instruction.VarGen
-    , pVars             :: !(HMS.HashMap Instruction.Var [Pandoc.Block])
+    , pUniqueGen        :: !UniqueGen
+    , pVars             :: !(HMS.HashMap Var [Block])
     }
 
 
@@ -108,15 +108,16 @@ margins ps = Margins
 
 --------------------------------------------------------------------------------
 data Slide = Slide
-    { slideComment :: !Comments.Comment
-    , slideContent :: !SlideContent
+    { slideSpeakerNotes :: !SpeakerNotes.SpeakerNotes
+    , slideSettings     :: !(Either String PresentationSettings)
+    , slideContent      :: !SlideContent
     } deriving (Show)
 
 
 --------------------------------------------------------------------------------
 data SlideContent
-    = ContentSlide (Instruction.Instructions Pandoc.Block)
-    | TitleSlide   Int [Pandoc.Inline]
+    = ContentSlide [Block]
+    | TitleSlide   Int [Inline]
     deriving (Show)
 
 
@@ -133,14 +134,17 @@ getSlide sidx = (`Seq.safeIndex` sidx) . pSlides
 --------------------------------------------------------------------------------
 numFragments :: Slide -> Int
 numFragments slide = case slideContent slide of
-    ContentSlide instrs -> Instruction.numFragments instrs
+    ContentSlide blocks -> 1 + length (blocksTriggers blocks)
     TitleSlide _ _      -> 1
 
 
 --------------------------------------------------------------------------------
 data ActiveFragment
-    = ActiveContent Instruction.Fragment
-    | ActiveTitle Pandoc.Block
+    = ActiveContent
+        [Block]
+        (HS.HashSet Var)
+        Counters
+    | ActiveTitle Block
     deriving (Show)
 
 
@@ -151,31 +155,27 @@ activeFragment presentation = do
     slide <- getSlide sidx presentation
     pure $ case slideContent slide of
         TitleSlide lvl is -> ActiveTitle $
-            Pandoc.Header lvl Pandoc.nullAttr is
-        ContentSlide instrs -> ActiveContent $
-            Instruction.renderFragment resolve $
-            Instruction.beforePause fidx instrs
-  where
-    resolve var = fromMaybe [] $ HMS.lookup var (pVars presentation)
+            Header lvl Pandoc.nullAttr is
+        ContentSlide blocks ->
+            let vars = variables $ blocksApplyFragments counters blocks
+                counters = triggersToCounters $ take fidx $
+                    blocksTriggers blocks in
+            ActiveContent blocks vars counters
 
 
 --------------------------------------------------------------------------------
-activeSpeakerNotes :: Presentation -> Comments.SpeakerNotes
+activeSpeakerNotes :: Presentation -> SpeakerNotes.SpeakerNotes
 activeSpeakerNotes presentation = fromMaybe mempty $ do
     let (sidx, _) = pActiveFragment presentation
     slide <- getSlide sidx presentation
-    pure . Comments.cSpeakerNotes $ slideComment slide
+    pure $ slideSpeakerNotes slide
 
 
 --------------------------------------------------------------------------------
-activeVars :: Presentation -> HS.HashSet Instruction.Var
-activeVars presentation = fromMaybe HS.empty $ do
-    let (sidx, fidx) = pActiveFragment presentation
-    slide <- getSlide sidx presentation
-    case slideContent slide of
-        TitleSlide _ _ -> Nothing
-        ContentSlide instrs -> pure $ Instruction.variables $
-            Instruction.beforePause fidx instrs
+activeVars :: Presentation -> HS.HashSet Var
+activeVars presentation = case activeFragment presentation of
+    Just (ActiveContent _ vars _) -> vars
+    _                             -> mempty
 
 
 --------------------------------------------------------------------------------
@@ -203,5 +203,5 @@ getPresentationSize pres = do
 
 
 --------------------------------------------------------------------------------
-updateVar :: Instruction.Var -> [Pandoc.Block] -> Presentation -> Presentation
+updateVar :: Var -> [Block] -> Presentation -> Presentation
 updateVar var blocks pres = pres {pVars = HMS.insert var blocks $ pVars pres}

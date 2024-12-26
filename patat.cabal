@@ -80,17 +80,17 @@ Library
     Patat.Images.W3m
     Patat.Main
     Patat.Presentation
-    Patat.Presentation.Comments
     Patat.Presentation.Display
     Patat.Presentation.Display.CodeBlock
     Patat.Presentation.Display.Internal
     Patat.Presentation.Display.Table
     Patat.Presentation.Fragment
-    Patat.Presentation.Instruction
     Patat.Presentation.Interactive
     Patat.Presentation.Internal
     Patat.Presentation.Read
     Patat.Presentation.Settings
+    Patat.Presentation.SpeakerNotes
+    Patat.Presentation.Syntax
     Patat.PrettyPrint
     Patat.PrettyPrint.Internal
     Patat.PrettyPrint.Matrix
@@ -101,13 +101,13 @@ Library
     Patat.Transition.Dissolve
     Patat.Transition.Matrix
     Patat.Transition.SlideLeft
+    Patat.Unique
 
   Other-modules:
     Control.Concurrent.Chan.Extended
     Data.Aeson.Extended
     Data.Aeson.TH.Extended
     Data.Char.WCWidth.Extended
-    Data.Data.Extended
     Data.Sequence.Extended
     Paths_patat
     Text.Pandoc.Extended

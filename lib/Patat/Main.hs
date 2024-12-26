@@ -27,7 +27,7 @@ import qualified Patat.EncodingFallback           as EncodingFallback
 import qualified Patat.Eval                       as Eval
 import qualified Patat.Images                     as Images
 import           Patat.Presentation
-import qualified Patat.Presentation.Comments      as Comments
+import qualified Patat.Presentation.SpeakerNotes  as SpeakerNotes
 import qualified Patat.PrettyPrint                as PP
 import           Patat.PrettyPrint.Matrix         (hPutMatrix)
 import           Patat.Transition
@@ -127,7 +127,7 @@ assertAnsiFeatures = do
 data App = App
     { aOptions      :: Options
     , aImages       :: Maybe Images.Handle
-    , aSpeakerNotes :: Maybe Comments.SpeakerNotesHandle
+    , aSpeakerNotes :: Maybe SpeakerNotes.Handle
     , aCommandChan  :: Chan AppCommand
     , aPresentation :: Presentation
     , aView         :: AppView
@@ -161,7 +161,7 @@ main = do
             OA.parserFailure parserPrefs parserInfo
             (OA.ShowHelpText Nothing) mempty
 
-    errOrPres <- readPresentation zeroVarGen filePath
+    errOrPres <- readPresentation zeroUniqueGen filePath
     pres      <- either (errorAndExit . return) return errOrPres
     let settings = pSettings pres
 
@@ -175,7 +175,7 @@ main = do
         withMaybeHandle Images.withHandle (psImages settings) $ \images ->
 
         -- (Maybe) initialize speaker notes.
-        withMaybeHandle Comments.withSpeakerNotesHandle
+        withMaybeHandle SpeakerNotes.withHandle
             (psSpeakerNotes settings) $ \speakerNotes ->
 
         -- Read presentation commands
@@ -206,7 +206,7 @@ main = do
 --------------------------------------------------------------------------------
 loop :: App -> IO ()
 loop app@App {..} = do
-    for_ aSpeakerNotes $ \sn -> Comments.writeSpeakerNotes sn
+    for_ aSpeakerNotes $ \sn -> SpeakerNotes.write sn
         (pEncodingFallback aPresentation)
         (activeSpeakerNotes aPresentation)
 

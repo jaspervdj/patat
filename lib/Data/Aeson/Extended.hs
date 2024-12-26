@@ -14,7 +14,7 @@ import           Text.Read        (readMaybe)
 
 -- | This can be parsed from a JSON string in addition to a JSON number.
 newtype FlexibleNum a = FlexibleNum {unFlexibleNum :: a}
-    deriving (Show, ToJSON)
+    deriving (Eq, Show, ToJSON)
 
 instance (FromJSON a, Read a) => FromJSON (FlexibleNum a) where
     parseJSON (String str) = case readMaybe (T.unpack str) of

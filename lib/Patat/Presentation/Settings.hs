@@ -1,4 +1,5 @@
 --------------------------------------------------------------------------------
+{-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE TemplateHaskell            #-}
@@ -22,12 +23,14 @@ module Patat.Presentation.Settings
     , SpeakerNotesSettings (..)
 
     , TransitionSettings (..)
+
+    , parseSlideSettings
     ) where
 
 
 --------------------------------------------------------------------------------
 import           Control.Applicative    ((<|>))
-import           Control.Monad          (mplus)
+import           Control.Monad          (mplus, unless)
 import qualified Data.Aeson.Extended    as A
 import qualified Data.Aeson.TH.Extended as A
 import qualified Data.Foldable          as Foldable
@@ -62,7 +65,7 @@ data PresentationSettings = PresentationSettings
     , psSyntaxDefinitions :: !(Maybe [FilePath])
     , psSpeakerNotes      :: !(Maybe SpeakerNotesSettings)
     , psTransition        :: !(Maybe TransitionSettings)
-    } deriving (Show)
+    } deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -106,7 +109,7 @@ defaultPresentationSettings = mempty
 
 
 --------------------------------------------------------------------------------
-data Wrap = NoWrap | AutoWrap | WrapAt Int deriving (Show)
+data Wrap = NoWrap | AutoWrap | WrapAt Int deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -117,7 +120,7 @@ instance A.FromJSON Wrap where
 
 
 --------------------------------------------------------------------------------
-data AutoOr a = Auto | NotAuto a deriving (Show)
+data AutoOr a = Auto | NotAuto a deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -131,7 +134,7 @@ data MarginSettings = MarginSettings
     { msTop   :: !(Maybe (AutoOr (A.FlexibleNum Int)))
     , msLeft  :: !(Maybe (AutoOr (A.FlexibleNum Int)))
     , msRight :: !(Maybe (AutoOr (A.FlexibleNum Int)))
-    } deriving (Show)
+    } deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -151,7 +154,7 @@ instance Monoid MarginSettings where
 
 --------------------------------------------------------------------------------
 newtype ExtensionList = ExtensionList {unExtensionList :: Pandoc.Extensions}
-    deriving (Show)
+    deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -208,7 +211,7 @@ defaultExtensionList = ExtensionList $
 data ImageSettings = ImageSettings
     { isBackend :: !T.Text
     , isParams  :: !A.Object
-    } deriving (Show)
+    } deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -227,7 +230,7 @@ data EvalSettingsContainer
     = EvalContainerCode
     | EvalContainerNone
     | EvalContainerInline
-    deriving (Show)
+    deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -249,7 +252,7 @@ data EvalSettings = EvalSettings
     , evalFragment  :: !Bool
     , evalContainer :: !EvalSettingsContainer
     , evalStderr    :: !Bool
-    } deriving (Show)
+    } deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -276,14 +279,14 @@ instance A.FromJSON EvalSettings where
 --------------------------------------------------------------------------------
 data SpeakerNotesSettings = SpeakerNotesSettings
     { snsFile :: !FilePath
-    } deriving (Show)
+    } deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
 data TransitionSettings = TransitionSettings
     { tsType   :: !T.Text
     , tsParams :: !A.Object
-    } deriving (Show)
+    } deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -296,3 +299,36 @@ instance A.FromJSON TransitionSettings where
 $(A.deriveFromJSON A.dropPrefixOptions ''MarginSettings)
 $(A.deriveFromJSON A.dropPrefixOptions ''SpeakerNotesSettings)
 $(A.deriveFromJSON A.dropPrefixOptions ''PresentationSettings)
+
+
+--------------------------------------------------------------------------------
+data Setting where
+    Setting :: String -> (PresentationSettings -> Maybe a) -> Setting
+
+
+--------------------------------------------------------------------------------
+unsupportedSlideSettings :: [Setting]
+unsupportedSlideSettings =
+    [ Setting "incrementalLists" psIncrementalLists
+    , Setting "autoAdvanceDelay" psAutoAdvanceDelay
+    , Setting "slideLevel"       psSlideLevel
+    , Setting "pandocExtensions" psPandocExtensions
+    , Setting "images"           psImages
+    , Setting "eval"             psEval
+    , Setting "speakerNotes"     psSpeakerNotes
+    ]
+
+
+--------------------------------------------------------------------------------
+parseSlideSettings :: PresentationSettings -> Either String PresentationSettings
+parseSlideSettings settings = do
+    unless (null unsupported) $ Left $
+        "the following settings are not supported in slide config blocks: " ++
+        intercalate ", " unsupported
+    pure settings
+  where
+    unsupported = do
+        setting <- unsupportedSlideSettings
+        case setting of
+            Setting name f | Just _ <- f settings -> [name]
+            Setting _    _                        -> []

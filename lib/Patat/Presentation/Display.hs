@@ -1,4 +1,5 @@
 --------------------------------------------------------------------------------
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 module Patat.Presentation.Display
@@ -11,19 +12,23 @@ module Patat.Presentation.Display
 
 --------------------------------------------------------------------------------
 import           Control.Monad                        (guard)
+import           Control.Monad.Identity               (runIdentity)
+import           Control.Monad.Writer                 (Writer, execWriter, tell)
 import qualified Data.Aeson.Extended                  as A
 import           Data.Char.WCWidth.Extended           (wcstrwidth)
-import           Data.Data.Extended                   (grecQ)
+import           Data.Foldable                        (for_)
+import qualified Data.HashMap.Strict                  as HMS
 import qualified Data.List                            as L
 import           Data.Maybe                           (fromMaybe, maybeToList)
 import qualified Data.Sequence.Extended               as Seq
 import qualified Data.Text                            as T
-import qualified Patat.Presentation.Comments          as Comments
 import           Patat.Presentation.Display.CodeBlock
 import           Patat.Presentation.Display.Internal
 import           Patat.Presentation.Display.Table
 import           Patat.Presentation.Internal
 import           Patat.Presentation.Settings
+import qualified Patat.Presentation.SpeakerNotes      as SpeakerNotes
+import           Patat.Presentation.Syntax
 import           Patat.PrettyPrint                    ((<$$>), (<+>))
 import qualified Patat.PrettyPrint                    as PP
 import           Patat.Size
@@ -31,7 +36,6 @@ import           Patat.Theme                          (Theme (..))
 import qualified Patat.Theme                          as Theme
 import           Prelude
 import qualified Text.Pandoc.Extended                 as Pandoc
-import qualified Text.Pandoc.Writers.Shared           as Pandoc
 
 
 --------------------------------------------------------------------------------
@@ -51,21 +55,31 @@ displayWithBorders (Size rows columns) pres@Presentation {..} f =
                 wrappedTitle = PP.spaces titleOffset <> PP.string title <> PP.spaces titleRemainder in
         borders wrappedTitle <> PP.hardline) <>
     f ds <> PP.hardline <>
+    -- TODO:
+    -- PP.string (show $ dsCounters ds) <> PP.hardline <>
+    -- PP.string (show $ activeTriggers pres) <> PP.hardline <>
+    -- PP.string (show $ pSlides ) <> PP.hardline <>
     PP.goToLine (rows - 2) <>
     borders (PP.space <> PP.string author <> middleSpaces <> PP.string active <> PP.space) <>
     PP.hardline
   where
     -- Get terminal width/title
-    (sidx, _) = pActiveFragment
-    settings  = activeSettings pres
-    ds        = DisplaySettings
+    settings     = activeSettings pres
+    (sidx, _)    = pActiveFragment
+    ds           = DisplaySettings
         { dsSize          = canvasSize
         , dsMargins       = margins settings
         , dsWrap          = fromMaybe NoWrap $ psWrap settings
         , dsTabStop       = maybe 4 A.unFlexibleNum $ psTabStop settings
         , dsTheme         = fromMaybe Theme.defaultTheme (psTheme settings)
         , dsSyntaxMap     = pSyntaxMap
+        , dsResolve       = \var -> fromMaybe [] $ HMS.lookup var pVars
+        , dsCounters      = counters
         }
+
+    counters = case activeFragment pres of
+        Just (ActiveContent _ _ c) -> c
+        _                          -> mempty
 
     -- Compute title.
     breadcrumbs = fromMaybe [] $ Seq.safeIndex pBreadcrumbs sidx
@@ -103,26 +117,25 @@ displayPresentation :: Size -> Presentation -> Display
 displayPresentation size pres@Presentation {..} =
      case activeFragment pres of
         Nothing -> DisplayDoc $ displayWithBorders size pres mempty
-        Just (ActiveContent fragment)
+        Just (ActiveContent fragment _ _)
                 | Just _ <- psImages pSettings
                 , Just image <- onlyImage fragment ->
             DisplayImage $ T.unpack image
-        Just (ActiveContent fragment) -> DisplayDoc $
+        Just (ActiveContent fragment _ _) -> DisplayDoc $
             displayWithBorders size pres $ \theme ->
                 prettyFragment theme fragment
         Just (ActiveTitle block) -> DisplayDoc $
             displayWithBorders size pres $ \ds ->
                 let auto = Margins {mTop = Auto, mRight = Auto, mLeft = Auto} in
-                prettyFragment ds {dsMargins = auto} $ Fragment [block]
-
+                prettyFragment ds {dsMargins = auto} [block]
   where
     -- Check if the fragment consists of "just a single image".  Discard
     -- headers.
-    onlyImage (Fragment (Pandoc.Header{} : bs)) = onlyImage (Fragment bs)
-    onlyImage (Fragment bs) = case bs of
-        [Pandoc.Figure _ _ bs']                      -> onlyImage (Fragment bs')
-        [Pandoc.Para [Pandoc.Image _ _ (target, _)]] -> Just target
-        _                                            -> Nothing
+    onlyImage (Header{} : bs) = onlyImage bs
+    onlyImage bs = case bs of
+        [Figure _ bs']                 -> onlyImage bs'
+        [Para [Image _ _ (target, _)]] -> Just target
+        _                              -> Nothing
 
 
 --------------------------------------------------------------------------------
@@ -145,18 +158,16 @@ dumpPresentation pres@Presentation {..} =
     dumpSlide :: Int -> [PP.Doc]
     dumpSlide i = do
         slide <- maybeToList $ getSlide i pres
-        dumpComment slide <> L.intercalate ["{fragment}"]
+        dumpSpeakerNotes slide <> L.intercalate ["{fragment}"]
             [ dumpFragment (i, j)
             | j <- [0 .. numFragments slide - 1]
             ]
 
-    dumpComment :: Slide -> [PP.Doc]
-    dumpComment slide = do
-        guard (Comments.cSpeakerNotes comment /= mempty)
+    dumpSpeakerNotes :: Slide -> [PP.Doc]
+    dumpSpeakerNotes slide = do
+        guard (slideSpeakerNotes slide /= mempty)
         pure $ PP.text $ "{speakerNotes: " <>
-            Comments.speakerNotesToText (Comments.cSpeakerNotes comment) <> "}"
-      where
-        comment = slideComment slide
+            SpeakerNotes.toText (slideSpeakerNotes slide) <> "}"
 
     dumpFragment :: Index -> [PP.Doc]
     dumpFragment idx =
@@ -173,8 +184,8 @@ dumpPresentation pres@Presentation {..} =
 
 
 --------------------------------------------------------------------------------
-prettyFragment :: DisplaySettings -> Fragment -> PP.Doc
-prettyFragment ds (Fragment blocks) = vertical $
+prettyFragment :: DisplaySettings -> [Block] -> PP.Doc
+prettyFragment ds blocks = vertical $
     PP.vcat (map (horizontal . prettyBlock ds) blocks) <>
     case prettyReferences ds blocks of
         []   -> mempty
@@ -219,21 +230,21 @@ prettyFragment ds (Fragment blocks) = vertical $
 
 
 --------------------------------------------------------------------------------
-prettyBlock :: DisplaySettings -> Pandoc.Block -> PP.Doc
+prettyBlock :: DisplaySettings -> Block -> PP.Doc
 
-prettyBlock ds (Pandoc.Plain inlines) = prettyInlines ds inlines
+prettyBlock ds (Plain inlines) = prettyInlines ds inlines
 
-prettyBlock ds (Pandoc.Para inlines) =
+prettyBlock ds (Para inlines) =
     prettyInlines ds inlines <> PP.hardline
 
-prettyBlock ds (Pandoc.Header i _ inlines) =
+prettyBlock ds (Header i _ inlines) =
     themed ds themeHeader (PP.string (replicate i '#') <+> prettyInlines ds inlines) <>
     PP.hardline
 
-prettyBlock ds (Pandoc.CodeBlock (_, classes, _) txt) =
+prettyBlock ds (CodeBlock (_, classes, _) txt) =
     prettyCodeBlock ds classes txt
 
-prettyBlock ds (Pandoc.BulletList bss) = PP.vcat
+prettyBlock ds (BulletList bss) = PP.vcat
     [ PP.indent
         (PP.Indentation 2 $ themed ds themeBulletList prefix)
         (PP.Indentation 4 mempty)
@@ -254,7 +265,7 @@ prettyBlock ds (Pandoc.BulletList bss) = PP.vcat
         }
     ds'    = ds {dsTheme = theme'}
 
-prettyBlock ds (Pandoc.OrderedList _ bss) = PP.vcat
+prettyBlock ds (OrderedList _ bss) = PP.vcat
     [ PP.indent
         (PP.Indentation 0 $ themed ds themeOrderedList $ PP.string prefix)
         (PP.Indentation 4 mempty)
@@ -268,15 +279,15 @@ prettyBlock ds (Pandoc.OrderedList _ bss) = PP.vcat
         | i <- [1 .. length bss]
         ]
 
-prettyBlock _ds (Pandoc.RawBlock _ t) = PP.text t <> PP.hardline
+prettyBlock _ds (RawBlock _ t) = PP.text t <> PP.hardline
 
-prettyBlock _ds Pandoc.HorizontalRule = "---"
+prettyBlock _ds HorizontalRule = "---"
 
-prettyBlock ds (Pandoc.BlockQuote bs) =
+prettyBlock ds (BlockQuote bs) =
     let quote = PP.Indentation 0 (themed ds themeBlockQuote "> ") in
     PP.indent quote quote (themed ds themeBlockQuote $ prettyBlocks ds bs)
 
-prettyBlock ds (Pandoc.DefinitionList terms) =
+prettyBlock ds (DefinitionList terms) =
     PP.vcat $ map prettyDefinition terms
   where
     prettyDefinition (term, definitions) =
@@ -285,134 +296,157 @@ prettyBlock ds (Pandoc.DefinitionList terms) =
         [ PP.indent
             (PP.Indentation 0 (themed ds themeDefinitionList ":   "))
             (PP.Indentation 4 mempty) $
-            prettyBlocks ds (Pandoc.plainToPara definition)
+            prettyBlocks ds (plainToPara definition)
         | definition <- definitions
         ]
 
-prettyBlock ds (Pandoc.Table _ caption specs thead tbodies tfoot) =
+    plainToPara :: [Block] -> [Block]
+    plainToPara = map $ \case
+        Plain inlines -> Para inlines
+        block         -> block
+
+
+prettyBlock ds (Table caption aligns headers rows) =
     PP.wrapAt Nothing $
-    prettyTable ds Table
-        { tCaption = prettyInlines ds caption'
-        , tAligns  = map align aligns
-        , tHeaders = map (prettyBlocks ds) headers
-        , tRows    = map (map (prettyBlocks ds)) rows
+    prettyTableDisplay ds TableDisplay
+        { tdCaption = prettyInlines ds caption
+        , tdAligns  = map align aligns
+        , tdHeaders = map (prettyBlocks ds) headers
+        , tdRows    = map (map (prettyBlocks ds)) rows
         }
   where
-    (caption', aligns, _, headers, rows) = Pandoc.toLegacyTable
-        caption specs thead tbodies tfoot
-
     align Pandoc.AlignLeft    = PP.AlignLeft
     align Pandoc.AlignCenter  = PP.AlignCenter
     align Pandoc.AlignDefault = PP.AlignLeft
     align Pandoc.AlignRight   = PP.AlignRight
 
-prettyBlock ds (Pandoc.Div _attrs blocks) = prettyBlocks ds blocks
+prettyBlock ds (Div _attrs blocks) = prettyBlocks ds blocks
 
-prettyBlock ds (Pandoc.LineBlock inliness) =
+prettyBlock ds (LineBlock inliness) =
     let ind = PP.Indentation 0 (themed ds themeLineBlock "| ") in
     PP.wrapAt Nothing $
     PP.indent ind ind $
     PP.vcat $
     map (prettyInlines ds) inliness
 
-prettyBlock ds (Pandoc.Figure _attr _caption blocks) =
-    prettyBlocks ds blocks
+prettyBlock ds (Figure _attr blocks) = prettyBlocks ds blocks
+
+prettyBlock ds (Fragmented w fragment) = prettyBlocks ds $
+    fragmentToBlocks (dsCounters ds) w fragment
+
+prettyBlock ds (VarBlock var) = prettyBlocks ds $ dsResolve ds var
+
+prettyBlock _ (SpeakerNote _) = mempty
+prettyBlock _ (Config _) = mempty
 
 
 --------------------------------------------------------------------------------
-prettyBlocks :: DisplaySettings -> [Pandoc.Block] -> PP.Doc
+prettyBlocks :: DisplaySettings -> [Block] -> PP.Doc
 prettyBlocks ds = PP.vcat . map (prettyBlock ds)
 
 
 --------------------------------------------------------------------------------
-prettyInline :: DisplaySettings -> Pandoc.Inline -> PP.Doc
+prettyInline :: DisplaySettings -> Inline -> PP.Doc
 
-prettyInline _ds Pandoc.Space = PP.space
+prettyInline _ds Space = PP.space
 
-prettyInline _ds (Pandoc.Str str) = PP.text str
+prettyInline _ds (Str str) = PP.text str
 
-prettyInline ds (Pandoc.Emph inlines) =
+prettyInline ds (Emph inlines) =
     themed ds themeEmph $
     prettyInlines ds inlines
 
-prettyInline ds (Pandoc.Strong inlines) =
+prettyInline ds (Strong inlines) =
     themed ds themeStrong $
     prettyInlines ds inlines
 
-prettyInline ds (Pandoc.Underline inlines) =
+prettyInline ds (Underline inlines) =
     themed ds themeUnderline $
     prettyInlines ds inlines
 
-prettyInline ds (Pandoc.Code _ txt) =
+prettyInline ds (Code _ txt) =
     themed ds themeCode $
     PP.text (" " <> txt <> " ")
 
-prettyInline ds link@(Pandoc.Link _attrs text (target, _title))
-    | isReferenceLink link =
+prettyInline ds link@(Link _attrs _text (target, _title))
+    | Just (text, _, _) <- toReferenceLink link =
         "[" <> themed ds themeLinkText (prettyInlines ds text) <> "]"
     | otherwise =
         "<" <> themed ds themeLinkTarget (PP.text target) <> ">"
 
-prettyInline _ds Pandoc.SoftBreak = PP.softline
+prettyInline _ds SoftBreak = PP.softline
 
-prettyInline _ds Pandoc.LineBreak = PP.hardline
+prettyInline _ds LineBreak = PP.hardline
 
-prettyInline ds (Pandoc.Strikeout t) =
+prettyInline ds (Strikeout t) =
     "~~" <> themed ds themeStrikeout (prettyInlines ds t) <> "~~"
 
-prettyInline ds (Pandoc.Quoted Pandoc.SingleQuote t) =
+prettyInline ds (Quoted Pandoc.SingleQuote t) =
     "'" <> themed ds themeQuoted (prettyInlines ds t) <> "'"
-prettyInline ds (Pandoc.Quoted Pandoc.DoubleQuote t) =
+prettyInline ds (Quoted Pandoc.DoubleQuote t) =
     "'" <> themed ds themeQuoted (prettyInlines ds t) <> "'"
 
-prettyInline ds (Pandoc.Math _ t) =
+prettyInline ds (Math _ t) =
     themed ds themeMath (PP.text t)
 
-prettyInline ds (Pandoc.Image _attrs text (target, _title)) =
+prettyInline ds (Image _attrs text (target, _title)) =
     "![" <> themed ds themeImageText (prettyInlines ds text) <> "](" <>
     themed ds themeImageTarget (PP.text target) <> ")"
 
-prettyInline _ (Pandoc.RawInline _ t) = PP.text t
+prettyInline _ (RawInline _ t) = PP.text t
 
 -- These elements aren't really supported.
-prettyInline ds  (Pandoc.Cite      _ t) = prettyInlines ds t
-prettyInline ds  (Pandoc.Span      _ t) = prettyInlines ds t
-prettyInline ds  (Pandoc.Note        t) = prettyBlocks  ds t
-prettyInline ds  (Pandoc.Superscript t) = prettyInlines ds t
-prettyInline ds  (Pandoc.Subscript   t) = prettyInlines ds t
-prettyInline ds  (Pandoc.SmallCaps   t) = prettyInlines ds t
+prettyInline ds  (Cite      _ t) = prettyInlines ds t
+prettyInline ds  (Span      _ t) = prettyInlines ds t
+prettyInline _   (Note        _) = mempty  -- TODO: support notes?
+prettyInline ds  (Superscript t) = prettyInlines ds t
+prettyInline ds  (Subscript   t) = prettyInlines ds t
+prettyInline ds  (SmallCaps   t) = prettyInlines ds t
 -- prettyInline unsupported = PP.ondullred $ PP.string $ show unsupported
 
 
 --------------------------------------------------------------------------------
-prettyInlines :: DisplaySettings -> [Pandoc.Inline] -> PP.Doc
+prettyInlines :: DisplaySettings -> [Inline] -> PP.Doc
 prettyInlines ds = mconcat . map (prettyInline ds)
 
 
 --------------------------------------------------------------------------------
-prettyReferences :: DisplaySettings -> [Pandoc.Block] -> [PP.Doc]
-prettyReferences ds =
-    map prettyReference . getReferences
-  where
-    getReferences :: [Pandoc.Block] -> [Pandoc.Inline]
-    getReferences = filter isReferenceLink . grecQ
+type Reference = ([Inline], T.Text, T.Text)
 
-    prettyReference :: Pandoc.Inline -> PP.Doc
-    prettyReference (Pandoc.Link _attrs text (target, title)) =
+
+--------------------------------------------------------------------------------
+prettyReferences :: DisplaySettings -> [Block] -> [PP.Doc]
+prettyReferences ds =
+    map prettyReference . execWriter . dftBlocks (pure . pure) tellReference
+  where
+    tellReference :: Inline -> Writer [Reference] [Inline]
+    tellReference inline = do
+        for_ (toReferenceLink inline) (tell . pure)
+        pure [inline]
+
+    prettyReference :: Reference -> PP.Doc
+    prettyReference (text, target, title) =
         "[" <>
         themed ds themeLinkText
-            (prettyInlines ds $ Pandoc.newlineToSpace text) <>
+            (prettyInlines ds $ newlineToSpace text) <>
         "](" <>
         themed ds themeLinkTarget (PP.text target) <>
         (if T.null title
             then mempty
             else PP.space <> "\"" <> PP.text title <> "\"")
         <> ")"
-    prettyReference _ = mempty
+
+    newlineToSpace :: [Inline] -> [Inline]
+    newlineToSpace = runIdentity . dftInlines (pure . pure) work
+      where
+        work x = pure $ case x of
+            SoftBreak -> [Space]
+            LineBreak -> [Space]
+            _         -> [x]
 
 
 --------------------------------------------------------------------------------
-isReferenceLink :: Pandoc.Inline -> Bool
-isReferenceLink (Pandoc.Link _attrs text (target, _)) =
-    [Pandoc.Str target] /= text
-isReferenceLink _ = False
+toReferenceLink :: Inline -> Maybe Reference
+toReferenceLink (Link _attrs text (target, title))
+    | [Str target] /= text = Just (text, target, title)
+toReferenceLink _ = Nothing

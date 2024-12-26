@@ -8,6 +8,7 @@ module Patat.Presentation.Display.Internal
 --------------------------------------------------------------------------------
 import           Patat.Presentation.Internal (Margins)
 import           Patat.Presentation.Settings (Wrap)
+import           Patat.Presentation.Syntax   (Block, Counters, Var)
 import qualified Patat.PrettyPrint           as PP
 import           Patat.Size                  (Size)
 import qualified Patat.Theme                 as Theme
@@ -22,6 +23,8 @@ data DisplaySettings = DisplaySettings
     , dsMargins   :: !Margins
     , dsTheme     :: !Theme.Theme
     , dsSyntaxMap :: !Skylighting.SyntaxMap
+    , dsResolve   :: !(Var -> [Block])
+    , dsCounters  :: !Counters
     }
 
 
