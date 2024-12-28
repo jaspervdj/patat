@@ -1,12 +1,15 @@
+{-# LANGUAGE LambdaCase #-}
 module Patat.Presentation.Syntax
     ( Block (..)
-    , foldBlock
-    , foldInline
+
+    , dftBlock
+    , dftInline
 
     , fromPandoc
     ) where
 
 import qualified Data.Text                  as T
+import           Data.Traversable           (for)
 import qualified Text.Pandoc                as Pandoc
 import qualified Text.Pandoc.Writers.Shared as Pandoc
 
@@ -40,64 +43,72 @@ data Block
     | Div !Pandoc.Attr ![Block]
     deriving (Eq, Show)
 
--- | Perform a deep fold over all inlines in a block.
--- Currently only used to find reference links.
-foldBlock
-    :: Monoid m
-    => (Block -> m)
-    -> (Pandoc.Inline -> m)
-    -> Block -> m
-foldBlock fb fi block = fb block <> case block of
-    Plain is -> foldMap (foldInline fb fi) is
-    Para is -> foldMap (foldInline fb fi) is
-    LineBlock iss -> foldMap (foldMap (foldInline fb fi)) iss
-    CodeBlock _ _ -> mempty
-    RawBlock _ _ -> mempty
-    BlockQuote bs -> foldMap (foldBlock fb fi) bs
-    OrderedList _ bss -> foldMap (foldMap (foldBlock fb fi)) bss
-    BulletList bss -> foldMap (foldMap (foldBlock fb fi)) bss
-    DefinitionList items -> mconcat $ do
-        (is, bss) <- items
-        pure $ foldMap (foldInline fb fi) is <>
-            foldMap (foldMap (foldBlock fb fi)) bss
-    Header _ _ is -> foldMap (foldInline fb fi) is
-    HorizontalRule -> mempty
-    Table caption _ thead trows ->
-        foldMap (foldInline fb fi) caption <>
-        foldMap (foldMap (foldBlock fb fi)) thead <>
-        foldMap (foldMap (foldMap (foldBlock fb fi))) trows
-    Figure _ bs -> foldMap (foldBlock fb fi) bs
-    Div _ bs -> foldMap (foldBlock fb fi) bs
+-- | Depth-First Traversal of blocks (and inlines).
+dftBlock
+    :: Monad m
+    => (Block -> m Block)
+    -> (Pandoc.Inline -> m Pandoc.Inline)
+    -> Block -> m Block
+dftBlock fb fi = (>>= fb) . \case
+    Plain xs -> Plain <$> traverse inline xs
+    Para xs -> Para <$> traverse inline xs
+    LineBlock xss -> LineBlock <$> traverse (traverse inline) xss
+    b@(CodeBlock _attr _txt) -> pure b
+    b@(RawBlock _fmt _txt) -> pure b
+    BlockQuote xs -> BlockQuote <$> traverse block xs
+    OrderedList attr xss ->
+        OrderedList attr <$> traverse (traverse block) xss
+    BulletList xss ->BulletList <$> traverse (traverse block) xss
+    DefinitionList xss -> DefinitionList <$> for xss
+        (\(term, definition) -> (,)
+            <$> traverse inline term
+            <*> traverse (traverse block) definition)
+    Header lvl attr xs -> Header lvl attr <$> traverse inline xs
+    b@HorizontalRule -> pure b
+    Table cptn aligns thead trows -> Table
+        <$> traverse inline cptn
+        <*> pure aligns
+        <*> traverse (traverse block) thead
+        <*> traverse (traverse (traverse block)) trows
+    Figure attr xs -> Figure attr <$> traverse block xs
+    Div attr xs -> Div attr <$> traverse block xs
+  where
+    block  = dftBlock fb fi
+    inline = dftInline fb fi
 
-foldInline
-    :: Monoid m
-    => (Block -> m)
-    -> (Pandoc.Inline -> m)
-    -> Pandoc.Inline -> m
-foldInline fb fi inline = fi inline <> case inline of
-    Pandoc.Str _ -> mempty
-    Pandoc.Emph is -> foldMap (foldInline fb fi) is
-    Pandoc.Underline is -> foldMap (foldInline fb fi) is
-    Pandoc.Strong is -> foldMap (foldInline fb fi) is
-    Pandoc.Strikeout is -> foldMap (foldInline fb fi) is
-    Pandoc.Superscript is -> foldMap (foldInline fb fi) is
-    Pandoc.Subscript is -> foldMap (foldInline fb fi) is
-    Pandoc.SmallCaps is -> foldMap (foldInline fb fi) is
-    Pandoc.Quoted _ is -> foldMap (foldInline fb fi) is
-    Pandoc.Cite _ is -> foldMap (foldInline fb fi) is
-    Pandoc.Code _ _ -> mempty
-    Pandoc.Space -> mempty
-    Pandoc.SoftBreak -> mempty
-    Pandoc.LineBreak -> mempty
-    Pandoc.Math _ _ -> mempty
-    Pandoc.RawInline _ _ -> mempty
-    Pandoc.Link _ is _ -> foldMap (foldInline fb fi) is
-    Pandoc.Image _ is _ -> foldMap (foldInline fb fi) is
-    Pandoc.Note bs ->
-        -- TODO: this should use our block type...
-        -- foldMap (foldBlock fb fi) bs
-        undefined
-    Pandoc.Span _ is -> foldMap (foldInline fb fi) is
+-- | Depth-First Traversal of inlines (and blocks).
+dftInline
+    :: Monad m
+    => (Block -> m Block)
+    -> (Pandoc.Inline -> m Pandoc.Inline)
+    -> Pandoc.Inline -> m Pandoc.Inline
+dftInline fb fi = (>>= fi) . \case
+    i@(Pandoc.Str _txt) -> pure i
+    Pandoc.Emph        xs -> Pandoc.Emph        <$> traverse inline xs
+    Pandoc.Underline   xs -> Pandoc.Underline   <$> traverse inline xs
+    Pandoc.Strong      xs -> Pandoc.Strong      <$> traverse inline xs
+    Pandoc.Strikeout   xs -> Pandoc.Strikeout   <$> traverse inline xs
+    Pandoc.Superscript xs -> Pandoc.Superscript <$> traverse inline xs
+    Pandoc.Subscript   xs -> Pandoc.Subscript   <$> traverse inline xs
+    Pandoc.SmallCaps   xs -> Pandoc.SmallCaps   <$> traverse inline xs
+    Pandoc.Quoted ty   xs -> Pandoc.Quoted ty   <$> traverse inline xs
+    Pandoc.Cite c      xs -> Pandoc.Cite c      <$> traverse inline xs
+    i@(Pandoc.Code _attr _txt)     -> pure i
+    i@Pandoc.Space                 -> pure i
+    i@Pandoc.SoftBreak             -> pure i
+    i@Pandoc.LineBreak             -> pure i
+    i@(Pandoc.Math _ty _txt)       -> pure i
+    i@(Pandoc.RawInline _fmt _txt) -> pure i
+    Pandoc.Link attr xs tgt ->
+        Pandoc.Link attr <$> traverse inline xs <*> pure tgt
+    Pandoc.Image attr xs tgt ->
+        Pandoc.Image attr <$> traverse inline xs <*> pure tgt
+    -- TODO: This is broken because we don't define our own Inline type using
+    -- our own Block.   It's probably fine since Note is pretty much unused.
+    i@(Pandoc.Note _blocks) -> pure i
+    Pandoc.Span attr xs -> Pandoc.Span attr <$> traverse inline xs
+  where
+    inline = dftInline fb fi
 
 fromPandoc :: Pandoc.Block -> Block
 fromPandoc (Pandoc.Plain inlines) = Plain inlines

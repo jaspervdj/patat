@@ -12,8 +12,10 @@ module Patat.Presentation.Display
 
 --------------------------------------------------------------------------------
 import           Control.Monad                        (guard)
+import           Control.Monad.Writer                 (Writer, execWriter, tell)
 import qualified Data.Aeson.Extended                  as A
 import           Data.Char.WCWidth.Extended           (wcstrwidth)
+import           Data.Foldable                        (for_)
 import qualified Data.List                            as L
 import           Data.Maybe                           (fromMaybe, maybeToList)
 import qualified Data.Sequence.Extended               as Seq
@@ -397,15 +399,20 @@ prettyInlines ds = mconcat . map (prettyInline ds)
 
 
 --------------------------------------------------------------------------------
+type Reference = ([Pandoc.Inline], T.Text, T.Text)
+
+
+--------------------------------------------------------------------------------
 prettyReferences :: DisplaySettings -> [Block] -> [PP.Doc]
 prettyReferences ds =
-    map prettyReference . getReferences
+    map prettyReference . execWriter . traverse (dftBlock pure tellReference)
   where
-    getReferences :: [Block] -> [([Pandoc.Inline], T.Text, T.Text)]
-    getReferences = foldMap $
-        foldBlock (const mempty) (maybeToList . toReferenceLink)
+    tellReference :: Pandoc.Inline -> Writer [Reference] Pandoc.Inline
+    tellReference inline = do
+        for_ (toReferenceLink inline) (tell . pure)
+        pure inline
 
-    prettyReference :: ([Pandoc.Inline], T.Text, T.Text) -> PP.Doc
+    prettyReference :: Reference -> PP.Doc
     prettyReference (text, target, title) =
         "[" <>
         themed ds themeLinkText
@@ -419,7 +426,7 @@ prettyReferences ds =
 
 
 --------------------------------------------------------------------------------
-toReferenceLink :: Pandoc.Inline -> Maybe ([Pandoc.Inline], T.Text, T.Text)
+toReferenceLink :: Pandoc.Inline -> Maybe Reference
 toReferenceLink (Pandoc.Link _attrs text (target, title))
     | [Pandoc.Str target] /= text = Just (text, target, title)
 toReferenceLink _ = Nothing
