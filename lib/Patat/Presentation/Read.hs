@@ -16,6 +16,7 @@ module Patat.Presentation.Read
 import           Control.Monad.Except           (ExceptT (..), runExceptT,
                                                  throwError)
 import           Control.Monad.Trans            (liftIO)
+import Control.Monad (guard)
 import qualified Data.Aeson.Extended            as A
 import qualified Data.Aeson.KeyMap              as AKM
 import           Data.Bifunctor                 (first)
@@ -138,9 +139,9 @@ pandocToPresentation pVarGen pFilePath pEncodingFallback pSettings pSyntaxMap
         !pEvalBlocks     = mempty
         !pVars           = mempty
     pSlideSettings <- Seq.traverseWithIndex
-        (\i ->
-            first (\err -> "on slide " ++ show (i + 1) ++ ": " ++ err) .
-            Comments.parseSlideSettings . slideComment)
+        (\i slide -> case slideSettings slide of
+            Left err -> Left $ "on slide " ++ show (i + 1) ++ ": " ++ err
+            Right cfg -> pure cfg)
         pSlides
     pTransitionGens <- for pSlideSettings $ \slideSettings ->
         case psTransition (slideSettings <> pSettings) of
@@ -229,7 +230,7 @@ pandocToSlides settings (Pandoc.Pandoc _meta pblocks) =
 -- header that occurs before a non-header in the blocks.
 detectSlideLevel :: [Block] -> Int
 detectSlideLevel blocks0 =
-    go 6 $ Comments.remove blocks0
+    go 6 $ filter (not . isComment) blocks0
   where
     go level (Header n _ _ : x : xs)
         | n < level && not (isHeader x) = go n xs
@@ -248,16 +249,19 @@ detectSlideLevel blocks0 =
 -- 'detectSlideLevel').
 splitSlides :: Int -> [Block] -> [Slide]
 splitSlides slideLevel blocks0
-    | any (== HorizontalRule) blocks0 = splitAtRules   blocks0
-    | otherwise                       = splitAtHeaders [] blocks0
+    | any isHorizontalRule blocks0 = splitAtRules   blocks0
+    | otherwise                    = splitAtHeaders [] blocks0
   where
     mkContentSlide :: [Block] -> [Slide]
-    mkContentSlide bs0 = case Comments.partition bs0 of
-        (_,  [])  -> [] -- Never create empty slides
-        (sn, bs1) -> pure . Slide sn . ContentSlide $
+    mkContentSlide bs0 = do
+        let bs1  = filter (not . isComment) bs0
+            sns  = Comments.SpeakerNotes [s | SpeakerNote s <- bs0]
+            cfgs = concatCfgs [cfg | Config cfg <- bs0]
+        guard $ not $ null bs1  -- Never create empty slides
+        pure $ Slide sns cfgs $ ContentSlide $
             Instruction.fromList [Instruction.Append bs1]
 
-    splitAtRules blocks = case break (== HorizontalRule) blocks of
+    splitAtRules blocks = case break isHorizontalRule blocks of
         (xs, [])           -> mkContentSlide xs
         (xs, (_rule : ys)) -> mkContentSlide xs ++ splitAtRules ys
 
@@ -268,12 +272,19 @@ splitSlides slideLevel blocks0
         | i == slideLevel =
             mkContentSlide (reverse acc) ++ splitAtHeaders [b] bs0
         | otherwise       =
-            let (sn, bs1) = Comments.split bs0 in
+            let (cmnts, bs1) = break (not . isComment) bs0
+                sns  = Comments.SpeakerNotes [s | SpeakerNote s <- cmnts]
+                cfgs = concatCfgs [cfg | Config cfg <- cmnts] in
             mkContentSlide (reverse acc) ++
-            [Slide sn $ TitleSlide i txt] ++
+            [Slide sns cfgs $ TitleSlide i txt] ++
             splitAtHeaders [] bs1
     splitAtHeaders acc (b : bs) =
         splitAtHeaders (b : acc) bs
+
+    concatCfgs
+        :: [Either String PresentationSettings]
+        -> Either String PresentationSettings
+    concatCfgs = fmap mconcat . sequence
 
 
 --------------------------------------------------------------------------------

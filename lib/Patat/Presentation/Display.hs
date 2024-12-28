@@ -147,18 +147,16 @@ dumpPresentation pres@Presentation {..} =
     dumpSlide :: Int -> [PP.Doc]
     dumpSlide i = do
         slide <- maybeToList $ getSlide i pres
-        dumpComment slide <> L.intercalate ["{fragment}"]
+        dumpSpeakerNotes slide <> L.intercalate ["{fragment}"]
             [ dumpFragment (i, j)
             | j <- [0 .. numFragments slide - 1]
             ]
 
-    dumpComment :: Slide -> [PP.Doc]
-    dumpComment slide = do
-        guard (Comments.cSpeakerNotes comment /= mempty)
+    dumpSpeakerNotes :: Slide -> [PP.Doc]
+    dumpSpeakerNotes slide = do
+        guard (slideSpeakerNotes slide /= mempty)
         pure $ PP.text $ "{speakerNotes: " <>
-            Comments.speakerNotesToText (Comments.cSpeakerNotes comment) <> "}"
-      where
-        comment = slideComment slide
+            Comments.speakerNotesToText (slideSpeakerNotes slide) <> "}"
 
     dumpFragment :: Index -> [PP.Doc]
     dumpFragment idx =
@@ -323,6 +321,9 @@ prettyBlock ds (LineBlock inliness) =
 prettyBlock ds (Figure _attr blocks) =
     -- TODO: the fromPandoc conversion here is weird
     prettyBlocks ds blocks
+
+prettyBlock _ (SpeakerNote _) = mempty
+prettyBlock _ (Config _) = mempty
 
 
 --------------------------------------------------------------------------------

@@ -109,8 +109,9 @@ margins ps = Margins
 
 --------------------------------------------------------------------------------
 data Slide = Slide
-    { slideComment :: !Comments.Comment
-    , slideContent :: !SlideContent
+    { slideSpeakerNotes :: !Comments.SpeakerNotes
+    , slideSettings     :: !(Either String PresentationSettings)
+    , slideContent      :: !SlideContent
     } deriving (Show)
 
 
@@ -165,7 +166,7 @@ activeSpeakerNotes :: Presentation -> Comments.SpeakerNotes
 activeSpeakerNotes presentation = fromMaybe mempty $ do
     let (sidx, _) = pActiveFragment presentation
     slide <- getSlide sidx presentation
-    pure . Comments.cSpeakerNotes $ slideComment slide
+    pure $ slideSpeakerNotes slide
 
 
 --------------------------------------------------------------------------------

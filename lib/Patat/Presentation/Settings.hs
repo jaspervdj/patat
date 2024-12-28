@@ -62,7 +62,7 @@ data PresentationSettings = PresentationSettings
     , psSyntaxDefinitions :: !(Maybe [FilePath])
     , psSpeakerNotes      :: !(Maybe SpeakerNotesSettings)
     , psTransition        :: !(Maybe TransitionSettings)
-    } deriving (Show)
+    } deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -106,7 +106,7 @@ defaultPresentationSettings = mempty
 
 
 --------------------------------------------------------------------------------
-data Wrap = NoWrap | AutoWrap | WrapAt Int deriving (Show)
+data Wrap = NoWrap | AutoWrap | WrapAt Int deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -117,7 +117,7 @@ instance A.FromJSON Wrap where
 
 
 --------------------------------------------------------------------------------
-data AutoOr a = Auto | NotAuto a deriving (Show)
+data AutoOr a = Auto | NotAuto a deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -131,7 +131,7 @@ data MarginSettings = MarginSettings
     { msTop   :: !(Maybe (AutoOr (A.FlexibleNum Int)))
     , msLeft  :: !(Maybe (AutoOr (A.FlexibleNum Int)))
     , msRight :: !(Maybe (AutoOr (A.FlexibleNum Int)))
-    } deriving (Show)
+    } deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -151,7 +151,7 @@ instance Monoid MarginSettings where
 
 --------------------------------------------------------------------------------
 newtype ExtensionList = ExtensionList {unExtensionList :: Pandoc.Extensions}
-    deriving (Show)
+    deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -208,7 +208,7 @@ defaultExtensionList = ExtensionList $
 data ImageSettings = ImageSettings
     { isBackend :: !T.Text
     , isParams  :: !A.Object
-    } deriving (Show)
+    } deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -227,7 +227,7 @@ data EvalSettingsContainer
     = EvalContainerCode
     | EvalContainerNone
     | EvalContainerInline
-    deriving (Show)
+    deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -249,7 +249,7 @@ data EvalSettings = EvalSettings
     , evalFragment  :: !Bool
     , evalContainer :: !EvalSettingsContainer
     , evalStderr    :: !Bool
-    } deriving (Show)
+    } deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -276,14 +276,14 @@ instance A.FromJSON EvalSettings where
 --------------------------------------------------------------------------------
 data SpeakerNotesSettings = SpeakerNotesSettings
     { snsFile :: !FilePath
-    } deriving (Show)
+    } deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
 data TransitionSettings = TransitionSettings
     { tsType   :: !T.Text
     , tsParams :: !A.Object
-    } deriving (Show)
+    } deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------

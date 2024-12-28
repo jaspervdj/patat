@@ -4,13 +4,7 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE TemplateHaskell            #-}
 module Patat.Presentation.Comments
-    ( Comment (..)
-    , parse
-    , remove
-    , split
-    , partition
-
-    , SpeakerNotes
+    ( SpeakerNotes (..)
     , speakerNotesToText
 
     , SpeakerNotesHandle
@@ -22,89 +16,17 @@ module Patat.Presentation.Comments
 
 
 --------------------------------------------------------------------------------
-import           Control.Applicative         ((<|>))
 import           Control.Exception           (bracket)
 import           Control.Monad               (unless, when)
-import           Data.Function               (on)
 import qualified Data.IORef                  as IORef
 import           Data.List                   (intercalate, intersperse)
 import qualified Data.Text                   as T
-import qualified Data.Text.Encoding          as T
 import qualified Data.Text.IO                as T
-import qualified Data.Yaml                   as Yaml
 import           Patat.EncodingFallback      (EncodingFallback)
 import qualified Patat.EncodingFallback      as EncodingFallback
 import           Patat.Presentation.Settings
-import           Patat.Presentation.Syntax
 import           System.Directory            (removeFile)
 import qualified System.IO                   as IO
-
-
---------------------------------------------------------------------------------
-data Comment = Comment
-    { cSpeakerNotes :: SpeakerNotes
-    , cConfig       :: Either String PresentationSettings
-    } deriving (Show)
-
-
---------------------------------------------------------------------------------
-instance Semigroup Comment where
-    l <> r = Comment
-        { cSpeakerNotes = on (<>) cSpeakerNotes l r
-        , cConfig       = case (cConfig l, cConfig r) of
-            (Left err, _       ) -> Left err
-            (Right _,  Left err) -> Left err
-            (Right x,  Right y ) -> Right (x <> y)
-        }
-
-
---------------------------------------------------------------------------------
-instance Monoid Comment where
-    mappend = (<>)
-    mempty  = Comment mempty (Right mempty)
-
-
---------------------------------------------------------------------------------
--- TODO: move to 'fromPandoc'
-parse :: Block -> Maybe Comment
-parse (RawBlock "html" t0) =
-    (do
-        t1 <- T.stripPrefix "<!--config:" t0
-        t2 <- T.stripSuffix "-->" t1
-        pure . Comment mempty $ case Yaml.decodeEither' (T.encodeUtf8 t2) of
-            Left err  -> Left (show err)
-            Right obj -> Right obj) <|>
-    (do
-        t1 <- T.stripPrefix "<!--" t0
-        t2 <- T.stripSuffix "-->" t1
-        pure $ Comment (SpeakerNotes [T.strip t2]) (Right mempty))
-parse _ = Nothing
-
-
---------------------------------------------------------------------------------
-remove :: [Block] -> [Block]
-remove = snd . partition
-
-
---------------------------------------------------------------------------------
--- | Take all comments from the front of the list.  Return those and the
--- remaining blocks.
-split :: [Block] -> (Comment, [Block])
-split = go []
-  where
-    go sn []                           = (mconcat (reverse sn), [])
-    go sn (x : xs) | Just s <- parse x = go (s : sn) xs
-    go sn xs                           = (mconcat (reverse sn), xs)
-
-
---------------------------------------------------------------------------------
--- | Partition the list into speaker notes and other blocks.
-partition :: [Block] -> (Comment, [Block])
-partition = go [] []
-  where
-    go sn bs []                           = (mconcat (reverse sn), reverse bs)
-    go sn bs (x : xs) | Just s <- parse x = go (s : sn) bs xs
-    go sn bs (x : xs)                     = go sn (x : bs) xs
 
 
 --------------------------------------------------------------------------------
@@ -161,15 +83,15 @@ unsupportedSlideSettings =
 
 
 --------------------------------------------------------------------------------
-parseSlideSettings :: Comment -> Either String PresentationSettings
-parseSlideSettings c = do
-    settings <- cConfig c
-    let unsupported = do
-            setting <- unsupportedSlideSettings
-            case setting of
-                Setting name f | Just _ <- f settings -> [name]
-                Setting _    _                        -> []
+parseSlideSettings :: PresentationSettings -> Either String PresentationSettings
+parseSlideSettings settings = do
     unless (null unsupported) $ Left $
         "the following settings are not supported in slide config blocks: " ++
         intercalate ", " unsupported
     pure settings
+  where
+    unsupported = do
+        setting <- unsupportedSlideSettings
+        case setting of
+            Setting name f | Just _ <- f settings -> [name]
+            Setting _    _                        -> []

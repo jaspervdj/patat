@@ -1,4 +1,5 @@
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Patat.Presentation.Syntax
     ( Block (..)
 
@@ -6,12 +7,18 @@ module Patat.Presentation.Syntax
     , dftInline
 
     , fromPandoc
+
+    , isHorizontalRule
+    , isComment
     ) where
 
-import qualified Data.Text                  as T
-import           Data.Traversable           (for)
-import qualified Text.Pandoc                as Pandoc
-import qualified Text.Pandoc.Writers.Shared as Pandoc
+import qualified Data.Text                   as T
+import qualified Data.Text.Encoding          as T
+import           Data.Traversable            (for)
+import qualified Data.Yaml                   as Yaml
+import           Patat.Presentation.Settings (PresentationSettings)
+import qualified Text.Pandoc                 as Pandoc
+import qualified Text.Pandoc.Writers.Shared  as Pandoc
 
 -- | This is similar to 'Pandoc.Block'.  Having our own datatype has some
 -- advantages:
@@ -41,6 +48,9 @@ data Block
     | Table ![Pandoc.Inline] ![Pandoc.Alignment] ![[Block]] ![[[Block]]]
     | Figure !Pandoc.Attr ![Block]
     | Div !Pandoc.Attr ![Block]
+    -- Our own extensions:
+    | SpeakerNote !T.Text
+    | Config !(Either String PresentationSettings)
     deriving (Eq, Show)
 
 -- | Depth-First Traversal of blocks (and inlines).
@@ -72,6 +82,8 @@ dftBlock fb fi = (>>= fb) . \case
         <*> traverse (traverse (traverse block)) trows
     Figure attr xs -> Figure attr <$> traverse block xs
     Div attr xs -> Div attr <$> traverse block xs
+    b@(SpeakerNote _txt) -> pure b
+    b@(Config _cfg) -> pure b
   where
     block  = dftBlock fb fi
     inline = dftInline fb fi
@@ -115,7 +127,19 @@ fromPandoc (Pandoc.Plain inlines) = Plain inlines
 fromPandoc (Pandoc.Para inlines) = Para inlines
 fromPandoc (Pandoc.LineBlock inliness) = LineBlock inliness
 fromPandoc (Pandoc.CodeBlock attrs body) = CodeBlock attrs body
-fromPandoc (Pandoc.RawBlock fmt body) = RawBlock fmt body
+fromPandoc (Pandoc.RawBlock fmt body)
+    -- Parse config blocks.
+    | fmt == "html"
+    , Just t1 <- T.stripPrefix "<!--config:" body
+    , Just t2 <- T.stripSuffix "-->" t1 = Config $
+        case Yaml.decodeEither' (T.encodeUtf8 t2) of
+            Left err  -> Left (show err)
+            Right obj -> Right obj
+    -- Parse other comments.
+    | Just t1 <- T.stripPrefix "<!--" body
+    , Just t2 <- T.stripSuffix "-->" t1 = SpeakerNote $ T.strip t2
+    -- Other raw blocks, leave as-is.
+    | otherwise = RawBlock fmt body
 fromPandoc (Pandoc.BlockQuote blocks) =
     BlockQuote $ map fromPandoc blocks
 fromPandoc (Pandoc.OrderedList attrs items) =
@@ -140,3 +164,12 @@ fromPandoc (Pandoc.Figure attrs _caption blocks) =
     Figure attrs $ map fromPandoc blocks
 fromPandoc (Pandoc.Div attrs blocks) =
     Div attrs $ map fromPandoc blocks
+
+isHorizontalRule :: Block -> Bool
+isHorizontalRule HorizontalRule = True
+isHorizontalRule _              = False
+
+isComment :: Block -> Bool
+isComment (SpeakerNote _) = True
+isComment (Config _)      = True
+isComment _               = False

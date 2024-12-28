@@ -60,7 +60,7 @@ testDetectSlideLevel = Tasty.testGroup "detectSlideLevel"
     , Tasty.testCase "03" $
         (Tasty.@=?) 2 $ detectSlideLevel
             [ Header 1 mempty [Pandoc.Str "Intro"]
-            , RawBlock "html" "<!-- Some speaker notes -->"
+            , SpeakerNote "Some speaker note"
             , Header 2 mempty [Pandoc.Str "Detail"]
             , Para [Pandoc.Str "Hi"]
             ]

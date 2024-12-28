@@ -70,6 +70,8 @@ fragmentBlock _ block@(Div {})            = [Append [block]]
 fragmentBlock _ block@HorizontalRule      = [Append [block]]
 fragmentBlock _ block@(LineBlock {})      = [Append [block]]
 fragmentBlock _ block@(Figure {})         = [Append [block]]
+fragmentBlock _ block@(SpeakerNote {})    = [Append [block]]
+fragmentBlock _ block@(Config {})         = [Append [block]]
 
 fragmentList
     :: FragmentSettings      -- ^ Global settings
