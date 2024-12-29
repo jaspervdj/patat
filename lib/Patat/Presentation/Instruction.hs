@@ -18,14 +18,11 @@ module Patat.Presentation.Instruction
     , Instruction (..)
     , beforePause
     , numFragments
-    , variables
 
     , Fragment (..)
     , renderFragment
     ) where
 
-import           Data.Hashable             (Hashable)
-import qualified Data.HashSet              as HS
 import           Data.List                 (foldl')
 import           Patat.Presentation.Syntax
 
@@ -48,26 +45,11 @@ fromList = Instructions . go
 toList :: Instructions a -> [Instruction a]
 toList (Instructions xs) = xs
 
--- | A variable is like a placeholder in the instructions, something we don't
--- know yet, dynamic content.  Currently this is only used for code evaluation.
-newtype Var = Var Int deriving (Hashable, Eq, Ord, Show)
-
--- | Used to generate fresh variables.
-newtype VarGen = VarGen Int deriving (Show)
-
-zeroVarGen :: VarGen
-zeroVarGen = VarGen 0
-
-freshVar :: VarGen -> (Var, VarGen)
-freshVar (VarGen x) = (Var x, VarGen (x + 1))
-
 data Instruction a
     -- Pause.
     = Pause
     -- Append items.
     | Append [a]
-    -- Append the content of a variable.
-    | AppendVar Var
     -- Remove the last item.
     | Delete
     -- Modify the last block with the provided instruction.
@@ -77,7 +59,6 @@ data Instruction a
 isPause :: Instruction a -> Bool
 isPause Pause          = True
 isPause (Append _)     = False
-isPause (AppendVar _)  = False
 isPause Delete         = False
 isPause (ModifyLast i) = isPause i
 
@@ -91,16 +72,10 @@ beforePause n = Instructions . go 0 . unInstructions
     go i (Pause : t) = if i >= n then [] else go (i + 1) t
     go i (h     : t) = h : go i t
 
-variables :: Instructions a -> HS.HashSet Var
-variables (Instructions []               )  = mempty
-variables (Instructions (AppendVar v : t))  = HS.insert v (variables (Instructions t))
-variables (Instructions (ModifyLast i : t)) = variables (Instructions t) <> variables (Instructions [i])
-variables (Instructions (_           : t))  = variables (Instructions t)
-
 numFragments :: Instructions a -> Int
 numFragments = succ . numPauses
 
-newtype Fragment = Fragment [Block] deriving (Show)
+newtype Fragment = Fragment {unFragment :: [Block]} deriving (Show)
 
 renderFragment
     :: (Var -> [Block]) -> Instructions Block -> Fragment
@@ -112,7 +87,6 @@ goBlocks
     -> [Block]
 goBlocks _ Pause xs = xs
 goBlocks _ (Append ys) xs = xs ++ ys
-goBlocks resolve (AppendVar v) xs = xs ++ resolve v
 goBlocks _ Delete xs = sinit xs
 goBlocks resolve (ModifyLast f) xs
     | null xs   = xs  -- Shouldn't happen unless instructions are malformed.
@@ -124,11 +98,6 @@ goBlock _ (Append ys) block = case block of
     -- We can only append to a few specific block types for now.
     BulletList xs       -> BulletList $ xs ++ [ys]
     OrderedList attr xs -> OrderedList attr $ xs ++ [ys]
-    _                   -> block
-goBlock resolve (AppendVar v) block = case block of
-    -- We can only append to a few specific block types for now.
-    BulletList xs       -> BulletList $ xs ++ [resolve v]
-    OrderedList attr xs -> OrderedList attr $ xs ++ [resolve v]
     _                   -> block
 goBlock _ Delete block = case block of
     -- We can only delete from a few specific block types for now.

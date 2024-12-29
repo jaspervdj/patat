@@ -17,6 +17,7 @@ import           Control.Monad.Writer                 (Writer, execWriter, tell)
 import qualified Data.Aeson.Extended                  as A
 import           Data.Char.WCWidth.Extended           (wcstrwidth)
 import           Data.Foldable                        (for_)
+import qualified Data.HashMap.Strict                  as HMS
 import qualified Data.List                            as L
 import           Data.Maybe                           (fromMaybe, maybeToList)
 import qualified Data.Sequence.Extended               as Seq
@@ -68,6 +69,7 @@ displayWithBorders (Size rows columns) pres@Presentation {..} f =
         , dsTabStop       = maybe 4 A.unFlexibleNum $ psTabStop settings
         , dsTheme         = fromMaybe Theme.defaultTheme (psTheme settings)
         , dsSyntaxMap     = pSyntaxMap
+        , dsResolve       = \var -> fromMaybe [] $ HMS.lookup var pVars
         }
 
     -- Compute title.
@@ -323,6 +325,7 @@ prettyBlock ds (Figure _attr blocks) =
     -- TODO: the fromPandoc conversion here is weird
     prettyBlocks ds blocks
 
+prettyBlock ds (VarBlock var) = prettyBlocks ds $ dsResolve ds var
 prettyBlock _ (SpeakerNote _) = mempty
 prettyBlock _ (Config _) = mempty
 
@@ -404,12 +407,12 @@ type Reference = ([Inline], T.Text, T.Text)
 --------------------------------------------------------------------------------
 prettyReferences :: DisplaySettings -> [Block] -> [PP.Doc]
 prettyReferences ds =
-    map prettyReference . execWriter . traverse (dftBlock pure tellReference)
+    map prettyReference . execWriter . dftBlocks (pure . pure) tellReference
   where
-    tellReference :: Inline -> Writer [Reference] Inline
+    tellReference :: Inline -> Writer [Reference] [Inline]
     tellReference inline = do
         for_ (toReferenceLink inline) (tell . pure)
-        pure inline
+        pure [inline]
 
     prettyReference :: Reference -> PP.Doc
     prettyReference (text, target, title) =
@@ -424,12 +427,12 @@ prettyReferences ds =
         <> ")"
 
     newlineToSpace :: [Inline] -> [Inline]
-    newlineToSpace = runIdentity . traverse (dftInline pure work)
+    newlineToSpace = runIdentity . dftInlines (pure . pure) work
       where
         work x = pure $ case x of
-            SoftBreak -> Space
-            LineBreak -> Space
-            _         -> x
+            SoftBreak -> [Space]
+            LineBreak -> [Space]
+            _         -> [x]
 
 
 --------------------------------------------------------------------------------

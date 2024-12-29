@@ -30,7 +30,6 @@ fragmentInstructions fs = fromList . concatMap fragmentInstruction . toList
     fragmentInstruction Pause = [Pause]
     fragmentInstruction (Append []) = [Append []]
     fragmentInstruction (Append xs) = fragmentBlocks fs xs
-    fragmentInstruction (AppendVar v) = [AppendVar v]
     fragmentInstruction Delete = [Delete]
     fragmentInstruction (ModifyLast f) = map ModifyLast $ fragmentInstruction f
 
@@ -69,6 +68,7 @@ fragmentBlock _ block@(Div {})            = [Append [block]]
 fragmentBlock _ block@HorizontalRule      = [Append [block]]
 fragmentBlock _ block@(LineBlock {})      = [Append [block]]
 fragmentBlock _ block@(Figure {})         = [Append [block]]
+fragmentBlock _ block@(VarBlock {})       = [Append [block]]
 fragmentBlock _ block@(SpeakerNote {})    = [Append [block]]
 fragmentBlock _ block@(Config {})         = [Append [block]]
 

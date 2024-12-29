@@ -176,8 +176,12 @@ activeVars presentation = fromMaybe HS.empty $ do
     slide <- getSlide sidx presentation
     case slideContent slide of
         TitleSlide _ _ -> Nothing
-        ContentSlide instrs -> pure $ Instruction.variables $
+        ContentSlide instrs -> pure $
+            variables $ Instruction.unFragment $
+            Instruction.renderFragment resolve $
             Instruction.beforePause fidx instrs
+  where
+    resolve _ = []
 
 
 --------------------------------------------------------------------------------

@@ -32,7 +32,6 @@ import qualified Patat.EncodingFallback         as EncodingFallback
 import qualified Patat.Eval                     as Eval
 import qualified Patat.Presentation.Comments    as Comments
 import           Patat.Presentation.Fragment
-import           Patat.Presentation.Instruction (VarGen)
 import qualified Patat.Presentation.Instruction as Instruction
 import           Patat.Presentation.Internal
 import           Patat.Presentation.Syntax

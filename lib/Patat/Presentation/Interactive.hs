@@ -14,7 +14,6 @@ module Patat.Presentation.Interactive
 
 --------------------------------------------------------------------------------
 import           Data.Char                      (isDigit)
-import           Patat.Presentation.Instruction (Var)
 import           Patat.Presentation.Internal
 import           Patat.Presentation.Read
 import           Patat.Presentation.Syntax

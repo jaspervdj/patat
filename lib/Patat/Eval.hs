@@ -77,9 +77,6 @@ evalInstruction settings instr = case instr of
     ModifyLast i  -> map ModifyLast <$> evalInstruction settings i
     Append []     -> pure [Append []]
     Append blocks -> concat <$> traverse (evalBlock settings) blocks
-    AppendVar v   ->
-        -- Should not happen since we don't do recursive evaluation.
-        pure [AppendVar v]
     Delete        -> pure [Delete]
 
 
@@ -92,14 +89,14 @@ evalBlock settings orig@(CodeBlock attr@(_, classes, _) txt)
         var <- state freshVar
         tell $ HMS.singleton var $ EvalBlock s attr txt Nothing
         pure $ case (evalFragment, evalReplace) of
-            (False, True) -> [AppendVar var]
-            (False, False) -> [Append [orig], AppendVar var]
+            (False, True) -> [Append [VarBlock var]]
+            (False, False) -> [Append [orig, VarBlock var]]
             (True, True) ->
                 [ Append [orig], Pause
-                , Delete, AppendVar var
+                , Delete, Append [VarBlock var]
                 ]
             (True, False) ->
-                [Append [orig], Pause, AppendVar var]
+                [Append [orig], Pause, Append [VarBlock var]]
     | _ : _ : _ <- lookupSettings classes settings =
         let msg = "patat eval matched multiple settings for " <>
                 T.intercalate "," classes in
