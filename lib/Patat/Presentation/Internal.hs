@@ -64,15 +64,15 @@ import qualified Text.Pandoc                    as Pandoc
 
 
 --------------------------------------------------------------------------------
-type Breadcrumbs = [(Int, [Pandoc.Inline])]
+type Breadcrumbs = [(Int, [Inline])]
 
 
 --------------------------------------------------------------------------------
 data Presentation = Presentation
     { pFilePath         :: !FilePath
     , pEncodingFallback :: !EncodingFallback
-    , pTitle            :: ![Pandoc.Inline]
-    , pAuthor           :: ![Pandoc.Inline]
+    , pTitle            :: ![Inline]
+    , pAuthor           :: ![Inline]
     , pSettings         :: !PresentationSettings
     , pSlides           :: !(Seq Slide)
     , pBreadcrumbs      :: !(Seq Breadcrumbs)            -- One for each slide.
@@ -118,7 +118,7 @@ data Slide = Slide
 --------------------------------------------------------------------------------
 data SlideContent
     = ContentSlide (Instruction.Instructions Block)
-    | TitleSlide   Int [Pandoc.Inline]
+    | TitleSlide   Int [Inline]
     deriving (Show)
 
 

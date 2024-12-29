@@ -17,7 +17,6 @@ import           Data.List                      (intersperse, intercalate)
 import           Patat.Presentation.Instruction
 import           Patat.Presentation.Syntax
 import           Prelude
-import qualified Text.Pandoc                    as Pandoc
 
 data FragmentSettings = FragmentSettings
     { fsIncrementalLists :: !Bool
@@ -44,7 +43,7 @@ fragmentBlock _fs block@(Para inlines)
     | inlines == threeDots = [Pause]
     | otherwise            = [Append [block]]
   where
-    threeDots = intersperse Pandoc.Space $ replicate 3 (Pandoc.Str ".")
+    threeDots = intersperse Space $ replicate 3 (Str ".")
 
 fragmentBlock fs (BulletList bs0) =
     fragmentList fs (fsIncrementalLists fs) BulletList bs0

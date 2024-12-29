@@ -36,6 +36,6 @@ renderEvalBlock :: EvalBlock -> T.Text -> [Block]
 renderEvalBlock EvalBlock {..} out = case evalContainer ebSettings of
     EvalContainerCode   -> [CodeBlock ebAttr out]
     EvalContainerNone   -> [RawBlock fmt out]
-    EvalContainerInline -> [Plain [Pandoc.RawInline fmt out]]
+    EvalContainerInline -> [Plain [RawInline fmt out]]
   where
     fmt = "eval"

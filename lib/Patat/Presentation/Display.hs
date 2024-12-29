@@ -12,6 +12,7 @@ module Patat.Presentation.Display
 
 --------------------------------------------------------------------------------
 import           Control.Monad                        (guard)
+import           Control.Monad.Identity               (runIdentity)
 import           Control.Monad.Writer                 (Writer, execWriter, tell)
 import qualified Data.Aeson.Extended                  as A
 import           Data.Char.WCWidth.Extended           (wcstrwidth)
@@ -122,9 +123,9 @@ displayPresentation size pres@Presentation {..} =
     -- headers.
     onlyImage (Fragment (Header{} : bs)) = onlyImage (Fragment bs)
     onlyImage (Fragment bs) = case bs of
-        [Figure _ bs']                        -> onlyImage (Fragment bs')
-        [Para [Pandoc.Image _ _ (target, _)]] -> Just target
-        _                                     -> Nothing
+        [Figure _ bs']                 -> onlyImage (Fragment bs')
+        [Para [Image _ _ (target, _)]] -> Just target
+        _                              -> Nothing
 
 
 --------------------------------------------------------------------------------
@@ -332,75 +333,72 @@ prettyBlocks ds = PP.vcat . map (prettyBlock ds)
 
 
 --------------------------------------------------------------------------------
-prettyInline :: DisplaySettings -> Pandoc.Inline -> PP.Doc
+prettyInline :: DisplaySettings -> Inline -> PP.Doc
 
-prettyInline _ds Pandoc.Space = PP.space
+prettyInline _ds Space = PP.space
 
-prettyInline _ds (Pandoc.Str str) = PP.text str
+prettyInline _ds (Str str) = PP.text str
 
-prettyInline ds (Pandoc.Emph inlines) =
+prettyInline ds (Emph inlines) =
     themed ds themeEmph $
     prettyInlines ds inlines
 
-prettyInline ds (Pandoc.Strong inlines) =
+prettyInline ds (Strong inlines) =
     themed ds themeStrong $
     prettyInlines ds inlines
 
-prettyInline ds (Pandoc.Underline inlines) =
+prettyInline ds (Underline inlines) =
     themed ds themeUnderline $
     prettyInlines ds inlines
 
-prettyInline ds (Pandoc.Code _ txt) =
+prettyInline ds (Code _ txt) =
     themed ds themeCode $
     PP.text (" " <> txt <> " ")
 
-prettyInline ds link@(Pandoc.Link _attrs _text (target, _title))
+prettyInline ds link@(Link _attrs _text (target, _title))
     | Just (text, _, _) <- toReferenceLink link =
         "[" <> themed ds themeLinkText (prettyInlines ds text) <> "]"
     | otherwise =
         "<" <> themed ds themeLinkTarget (PP.text target) <> ">"
 
-prettyInline _ds Pandoc.SoftBreak = PP.softline
+prettyInline _ds SoftBreak = PP.softline
 
-prettyInline _ds Pandoc.LineBreak = PP.hardline
+prettyInline _ds LineBreak = PP.hardline
 
-prettyInline ds (Pandoc.Strikeout t) =
+prettyInline ds (Strikeout t) =
     "~~" <> themed ds themeStrikeout (prettyInlines ds t) <> "~~"
 
-prettyInline ds (Pandoc.Quoted Pandoc.SingleQuote t) =
+prettyInline ds (Quoted Pandoc.SingleQuote t) =
     "'" <> themed ds themeQuoted (prettyInlines ds t) <> "'"
-prettyInline ds (Pandoc.Quoted Pandoc.DoubleQuote t) =
+prettyInline ds (Quoted Pandoc.DoubleQuote t) =
     "'" <> themed ds themeQuoted (prettyInlines ds t) <> "'"
 
-prettyInline ds (Pandoc.Math _ t) =
+prettyInline ds (Math _ t) =
     themed ds themeMath (PP.text t)
 
-prettyInline ds (Pandoc.Image _attrs text (target, _title)) =
+prettyInline ds (Image _attrs text (target, _title)) =
     "![" <> themed ds themeImageText (prettyInlines ds text) <> "](" <>
     themed ds themeImageTarget (PP.text target) <> ")"
 
-prettyInline _ (Pandoc.RawInline _ t) = PP.text t
+prettyInline _ (RawInline _ t) = PP.text t
 
 -- These elements aren't really supported.
-prettyInline ds  (Pandoc.Cite      _ t) = prettyInlines ds t
-prettyInline ds  (Pandoc.Span      _ t) = prettyInlines ds t
-prettyInline _   (Pandoc.Note        _) =
-    -- TODO: this requires inlines to contain our blocks, rather than
-    -- pandoc blocks.
-    mempty
-prettyInline ds  (Pandoc.Superscript t) = prettyInlines ds t
-prettyInline ds  (Pandoc.Subscript   t) = prettyInlines ds t
-prettyInline ds  (Pandoc.SmallCaps   t) = prettyInlines ds t
+prettyInline ds  (Cite      _ t) = prettyInlines ds t
+prettyInline ds  (Span      _ t) = prettyInlines ds t
+prettyInline _   (Note        _) = mempty
+prettyInline ds  (Superscript t) = prettyInlines ds t
+prettyInline ds  (Subscript   t) = prettyInlines ds t
+prettyInline ds  (SmallCaps   t) = prettyInlines ds t
 -- prettyInline unsupported = PP.ondullred $ PP.string $ show unsupported
 
 
 --------------------------------------------------------------------------------
-prettyInlines :: DisplaySettings -> [Pandoc.Inline] -> PP.Doc
+prettyInlines :: DisplaySettings -> [Inline] -> PP.Doc
 prettyInlines ds = mconcat . map (prettyInline ds)
 
 
 --------------------------------------------------------------------------------
-type Reference = ([Pandoc.Inline], T.Text, T.Text)
+type Reference = ([Inline], T.Text, T.Text)
 
 
 --------------------------------------------------------------------------------
@@ -408,7 +406,7 @@ prettyReferences :: DisplaySettings -> [Block] -> [PP.Doc]
 prettyReferences ds =
     map prettyReference . execWriter . traverse (dftBlock pure tellReference)
   where
-    tellReference :: Pandoc.Inline -> Writer [Reference] Pandoc.Inline
+    tellReference :: Inline -> Writer [Reference] Inline
     tellReference inline = do
         for_ (toReferenceLink inline) (tell . pure)
         pure inline
@@ -417,7 +415,7 @@ prettyReferences ds =
     prettyReference (text, target, title) =
         "[" <>
         themed ds themeLinkText
-            (prettyInlines ds $ Pandoc.newlineToSpace text) <>
+            (prettyInlines ds $ newlineToSpace text) <>
         "](" <>
         themed ds themeLinkTarget (PP.text target) <>
         (if T.null title
@@ -425,9 +423,17 @@ prettyReferences ds =
             else PP.space <> "\"" <> PP.text title <> "\"")
         <> ")"
 
+    newlineToSpace :: [Inline] -> [Inline]
+    newlineToSpace = runIdentity . traverse (dftInline pure work)
+      where
+        work x = pure $ case x of
+            SoftBreak -> Space
+            LineBreak -> Space
+            _         -> x
+
 
 --------------------------------------------------------------------------------
-toReferenceLink :: Pandoc.Inline -> Maybe Reference
-toReferenceLink (Pandoc.Link _attrs text (target, title))
-    | [Pandoc.Str target] /= text = Just (text, target, title)
+toReferenceLink :: Inline -> Maybe Reference
+toReferenceLink (Link _attrs text (target, title))
+    | [Str target] /= text = Just (text, target, title)
 toReferenceLink _ = Nothing

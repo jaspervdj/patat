@@ -9,7 +9,6 @@ import           Patat.Presentation.Read
 import           Patat.Presentation.Syntax
 import qualified Test.Tasty                as Tasty
 import qualified Test.Tasty.HUnit          as Tasty
-import qualified Text.Pandoc               as Pandoc
 
 
 --------------------------------------------------------------------------------
@@ -48,20 +47,20 @@ testDetectSlideLevel :: Tasty.TestTree
 testDetectSlideLevel = Tasty.testGroup "detectSlideLevel"
     [ Tasty.testCase "01" $
         (Tasty.@=?) 1 $ detectSlideLevel
-            [ Header 1 mempty [Pandoc.Str "Intro"]
-            , Para [Pandoc.Str "Hi"]
+            [ Header 1 mempty [Str "Intro"]
+            , Para [Str "Hi"]
             ]
     , Tasty.testCase "02" $
         (Tasty.@=?) 2 $ detectSlideLevel
-            [ Header 1 mempty [Pandoc.Str "Intro"]
-            , Header 2 mempty [Pandoc.Str "Detail"]
-            , Para [Pandoc.Str "Hi"]
+            [ Header 1 mempty [Str "Intro"]
+            , Header 2 mempty [Str "Detail"]
+            , Para [Str "Hi"]
             ]
     , Tasty.testCase "03" $
         (Tasty.@=?) 2 $ detectSlideLevel
-            [ Header 1 mempty [Pandoc.Str "Intro"]
+            [ Header 1 mempty [Str "Intro"]
             , SpeakerNote "Some speaker note"
-            , Header 2 mempty [Pandoc.Str "Detail"]
-            , Para [Pandoc.Str "Hi"]
+            , Header 2 mempty [Str "Detail"]
+            , Para [Str "Hi"]
             ]
     ]
