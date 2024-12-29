@@ -108,7 +108,6 @@ Library
     Data.Aeson.Extended
     Data.Aeson.TH.Extended
     Data.Char.WCWidth.Extended
-    Data.Data.Extended
     Data.Sequence.Extended
     Paths_patat
     Text.Pandoc.Extended

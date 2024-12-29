@@ -2,28 +2,15 @@
 {-# LANGUAGE LambdaCase #-}
 module Text.Pandoc.Extended
     ( module Text.Pandoc
-
-    , newlineToSpace
-
     , readPlainText
     ) where
 
 
 --------------------------------------------------------------------------------
-import           Data.Char          (isSpace)
-import           Data.Data.Extended (grecT)
-import qualified Data.Text          as T
+import           Data.Char   (isSpace)
+import qualified Data.Text   as T
 import           Prelude
 import           Text.Pandoc
-
-
-
---------------------------------------------------------------------------------
-newlineToSpace :: [Inline] -> [Inline]
-newlineToSpace = grecT $ \case
-    SoftBreak -> Space
-    LineBreak -> Space
-    inline    -> inline
 
 
 --------------------------------------------------------------------------------
