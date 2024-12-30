@@ -130,12 +130,11 @@ pandocToPresentation pVarGen pFilePath pEncodingFallback pSettings pSyntaxMap
         pandoc@(Pandoc.Pandoc meta _) = do
     let !pTitle          = case Pandoc.docTitle meta of
             []    -> [Str . T.pack . snd $ splitFileName pFilePath]
-            title -> map fromPandocInline title
+            title -> fromPandocInlines title
         !pSlides         = pandocToSlides pSettings pandoc
         !pBreadcrumbs    = collectBreadcrumbs pSlides
         !pActiveFragment = (0, 0)
-        !pAuthor         = map fromPandocInline $
-            concat $ Pandoc.docAuthors meta
+        !pAuthor         = fromPandocInlines $ concat $ Pandoc.docAuthors meta
         !pEvalBlocks     = mempty
         !pVars           = mempty
     pSlideSettings <- Seq.traverseWithIndex
@@ -208,7 +207,7 @@ readSettings path = do
 --------------------------------------------------------------------------------
 pandocToSlides :: PresentationSettings -> Pandoc.Pandoc -> Seq.Seq Slide
 pandocToSlides settings (Pandoc.Pandoc _meta pblocks) =
-    let blocks       = map fromPandocBlock pblocks
+    let blocks       = fromPandocBlocks pblocks
         slideLevel   = fromMaybe (detectSlideLevel blocks) (psSlideLevel settings)
         unfragmented = splitSlides slideLevel blocks
         fragmented   = map fragmentSlide unfragmented in

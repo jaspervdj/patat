@@ -321,9 +321,7 @@ prettyBlock ds (LineBlock inliness) =
     PP.vcat $
     map (prettyInlines ds) inliness
 
-prettyBlock ds (Figure _attr blocks) =
-    -- TODO: the fromPandoc conversion here is weird
-    prettyBlocks ds blocks
+prettyBlock ds (Figure _attr blocks) = prettyBlocks ds blocks
 
 prettyBlock ds (VarBlock var) = prettyBlocks ds $ dsResolve ds var
 prettyBlock _ (SpeakerNote _) = mempty
@@ -388,7 +386,7 @@ prettyInline _ (RawInline _ t) = PP.text t
 -- These elements aren't really supported.
 prettyInline ds  (Cite      _ t) = prettyInlines ds t
 prettyInline ds  (Span      _ t) = prettyInlines ds t
-prettyInline _   (Note        _) = mempty
+prettyInline _   (Note        _) = mempty  -- TODO: support notes?
 prettyInline ds  (Superscript t) = prettyInlines ds t
 prettyInline ds  (Subscript   t) = prettyInlines ds t
 prettyInline ds  (SmallCaps   t) = prettyInlines ds t

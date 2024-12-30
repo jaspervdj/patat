@@ -14,8 +14,8 @@ module Patat.Presentation.Syntax
     , dftBlocks
     , dftInlines
 
-    , fromPandocBlock
-    , fromPandocInline
+    , fromPandocBlocks
+    , fromPandocInlines
 
     , isHorizontalRule
     , isComment
@@ -177,73 +177,79 @@ dftInlines fb fi = inlines
         Note blocks -> Note <$> dftBlocks fb fi blocks
         Span attr xs -> Span attr . concat <$> traverse inline xs
 
-fromPandocBlock :: Pandoc.Block -> Block
-fromPandocBlock (Pandoc.Plain xs) = Plain (map fromPandocInline xs)
-fromPandocBlock (Pandoc.Para xs) = Para (map fromPandocInline xs)
+fromPandocBlocks :: [Pandoc.Block] -> [Block]
+fromPandocBlocks = concatMap fromPandocBlock
+
+fromPandocBlock :: Pandoc.Block -> [Block]
+fromPandocBlock (Pandoc.Plain xs) = [Plain (fromPandocInlines xs)]
+fromPandocBlock (Pandoc.Para xs) = [Para (fromPandocInlines xs)]
 fromPandocBlock (Pandoc.LineBlock xs) =
-    LineBlock (map (map fromPandocInline) xs)
-fromPandocBlock (Pandoc.CodeBlock attrs body) = CodeBlock attrs body
+    [LineBlock (map fromPandocInlines xs)]
+fromPandocBlock (Pandoc.CodeBlock attrs body) = [CodeBlock attrs body]
 fromPandocBlock (Pandoc.RawBlock fmt body)
     -- Parse config blocks.
     | fmt == "html"
     , Just t1 <- T.stripPrefix "<!--config:" body
-    , Just t2 <- T.stripSuffix "-->" t1 = Config $
+    , Just t2 <- T.stripSuffix "-->" t1 = pure $ Config $
         case Yaml.decodeEither' (T.encodeUtf8 t2) of
             Left err  -> Left (show err)
             Right obj -> Right obj
     -- Parse other comments.
     | Just t1 <- T.stripPrefix "<!--" body
-    , Just t2 <- T.stripSuffix "-->" t1 = SpeakerNote $ T.strip t2
+    , Just t2 <- T.stripSuffix "-->" t1 = pure $ SpeakerNote $ T.strip t2
     -- Other raw blocks, leave as-is.
-    | otherwise = RawBlock fmt body
+    | otherwise = [RawBlock fmt body]
 fromPandocBlock (Pandoc.BlockQuote blocks) =
-    BlockQuote $ map fromPandocBlock blocks
+    [BlockQuote $ fromPandocBlocks blocks]
 fromPandocBlock (Pandoc.OrderedList attrs items) =
-    OrderedList attrs $ map (map fromPandocBlock) items
+    [OrderedList attrs $ map fromPandocBlocks items]
 fromPandocBlock (Pandoc.BulletList items) =
-    BulletList $ map (map fromPandocBlock) items
-fromPandocBlock (Pandoc.DefinitionList items) = DefinitionList $ do
+    [BulletList $ map fromPandocBlocks items]
+fromPandocBlock (Pandoc.DefinitionList items) = pure $ DefinitionList $ do
     (inlines, blockss) <- items
-    pure (map fromPandocInline inlines, map (map fromPandocBlock) blockss)
+    pure (fromPandocInlines inlines, map (fromPandocBlocks) blockss)
 fromPandocBlock (Pandoc.Header lvl attrs inlines) =
-    Header lvl attrs (map fromPandocInline inlines)
-fromPandocBlock Pandoc.HorizontalRule = HorizontalRule
-fromPandocBlock (Pandoc.Table _ caption specs thead tbodies tfoot) = Table
-    (map fromPandocInline caption')
+    [Header lvl attrs (fromPandocInlines inlines)]
+fromPandocBlock Pandoc.HorizontalRule = [HorizontalRule]
+fromPandocBlock (Pandoc.Table _ cptn specs thead tbodies tfoot) = pure $ Table
+    (fromPandocInlines cptn')
     aligns
-    (map (map fromPandocBlock) headers)
-    (map (map (map fromPandocBlock)) rows)
+    (map (fromPandocBlocks) headers)
+    (map (map fromPandocBlocks) rows)
   where
-    (caption', aligns, _, headers, rows) = Pandoc.toLegacyTable
-        caption specs thead tbodies tfoot
+    (cptn', aligns, _, headers, rows) = Pandoc.toLegacyTable
+        cptn specs thead tbodies tfoot
 
 fromPandocBlock (Pandoc.Figure attrs _caption blocks) =
-    Figure attrs $ map fromPandocBlock blocks
+    [Figure attrs $ fromPandocBlocks blocks]
 fromPandocBlock (Pandoc.Div attrs blocks) =
-    Div attrs $ map fromPandocBlock blocks
+    [Div attrs $ fromPandocBlocks blocks]
 
-fromPandocInline :: Pandoc.Inline -> Inline
+fromPandocInlines :: [Pandoc.Inline] -> [Inline]
+fromPandocInlines = concatMap fromPandocInline
+
+fromPandocInline :: Pandoc.Inline -> [Inline]
 fromPandocInline inline = case inline of
-    Pandoc.Str txt           -> Str txt
-    Pandoc.Emph        xs    -> Emph        (map fromPandocInline xs)
-    Pandoc.Underline   xs    -> Underline   (map fromPandocInline xs)
-    Pandoc.Strong      xs    -> Strong      (map fromPandocInline xs)
-    Pandoc.Strikeout   xs    -> Strikeout   (map fromPandocInline xs)
-    Pandoc.Superscript xs    -> Superscript (map fromPandocInline xs)
-    Pandoc.Subscript   xs    -> Subscript   (map fromPandocInline xs)
-    Pandoc.SmallCaps   xs    -> SmallCaps   (map fromPandocInline xs)
-    Pandoc.Quoted ty   xs    -> Quoted ty   (map fromPandocInline xs)
-    Pandoc.Cite c      xs    -> Cite c      (map fromPandocInline xs)
-    Pandoc.Code attr txt     -> Code attr txt
-    Pandoc.Space             -> Space
-    Pandoc.SoftBreak         -> SoftBreak
-    Pandoc.LineBreak         -> LineBreak
-    Pandoc.Math ty txt       -> Math ty txt
-    Pandoc.RawInline fmt txt -> RawInline fmt txt
-    Pandoc.Link  attr xs tgt -> Link  attr (map fromPandocInline xs) tgt
-    Pandoc.Image attr xs tgt -> Image attr (map fromPandocInline xs) tgt
-    Pandoc.Note xs           -> Note (map fromPandocBlock xs)
-    Pandoc.Span attr xs      -> Span attr (map fromPandocInline xs)
+    Pandoc.Str txt           -> pure $ Str txt
+    Pandoc.Emph        xs    -> pure $ Emph        (fromPandocInlines xs)
+    Pandoc.Underline   xs    -> pure $ Underline   (fromPandocInlines xs)
+    Pandoc.Strong      xs    -> pure $ Strong      (fromPandocInlines xs)
+    Pandoc.Strikeout   xs    -> pure $ Strikeout   (fromPandocInlines xs)
+    Pandoc.Superscript xs    -> pure $ Superscript (fromPandocInlines xs)
+    Pandoc.Subscript   xs    -> pure $ Subscript   (fromPandocInlines xs)
+    Pandoc.SmallCaps   xs    -> pure $ SmallCaps   (fromPandocInlines xs)
+    Pandoc.Quoted ty   xs    -> pure $ Quoted ty   (fromPandocInlines xs)
+    Pandoc.Cite c      xs    -> pure $ Cite c      (fromPandocInlines xs)
+    Pandoc.Code attr txt     -> pure $ Code attr txt
+    Pandoc.Space             -> pure $ Space
+    Pandoc.SoftBreak         -> pure $ SoftBreak
+    Pandoc.LineBreak         -> pure $ LineBreak
+    Pandoc.Math ty txt       -> pure $ Math ty txt
+    Pandoc.RawInline fmt txt -> pure $ RawInline fmt txt
+    Pandoc.Link  attr xs tgt -> pure $ Link  attr (fromPandocInlines xs) tgt
+    Pandoc.Image attr xs tgt -> pure $ Image attr (fromPandocInlines xs) tgt
+    Pandoc.Note xs           -> pure $ Note (fromPandocBlocks xs)
+    Pandoc.Span attr xs      -> pure $ Span attr (fromPandocInlines xs)
 
 isHorizontalRule :: Block -> Bool
 isHorizontalRule HorizontalRule = True
