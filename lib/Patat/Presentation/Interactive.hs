@@ -136,7 +136,9 @@ updatePresentation cmd presentation = case cmd of
         }
 
     reloadPresentation = do
-        errOrPres <- readPresentation (pVarGen presentation) (pFilePath presentation)
+        errOrPres <- readPresentation
+            (pUniqueGen presentation)
+            (pFilePath presentation)
         return $ case errOrPres of
             Left  err  -> ErroredPresentation err
             Right pres -> UpdatedPresentation $ pres

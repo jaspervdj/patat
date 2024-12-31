@@ -86,7 +86,6 @@ Library
     Patat.Presentation.Display.Internal
     Patat.Presentation.Display.Table
     Patat.Presentation.Fragment
-    Patat.Presentation.Instruction
     Patat.Presentation.Interactive
     Patat.Presentation.Internal
     Patat.Presentation.Read
@@ -102,6 +101,7 @@ Library
     Patat.Transition.Dissolve
     Patat.Transition.Matrix
     Patat.Transition.SlideLeft
+    Patat.Unique
 
   Other-modules:
     Control.Concurrent.Chan.Extended

@@ -11,7 +11,6 @@ module Patat.Eval.Internal
 import qualified Control.Concurrent.Async       as Async
 import qualified Data.HashMap.Strict            as HMS
 import qualified Data.Text                      as T
-import           Patat.Presentation.Instruction
 import           Patat.Presentation.Settings
 import           Patat.Presentation.Syntax
 import qualified Text.Pandoc                    as Pandoc

@@ -11,33 +11,34 @@ module Patat.Eval
 
 
 --------------------------------------------------------------------------------
-import qualified Control.Concurrent.Async       as Async
-import           Control.Exception              (IOException, catch, finally)
-import           Control.Monad                  (foldM, when)
-import           Control.Monad.State            (StateT, runStateT, state)
-import           Control.Monad.Writer           (Writer, runWriter, tell)
-import           Data.Foldable                  (for_)
-import qualified Data.HashMap.Strict            as HMS
-import qualified Data.IORef                     as IORef
-import           Data.List                      (foldl')
-import           Data.Maybe                     (maybeToList)
-import qualified Data.Text                      as T
-import qualified Data.Text.IO                   as T
+import qualified Control.Concurrent.Async    as Async
+import           Control.Exception           (IOException, catch, finally)
+import           Control.Monad               (foldM, when)
+import           Control.Monad.State         (StateT, runStateT, state)
+import           Control.Monad.Writer        (Writer, runWriter, tell)
+import           Data.Foldable               (for_)
+import qualified Data.HashMap.Strict         as HMS
+import qualified Data.IORef                  as IORef
+import           Data.List                   (foldl')
+import           Data.Maybe                  (maybeToList)
+import qualified Data.Set                    as S
+import qualified Data.Text                   as T
+import qualified Data.Text.IO                as T
 import           Patat.Eval.Internal
-import           Patat.Presentation.Instruction
 import           Patat.Presentation.Internal
 import           Patat.Presentation.Syntax
-import           System.Exit                    (ExitCode (..))
-import qualified System.IO                      as IO
-import qualified System.Process                 as Process
+import           Patat.Unique
+import           System.Exit                 (ExitCode (..))
+import qualified System.IO                   as IO
+import qualified System.Process              as Process
 
 
 --------------------------------------------------------------------------------
 parseEvalBlocks :: Presentation -> Presentation
 parseEvalBlocks presentation =
     let ((pres, varGen), evalBlocks) = runWriter $
-            runStateT work (pVarGen presentation) in
-    pres {pEvalBlocks = evalBlocks, pVarGen = varGen}
+            runStateT work (pUniqueGen presentation) in
+    pres {pEvalBlocks = evalBlocks, pUniqueGen = varGen}
   where
     work = case psEval (pSettings presentation) of
         Nothing -> pure presentation
@@ -56,53 +57,51 @@ lookupSettings classes settings = do
 --------------------------------------------------------------------------------
 -- | Monad used for identifying and extracting the evaluation blocks from a
 -- presentation.
-type ExtractEvalM a = StateT VarGen (Writer (HMS.HashMap Var EvalBlock)) a
+type ExtractEvalM a = StateT UniqueGen (Writer (HMS.HashMap Var EvalBlock)) a
 
 
 --------------------------------------------------------------------------------
 evalSlide :: EvalSettingsMap -> Slide -> ExtractEvalM Slide
 evalSlide settings slide = case slideContent slide of
     TitleSlide _ _ -> pure slide
-    ContentSlide instrs0 -> do
-        instrs1 <- traverse (evalInstruction settings) (toList instrs0)
-        pure slide {slideContent = ContentSlide . fromList $ concat instrs1}
-
-
---------------------------------------------------------------------------------
-evalInstruction
-    :: EvalSettingsMap -> Instruction Block
-    -> ExtractEvalM [Instruction Block]
-evalInstruction settings instr = case instr of
-    Pause         -> pure [Pause]
-    ModifyLast i  -> map ModifyLast <$> evalInstruction settings i
-    Append []     -> pure [Append []]
-    Append blocks -> concat <$> traverse (evalBlock settings) blocks
-    Delete        -> pure [Delete]
+    ContentSlide blocks -> do
+        blocks1 <- dftBlocks (evalBlock settings) (pure . pure) blocks
+        pure slide {slideContent = ContentSlide blocks1}
 
 
 --------------------------------------------------------------------------------
 evalBlock
     :: EvalSettingsMap -> Block
-    -> ExtractEvalM [Instruction Block]
+    -> ExtractEvalM [Block]
 evalBlock settings orig@(CodeBlock attr@(_, classes, _) txt)
     | [s@EvalSettings {..}] <- lookupSettings classes settings = do
-        var <- state freshVar
+        var <- Var <$> state freshUnique
         tell $ HMS.singleton var $ EvalBlock s attr txt Nothing
-        pure $ case (evalFragment, evalReplace) of
-            (False, True) -> [Append [VarBlock var]]
-            (False, False) -> [Append [orig, VarBlock var]]
-            (True, True) ->
-                [ Append [orig], Pause
-                , Delete, Append [VarBlock var]
-                ]
-            (True, False) ->
-                [Append [orig], Pause, Append [VarBlock var]]
+        case (evalFragment, evalReplace) of
+            (False, True) -> pure [VarBlock var]
+            (False, False) -> pure [orig, VarBlock var]
+            (True, True) -> do
+                counterID <- CounterID <$> state freshUnique
+                pure $ pure $ Fragmented ConcatWrapper $ Fragment
+                    counterID
+                    [counterID]
+                    [ (S.singleton 0, [orig])
+                    , (S.singleton 1, [VarBlock var])
+                    ]
+            (True, False) -> do
+                counterID <- CounterID <$> state freshUnique
+                pure $ pure $ Fragmented ConcatWrapper $ Fragment
+                    counterID
+                    [counterID]
+                    [ (S.fromList [0, 1], [orig])
+                    , (S.fromList [1], [VarBlock var])
+                    ]
     | _ : _ : _ <- lookupSettings classes settings =
         let msg = "patat eval matched multiple settings for " <>
                 T.intercalate "," classes in
-        pure [Append [CodeBlock attr msg]]
+        pure [CodeBlock attr msg]
 evalBlock _ block =
-    pure [Append [block]]
+    pure [block]
 
 
 --------------------------------------------------------------------------------

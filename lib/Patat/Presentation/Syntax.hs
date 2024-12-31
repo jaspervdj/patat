@@ -1,12 +1,12 @@
+{-# LANGUAGE DeriveFoldable             #-}
+{-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE DeriveTraversable          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 module Patat.Presentation.Syntax
-    ( Var
-    , VarGen
-    , zeroVarGen
-    , freshVar
+    ( Var (..)
 
     , Block (..)
     , Inline (..)
@@ -21,31 +21,40 @@ module Patat.Presentation.Syntax
     , isComment
 
     , variables
+
+    , CounterID (..)
+    , blocksTriggers
+    , blocksApplyFragments
+    , Counters
+    , fragmentToBlocks
+    , triggersToCounters
+
+    , FragmentWrapper (..)
+    , fragmentWrapper
+    , Fragment (..)
     ) where
 
+import           Control.Monad.Identity      (runIdentity)
+import           Control.Monad.State         (State, execState, modify)
 import           Control.Monad.Writer        (Writer, execWriter, tell)
 import           Data.Hashable               (Hashable)
 import qualified Data.HashSet                as HS
+import           Data.List                   (foldl')
+import qualified Data.Map                    as M
+import           Data.Maybe                  (fromMaybe)
+import qualified Data.Set                    as S
 import qualified Data.Text                   as T
 import qualified Data.Text.Encoding          as T
 import           Data.Traversable            (for)
 import qualified Data.Yaml                   as Yaml
 import           Patat.Presentation.Settings (PresentationSettings)
+import           Patat.Unique
 import qualified Text.Pandoc                 as Pandoc
 import qualified Text.Pandoc.Writers.Shared  as Pandoc
 
 -- | A variable is like a placeholder in the instructions, something we don't
 -- know yet, dynamic content.  Currently this is only used for code evaluation.
-newtype Var = Var Int deriving (Hashable, Eq, Ord, Show)
-
--- | Used to generate fresh variables.
-newtype VarGen = VarGen Int deriving (Show)
-
-zeroVarGen :: VarGen
-zeroVarGen = VarGen 0
-
-freshVar :: VarGen -> (Var, VarGen)
-freshVar (VarGen x) = (Var x, VarGen (x + 1))
+newtype Var = Var Unique deriving (Hashable, Eq, Ord, Show)
 
 -- | This is similar to 'Pandoc.Block'.  Having our own datatype has some
 -- advantages:
@@ -73,6 +82,7 @@ data Block
     | Figure !Pandoc.Attr ![Block]
     | Div !Pandoc.Attr ![Block]
     -- Our own extensions:
+    | Fragmented !FragmentWrapper !(Fragment [Block])
     | VarBlock !Var
     | SpeakerNote !T.Text
     | Config !(Either String PresentationSettings)
@@ -139,6 +149,7 @@ dftBlocks fb fi = blocks
             <*> traverse (traverse blocks) trows
         Figure attr xs -> Figure attr <$> blocks xs
         Div attr xs -> Div attr <$> blocks xs
+        Fragmented w fragments -> Fragmented w <$> traverse blocks fragments
         b@(VarBlock _var) -> pure b
         b@(SpeakerNote _txt) -> pure b
         b@(Config _cfg) -> pure b
@@ -269,3 +280,68 @@ variables = execWriter . dftBlocks visit (pure . pure)
             VarBlock var -> tell $ HS.singleton var
             _            -> pure ()
         pure [b]
+
+newtype CounterID = CounterID Unique deriving (Eq, Ord, Show)
+
+-- We can construct a new one by doing a max + 1 over blocks.
+
+-- For each fragment, we can store which counters fire in which order
+data Fragment a = Fragment
+    -- The ID of the counter for this fragment
+    CounterID
+    -- These counters should be fired in this order
+    [CounterID]
+    -- If our counter has any of these values, the block will be visible.
+    [(S.Set Int, a)]
+    deriving (Foldable, Functor, Eq, Show, Traversable)
+
+-- | This could also be `[[Block]] -> [Block]` but then we lose Eq and Show.
+data FragmentWrapper
+    = ConcatWrapper
+    | BulletListWrapper
+    | OrderedListWrapper Pandoc.ListAttributes
+    deriving (Eq, Show)
+
+fragmentWrapper :: FragmentWrapper -> [[Block]] -> [Block]
+fragmentWrapper ConcatWrapper             = concat
+fragmentWrapper BulletListWrapper         = pure . BulletList
+fragmentWrapper (OrderedListWrapper attr) = pure . OrderedList attr
+
+-- This has given us a way to get the top level fragments in a list of blocks
+blocksTriggers :: [Block] -> [CounterID]
+blocksTriggers blocks = concat $
+    execState (dftBlocks visit (pure . pure) blocks) []
+  where
+    visit :: Block -> State [[CounterID]] [Block]
+    visit (Fragmented w fragment) = do
+        modify $ merge fragment
+        pure [Fragmented w fragment]
+    visit block = pure [block]
+
+    merge :: Fragment [Block] -> [[CounterID]] -> [[CounterID]]
+    merge (Fragment fid triggers _) known
+        | any (fid `elem`) known = known
+        | otherwise              =
+            filter (not . any (`elem` triggers)) known ++ [triggers]
+
+-- If each of those can give us an order, we can calculate a total order
+
+type Counters = M.Map CounterID Int
+
+triggersToCounters :: [CounterID] -> Counters
+triggersToCounters = foldl' (\acc x -> M.insertWith (+) x 1 acc) M.empty
+
+fragmentToBlocks :: Counters -> FragmentWrapper -> Fragment [Block] -> [Block]
+fragmentToBlocks counters fw (Fragment cid _ sections) = fragmentWrapper fw
+    [ section
+    | (activation, section) <- sections
+    , counter `S.member` activation
+    ]
+  where
+    counter = fromMaybe 0 $ M.lookup cid counters
+
+blocksApplyFragments :: Counters -> [Block] -> [Block]
+blocksApplyFragments counters = runIdentity . dftBlocks visit (pure . pure)
+  where
+    visit (Fragmented w fragment) = pure $ fragmentToBlocks counters w fragment
+    visit block                   = pure [block]

@@ -55,14 +55,18 @@ displayWithBorders (Size rows columns) pres@Presentation {..} f =
                 wrappedTitle = PP.spaces titleOffset <> PP.string title <> PP.spaces titleRemainder in
         borders wrappedTitle <> PP.hardline) <>
     f ds <> PP.hardline <>
+    -- TODO:
+    -- PP.string (show $ dsCounters ds) <> PP.hardline <>
+    -- PP.string (show $ activeTriggers pres) <> PP.hardline <>
+    -- PP.string (show $ pSlides ) <> PP.hardline <>
     PP.goToLine (rows - 2) <>
     borders (PP.space <> PP.string author <> middleSpaces <> PP.string active <> PP.space) <>
     PP.hardline
   where
     -- Get terminal width/title
-    (sidx, _) = pActiveFragment
-    settings  = activeSettings pres
-    ds        = DisplaySettings
+    settings     = activeSettings pres
+    (sidx, _)    = pActiveFragment
+    ds           = DisplaySettings
         { dsSize          = canvasSize
         , dsMargins       = margins settings
         , dsWrap          = fromMaybe NoWrap $ psWrap settings
@@ -70,7 +74,12 @@ displayWithBorders (Size rows columns) pres@Presentation {..} f =
         , dsTheme         = fromMaybe Theme.defaultTheme (psTheme settings)
         , dsSyntaxMap     = pSyntaxMap
         , dsResolve       = \var -> fromMaybe [] $ HMS.lookup var pVars
+        , dsCounters      = counters
         }
+
+    counters = case activeFragment pres of
+        Just (ActiveContent _ _ c) -> c
+        _                          -> mempty
 
     -- Compute title.
     breadcrumbs = fromMaybe [] $ Seq.safeIndex pBreadcrumbs sidx
@@ -108,24 +117,23 @@ displayPresentation :: Size -> Presentation -> Display
 displayPresentation size pres@Presentation {..} =
      case activeFragment pres of
         Nothing -> DisplayDoc $ displayWithBorders size pres mempty
-        Just (ActiveContent fragment)
+        Just (ActiveContent fragment _ _)
                 | Just _ <- psImages pSettings
                 , Just image <- onlyImage fragment ->
             DisplayImage $ T.unpack image
-        Just (ActiveContent fragment) -> DisplayDoc $
+        Just (ActiveContent fragment _ _) -> DisplayDoc $
             displayWithBorders size pres $ \theme ->
                 prettyFragment theme fragment
         Just (ActiveTitle block) -> DisplayDoc $
             displayWithBorders size pres $ \ds ->
                 let auto = Margins {mTop = Auto, mRight = Auto, mLeft = Auto} in
-                prettyFragment ds {dsMargins = auto} $ Fragment [block]
-
+                prettyFragment ds {dsMargins = auto} [block]
   where
     -- Check if the fragment consists of "just a single image".  Discard
     -- headers.
-    onlyImage (Fragment (Header{} : bs)) = onlyImage (Fragment bs)
-    onlyImage (Fragment bs) = case bs of
-        [Figure _ bs']                 -> onlyImage (Fragment bs')
+    onlyImage (Header{} : bs) = onlyImage bs
+    onlyImage bs = case bs of
+        [Figure _ bs']                 -> onlyImage bs'
         [Para [Image _ _ (target, _)]] -> Just target
         _                              -> Nothing
 
@@ -176,8 +184,8 @@ dumpPresentation pres@Presentation {..} =
 
 
 --------------------------------------------------------------------------------
-prettyFragment :: DisplaySettings -> Fragment -> PP.Doc
-prettyFragment ds (Fragment blocks) = vertical $
+prettyFragment :: DisplaySettings -> [Block] -> PP.Doc
+prettyFragment ds blocks = vertical $
     PP.vcat (map (horizontal . prettyBlock ds) blocks) <>
     case prettyReferences ds blocks of
         []   -> mempty
@@ -323,7 +331,11 @@ prettyBlock ds (LineBlock inliness) =
 
 prettyBlock ds (Figure _attr blocks) = prettyBlocks ds blocks
 
+prettyBlock ds (Fragmented w fragment) = prettyBlocks ds $
+    fragmentToBlocks (dsCounters ds) w fragment
+
 prettyBlock ds (VarBlock var) = prettyBlocks ds $ dsResolve ds var
+
 prettyBlock _ (SpeakerNote _) = mempty
 prettyBlock _ (Config _) = mempty
 
