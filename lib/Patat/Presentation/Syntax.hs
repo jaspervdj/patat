@@ -6,9 +6,7 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 module Patat.Presentation.Syntax
-    ( Var (..)
-
-    , Block (..)
+    ( Block (..)
     , Inline (..)
 
     , dftBlocks
@@ -20,6 +18,7 @@ module Patat.Presentation.Syntax
     , isHorizontalRule
     , isComment
 
+    , Var (..)
     , variables
 
     , CounterID (..)
@@ -51,10 +50,6 @@ import           Patat.Presentation.Settings (PresentationSettings)
 import           Patat.Unique
 import qualified Text.Pandoc                 as Pandoc
 import qualified Text.Pandoc.Writers.Shared  as Pandoc
-
--- | A variable is like a placeholder in the instructions, something we don't
--- know yet, dynamic content.  Currently this is only used for code evaluation.
-newtype Var = Var Unique deriving (Hashable, Eq, Ord, Show)
 
 -- | This is similar to 'Pandoc.Block'.  Having our own datatype has some
 -- advantages:
@@ -271,6 +266,11 @@ isComment (SpeakerNote _) = True
 isComment (Config _)      = True
 isComment _               = False
 
+-- | A variable is like a placeholder in the instructions, something we don't
+-- know yet, dynamic content.  Currently this is only used for code evaluation.
+newtype Var = Var Unique deriving (Hashable, Eq, Ord, Show)
+
+-- | Finds all variables that appear in some content.
 variables :: [Block] -> HS.HashSet Var
 variables = execWriter . dftBlocks visit (pure . pure)
   where
@@ -281,21 +281,35 @@ variables = execWriter . dftBlocks visit (pure . pure)
             _            -> pure ()
         pure [b]
 
+-- | A counter is used to change state in a slide.  As counters increment,
+-- content may deterministically show or hide.
 newtype CounterID = CounterID Unique deriving (Eq, Ord, Show)
 
--- We can construct a new one by doing a max + 1 over blocks.
-
--- For each fragment, we can store which counters fire in which order
+-- | A fragment stores content which can be hidden or shown depending on
+-- counter state.
+--
+-- The easiest example to think about is a bullet list which appears
+-- incrmentally on a slide.  Initially, the counter state is 0.  As it is
+-- incremented (the user goes to the next fragment in the slide), more list
+-- items become visible.
 data Fragment a = Fragment
-    -- The ID of the counter for this fragment
+    -- The ID of the counter for used this fragment.
     CounterID
-    -- These counters should be fired in this order
+    -- These counters should be fired in this order.
+    -- Counter IDs will be included multiple times if needed.
+    --
+    -- This should only contain the ID of this counter, and IDs of counters
+    -- nested inside the next field.
     [CounterID]
-    -- If our counter has any of these values, the block will be visible.
+    -- For each piece of content in this fragment, we store a set of ints.
+    -- When the current counter state is included in this set, the item is
+    -- visible.
     [(S.Set Int, a)]
     deriving (Foldable, Functor, Eq, Show, Traversable)
 
--- | This could also be `[[Block]] -> [Block]` but then we lose Eq and Show.
+-- | This determines how we construct content based on the visble items.
+-- This could also be represented as `[[Block]] -> [Block]` but then we lose
+-- the convenient Eq and Show instances.
 data FragmentWrapper
     = ConcatWrapper
     | BulletListWrapper
@@ -307,39 +321,45 @@ fragmentWrapper ConcatWrapper             = concat
 fragmentWrapper BulletListWrapper         = pure . BulletList
 fragmentWrapper (OrderedListWrapper attr) = pure . OrderedList attr
 
--- This has given us a way to get the top level fragments in a list of blocks
+-- | This does a deep traversal of some blocks, and returns all counters that
+-- should be fired in-order.
 blocksTriggers :: [Block] -> [CounterID]
 blocksTriggers blocks = concat $
     execState (dftBlocks visit (pure . pure) blocks) []
   where
+    -- We store a [[CounterID]] state, where each list represents the triggers
+    -- necessary for a single fragmented block.
     visit :: Block -> State [[CounterID]] [Block]
     visit (Fragmented w fragment) = do
         modify $ merge fragment
         pure [Fragmented w fragment]
     visit block = pure [block]
 
+    -- When we encounter a new fragmented block, we want to merge this into our
+    -- [[CounterID]] state.  However, we need to ensure to remove any children
+    -- of that fragmented block that were already in this list.
     merge :: Fragment [Block] -> [[CounterID]] -> [[CounterID]]
     merge (Fragment fid triggers _) known
         | any (fid `elem`) known = known
         | otherwise              =
             filter (not . any (`elem` triggers)) known ++ [triggers]
 
--- If each of those can give us an order, we can calculate a total order
-
+-- | Stores the state of several counters.
 type Counters = M.Map CounterID Int
 
+-- | Convert a list of counters that need to be triggered to the final state.
 triggersToCounters :: [CounterID] -> Counters
 triggersToCounters = foldl' (\acc x -> M.insertWith (+) x 1 acc) M.empty
 
+-- | Render a fragment by applying its constructor to what is visible.
 fragmentToBlocks :: Counters -> FragmentWrapper -> Fragment [Block] -> [Block]
 fragmentToBlocks counters fw (Fragment cid _ sections) = fragmentWrapper fw
-    [ section
-    | (activation, section) <- sections
-    , counter `S.member` activation
-    ]
+    [s | (activation, s) <- sections, counter `S.member` activation]
   where
     counter = fromMaybe 0 $ M.lookup cid counters
 
+-- | Apply `fragmentToBlocks` recursively at each position, removing fragments
+-- in favor of their currently visible content.
 blocksApplyFragments :: Counters -> [Block] -> [Block]
 blocksApplyFragments counters = runIdentity . dftBlocks visit (pure . pure)
   where
