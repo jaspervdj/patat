@@ -22,12 +22,12 @@ import qualified Data.List                            as L
 import           Data.Maybe                           (fromMaybe, maybeToList)
 import qualified Data.Sequence.Extended               as Seq
 import qualified Data.Text                            as T
-import qualified Patat.Presentation.Comments          as Comments
 import           Patat.Presentation.Display.CodeBlock
 import           Patat.Presentation.Display.Internal
 import           Patat.Presentation.Display.Table
 import           Patat.Presentation.Internal
 import           Patat.Presentation.Settings
+import qualified Patat.Presentation.SpeakerNotes      as SpeakerNotes
 import           Patat.Presentation.Syntax
 import           Patat.PrettyPrint                    ((<$$>), (<+>))
 import qualified Patat.PrettyPrint                    as PP
@@ -167,7 +167,7 @@ dumpPresentation pres@Presentation {..} =
     dumpSpeakerNotes slide = do
         guard (slideSpeakerNotes slide /= mempty)
         pure $ PP.text $ "{speakerNotes: " <>
-            Comments.speakerNotesToText (slideSpeakerNotes slide) <> "}"
+            SpeakerNotes.toText (slideSpeakerNotes slide) <> "}"
 
     dumpFragment :: Index -> [PP.Doc]
     dumpFragment idx =

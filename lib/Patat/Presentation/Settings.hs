@@ -1,4 +1,5 @@
 --------------------------------------------------------------------------------
+{-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE TemplateHaskell            #-}
@@ -22,12 +23,14 @@ module Patat.Presentation.Settings
     , SpeakerNotesSettings (..)
 
     , TransitionSettings (..)
+
+    , parseSlideSettings
     ) where
 
 
 --------------------------------------------------------------------------------
 import           Control.Applicative    ((<|>))
-import           Control.Monad          (mplus)
+import           Control.Monad          (mplus, unless)
 import qualified Data.Aeson.Extended    as A
 import qualified Data.Aeson.TH.Extended as A
 import qualified Data.Foldable          as Foldable
@@ -296,3 +299,36 @@ instance A.FromJSON TransitionSettings where
 $(A.deriveFromJSON A.dropPrefixOptions ''MarginSettings)
 $(A.deriveFromJSON A.dropPrefixOptions ''SpeakerNotesSettings)
 $(A.deriveFromJSON A.dropPrefixOptions ''PresentationSettings)
+
+
+--------------------------------------------------------------------------------
+data Setting where
+    Setting :: String -> (PresentationSettings -> Maybe a) -> Setting
+
+
+--------------------------------------------------------------------------------
+unsupportedSlideSettings :: [Setting]
+unsupportedSlideSettings =
+    [ Setting "incrementalLists" psIncrementalLists
+    , Setting "autoAdvanceDelay" psAutoAdvanceDelay
+    , Setting "slideLevel"       psSlideLevel
+    , Setting "pandocExtensions" psPandocExtensions
+    , Setting "images"           psImages
+    , Setting "eval"             psEval
+    , Setting "speakerNotes"     psSpeakerNotes
+    ]
+
+
+--------------------------------------------------------------------------------
+parseSlideSettings :: PresentationSettings -> Either String PresentationSettings
+parseSlideSettings settings = do
+    unless (null unsupported) $ Left $
+        "the following settings are not supported in slide config blocks: " ++
+        intercalate ", " unsupported
+    pure settings
+  where
+    unsupported = do
+        setting <- unsupportedSlideSettings
+        case setting of
+            Setting name f | Just _ <- f settings -> [name]
+            Setting _    _                        -> []

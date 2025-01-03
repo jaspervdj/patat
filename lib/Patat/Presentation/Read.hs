@@ -13,38 +13,39 @@ module Patat.Presentation.Read
 
 
 --------------------------------------------------------------------------------
-import           Control.Monad               (guard)
-import           Control.Monad.Except        (ExceptT (..), runExceptT,
-                                              throwError)
-import           Control.Monad.Trans         (liftIO)
-import qualified Data.Aeson.Extended         as A
-import qualified Data.Aeson.KeyMap           as AKM
-import           Data.Bifunctor              (first)
-import           Data.Maybe                  (fromMaybe)
-import           Data.Sequence.Extended      (Seq)
-import qualified Data.Sequence.Extended      as Seq
-import qualified Data.Text                   as T
-import qualified Data.Text.Encoding          as T
-import           Data.Traversable            (for)
-import qualified Data.Yaml                   as Yaml
-import           Patat.EncodingFallback      (EncodingFallback)
-import qualified Patat.EncodingFallback      as EncodingFallback
-import qualified Patat.Eval                  as Eval
-import qualified Patat.Presentation.Comments as Comments
+import           Control.Monad                   (guard)
+import           Control.Monad.Except            (ExceptT (..), runExceptT,
+                                                  throwError)
+import           Control.Monad.Trans             (liftIO)
+import qualified Data.Aeson.Extended             as A
+import qualified Data.Aeson.KeyMap               as AKM
+import           Data.Bifunctor                  (first)
+import           Data.Maybe                      (fromMaybe)
+import           Data.Sequence.Extended          (Seq)
+import qualified Data.Sequence.Extended          as Seq
+import qualified Data.Text                       as T
+import qualified Data.Text.Encoding              as T
+import           Data.Traversable                (for)
+import qualified Data.Yaml                       as Yaml
+import           Patat.EncodingFallback          (EncodingFallback)
+import qualified Patat.EncodingFallback          as EncodingFallback
+import qualified Patat.Eval                      as Eval
 import           Patat.Presentation.Fragment
 import           Patat.Presentation.Internal
+import qualified Patat.Presentation.SpeakerNotes as SpeakerNotes
 import           Patat.Presentation.Syntax
-import           Patat.Transition            (parseTransitionSettings)
+import           Patat.Transition                (parseTransitionSettings)
 import           Patat.Unique
 import           Prelude
-import qualified Skylighting                 as Skylighting
-import           System.Directory            (XdgDirectory (XdgConfig),
-                                              doesFileExist, getHomeDirectory,
-                                              getXdgDirectory)
-import           System.FilePath             (splitFileName, takeExtension,
-                                              (</>))
-import qualified Text.Pandoc.Error           as Pandoc
-import qualified Text.Pandoc.Extended        as Pandoc
+import qualified Skylighting                     as Skylighting
+import           System.Directory                (XdgDirectory (XdgConfig),
+                                                  doesFileExist,
+                                                  getHomeDirectory,
+                                                  getXdgDirectory)
+import           System.FilePath                 (splitFileName, takeExtension,
+                                                  (</>))
+import qualified Text.Pandoc.Error               as Pandoc
+import qualified Text.Pandoc.Extended            as Pandoc
 
 
 --------------------------------------------------------------------------------
@@ -242,7 +243,7 @@ splitSlides slideLevel blocks0
     mkContentSlide :: [Block] -> [Slide]
     mkContentSlide bs0 = do
         let bs1  = filter (not . isComment) bs0
-            sns  = Comments.SpeakerNotes [s | SpeakerNote s <- bs0]
+            sns  = SpeakerNotes.SpeakerNotes [s | SpeakerNote s <- bs0]
             cfgs = concatCfgs [cfg | Config cfg <- bs0]
         guard $ not $ null bs1  -- Never create empty slides
         pure $ Slide sns cfgs $ ContentSlide bs1
@@ -259,7 +260,7 @@ splitSlides slideLevel blocks0
             mkContentSlide (reverse acc) ++ splitAtHeaders [b] bs0
         | otherwise       =
             let (cmnts, bs1) = break (not . isComment) bs0
-                sns  = Comments.SpeakerNotes [s | SpeakerNote s <- cmnts]
+                sns  = SpeakerNotes.SpeakerNotes [s | SpeakerNote s <- cmnts]
                 cfgs = concatCfgs [cfg | Config cfg <- cmnts] in
             mkContentSlide (reverse acc) ++
             [Slide sns cfgs $ TitleSlide i txt] ++

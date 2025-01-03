@@ -80,7 +80,6 @@ Library
     Patat.Images.W3m
     Patat.Main
     Patat.Presentation
-    Patat.Presentation.Comments
     Patat.Presentation.Display
     Patat.Presentation.Display.CodeBlock
     Patat.Presentation.Display.Internal
@@ -90,6 +89,7 @@ Library
     Patat.Presentation.Internal
     Patat.Presentation.Read
     Patat.Presentation.Settings
+    Patat.Presentation.SpeakerNotes
     Patat.Presentation.Syntax
     Patat.PrettyPrint
     Patat.PrettyPrint.Internal

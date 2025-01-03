@@ -43,23 +43,23 @@ module Patat.Presentation.Internal
 
 
 --------------------------------------------------------------------------------
-import qualified Data.Aeson.Extended         as A
-import qualified Data.HashMap.Strict         as HMS
-import qualified Data.HashSet                as HS
-import           Data.Maybe                  (fromMaybe)
-import           Data.Sequence.Extended      (Seq)
-import qualified Data.Sequence.Extended      as Seq
-import           Patat.EncodingFallback      (EncodingFallback)
-import qualified Patat.Eval.Internal         as Eval
-import qualified Patat.Presentation.Comments as Comments
+import qualified Data.Aeson.Extended             as A
+import qualified Data.HashMap.Strict             as HMS
+import qualified Data.HashSet                    as HS
+import           Data.Maybe                      (fromMaybe)
+import           Data.Sequence.Extended          (Seq)
+import qualified Data.Sequence.Extended          as Seq
+import           Patat.EncodingFallback          (EncodingFallback)
+import qualified Patat.Eval.Internal             as Eval
 import           Patat.Presentation.Settings
+import qualified Patat.Presentation.SpeakerNotes as SpeakerNotes
 import           Patat.Presentation.Syntax
 import           Patat.Size
-import           Patat.Transition            (TransitionGen)
+import           Patat.Transition                (TransitionGen)
 import           Patat.Unique
 import           Prelude
-import qualified Skylighting                 as Skylighting
-import qualified Text.Pandoc                 as Pandoc
+import qualified Skylighting                     as Skylighting
+import qualified Text.Pandoc                     as Pandoc
 
 
 --------------------------------------------------------------------------------
@@ -108,7 +108,7 @@ margins ps = Margins
 
 --------------------------------------------------------------------------------
 data Slide = Slide
-    { slideSpeakerNotes :: !Comments.SpeakerNotes
+    { slideSpeakerNotes :: !SpeakerNotes.SpeakerNotes
     , slideSettings     :: !(Either String PresentationSettings)
     , slideContent      :: !SlideContent
     } deriving (Show)
@@ -164,7 +164,7 @@ activeFragment presentation = do
 
 
 --------------------------------------------------------------------------------
-activeSpeakerNotes :: Presentation -> Comments.SpeakerNotes
+activeSpeakerNotes :: Presentation -> SpeakerNotes.SpeakerNotes
 activeSpeakerNotes presentation = fromMaybe mempty $ do
     let (sidx, _) = pActiveFragment presentation
     slide <- getSlide sidx presentation
