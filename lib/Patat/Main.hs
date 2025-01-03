@@ -161,7 +161,7 @@ main = do
             OA.parserFailure parserPrefs parserInfo
             (OA.ShowHelpText Nothing) mempty
 
-    errOrPres <- readPresentation zeroVarGen filePath
+    errOrPres <- readPresentation zeroUniqueGen filePath
     pres      <- either (errorAndExit . return) return errOrPres
     let settings = pSettings pres
 

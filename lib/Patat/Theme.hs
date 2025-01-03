@@ -57,7 +57,7 @@ data Theme = Theme
     , themeImageText          :: !(Maybe Style)
     , themeImageTarget        :: !(Maybe Style)
     , themeSyntaxHighlighting :: !(Maybe SyntaxHighlighting)
-    } deriving (Show)
+    } deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -138,7 +138,7 @@ defaultTheme = Theme
 
 --------------------------------------------------------------------------------
 newtype Style = Style {unStyle :: [Ansi.SGR]}
-    deriving (Monoid, Semigroup, Show)
+    deriving (Eq, Monoid, Semigroup, Show)
 
 
 --------------------------------------------------------------------------------
@@ -241,7 +241,7 @@ namedSgrs = M.fromList
 --------------------------------------------------------------------------------
 newtype SyntaxHighlighting = SyntaxHighlighting
     { unSyntaxHighlighting :: M.Map String Style
-    } deriving (Monoid, Semigroup, Show, A.ToJSON)
+    } deriving (Eq, Monoid, Semigroup, Show, A.ToJSON)
 
 
 --------------------------------------------------------------------------------
