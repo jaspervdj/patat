@@ -134,7 +134,7 @@ getSlide sidx = (`Seq.safeIndex` sidx) . pSlides
 --------------------------------------------------------------------------------
 numFragments :: Slide -> Int
 numFragments slide = case slideContent slide of
-    ContentSlide blocks -> 1 + length (blocksTriggers blocks)
+    ContentSlide blocks -> blocksRevealSteps blocks
     TitleSlide _ _      -> 1
 
 
@@ -143,7 +143,7 @@ data ActiveFragment
     = ActiveContent
         [Block]
         (HS.HashSet Var)
-        Counters
+        RevealState
     | ActiveTitle Block
     deriving (Show)
 
@@ -157,10 +157,9 @@ activeFragment presentation = do
         TitleSlide lvl is -> ActiveTitle $
             Header lvl Pandoc.nullAttr is
         ContentSlide blocks ->
-            let vars = variables $ blocksApplyFragments counters blocks
-                counters = triggersToCounters $ take fidx $
-                    blocksTriggers blocks in
-            ActiveContent blocks vars counters
+            let vars = variables $ blocksReveal revealState blocks
+                revealState = blocksRevealStep fidx blocks in
+            ActiveContent blocks vars revealState
 
 
 --------------------------------------------------------------------------------

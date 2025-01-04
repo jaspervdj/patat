@@ -81,18 +81,18 @@ evalBlock settings orig@(CodeBlock attr@(_, classes, _) txt)
             (False, True) -> pure [VarBlock var]
             (False, False) -> pure [orig, VarBlock var]
             (True, True) -> do
-                counterID <- CounterID <$> state freshUnique
-                pure $ pure $ Fragmented ConcatWrapper $ Fragment
-                    counterID
-                    [counterID]
+                revealID <- RevealID <$> state freshUnique
+                pure $ pure $ Reveal ConcatWrapper $ RevealSequence
+                    revealID
+                    [revealID]
                     [ (S.singleton 0, [orig])
                     , (S.singleton 1, [VarBlock var])
                     ]
             (True, False) -> do
-                counterID <- CounterID <$> state freshUnique
-                pure $ pure $ Fragmented ConcatWrapper $ Fragment
-                    counterID
-                    [counterID]
+                revealID <- RevealID <$> state freshUnique
+                pure $ pure $ Reveal ConcatWrapper $ RevealSequence
+                    revealID
+                    [revealID]
                     [ (S.fromList [0, 1], [orig])
                     , (S.fromList [1], [VarBlock var])
                     ]

@@ -57,21 +57,22 @@ splitOnThreeDots blocks = case break (== threeDots) blocks of
 
 fragmentBlocks
     :: FragmentSettings -> [Block] -> FragmentM [Block]
-fragmentBlocks fs blocks = case splitOnThreeDots blocks of
-    [] -> pure []
-    [_] -> concat <$> traverse (fragmentBlock fs) blocks
-    sections0@(_ : _) -> do
-        counterID <- CounterID <$> state freshUnique
-        sections1 <- traverse (fragmentBlocks fs) sections0
-        let pauses = length sections1 - 1
-            triggers = case sections1 of
-                [] -> replicate pauses counterID
-                (sh : st) -> blocksTriggers sh ++
-                    [c | s <- st, c <- counterID : blocksTriggers s]
-        pure $ pure $ Fragmented ConcatWrapper $ Fragment
-            counterID
-            triggers
-            [(S.fromList [i .. pauses], s) | (i, s) <- zip [0 ..] sections1]
+fragmentBlocks fs blocks = (>>= fragmentAgainAfterLists) $
+    case splitOnThreeDots blocks of
+        [] -> pure []
+        [_] -> concat <$> traverse (fragmentBlock fs) blocks
+        sections0@(_ : _) -> do
+            revealID <- RevealID <$> state freshUnique
+            sections1 <- traverse (fragmentBlocks fs) sections0
+            let pauses = length sections1 - 1
+                triggers = case sections1 of
+                    [] -> replicate pauses revealID
+                    (sh : st) -> blocksRevealOrder sh ++
+                        [c | s <- st, c <- revealID : blocksRevealOrder s]
+            pure $ pure $ Reveal ConcatWrapper $ RevealSequence
+                revealID
+                triggers
+                [(S.fromList [i .. pauses], s) | (i, s) <- zip [0 ..] sections1]
 
 fragmentBlock :: FragmentSettings -> Block -> FragmentM [Block]
 fragmentBlock _fs (Para inlines) = pure [Para inlines]
@@ -103,25 +104,55 @@ fragmentBlock _ block@(Figure {})         = pure [block]
 fragmentBlock _ block@(VarBlock {})       = pure [block]
 fragmentBlock _ block@(SpeakerNote {})    = pure [block]
 fragmentBlock _ block@(Config {})         = pure [block]
-fragmentBlock _ block@(Fragmented {})     = pure [block]  -- Should not happen
+fragmentBlock _ block@(Reveal {})         = pure [block]  -- Should not happen
 
 fragmentList
     :: FragmentSettings   -- ^ Global settings
     -> Bool               -- ^ Fragment THIS list?
-    -> FragmentWrapper    -- ^ List constructor
+    -> RevealWrapper      -- ^ List constructor
     -> [[Block]]          -- ^ List items
     -> FragmentM [Block]  -- ^ Resulting list
-fragmentList fs fragmentThisList fw items0 = do
+fragmentList fs fragmentThisList rw items0 = do
     items1 <- traverse (fragmentBlocks fs) items0
     case fragmentThisList of
-        False -> pure $ fragmentWrapper fw items1
+        False -> pure $ revealWrapper rw items1
         True -> do
-            counterID <- CounterID <$> state freshUnique
-            let triggers = [c | s <- items1, c <- counterID : blocksTriggers s]
+            revealID <- RevealID <$> state freshUnique
+            let triggers = [c | s <- items1, c <- revealID : blocksRevealOrder s]
                 pauses   = length items1
-            pure $ pure $ Fragmented fw $ Fragment
-                counterID
+            pure $ pure $ Reveal rw $ RevealSequence
+                revealID
                 triggers
                 [ (S.fromList [i .. pauses], s)
                 | (i, s) <- zip [1 ..] items1
                 ]
+
+-- Insert a final pause after any incremental lists.  This needs to happen
+-- on the list containing these blocks.
+fragmentAgainAfterLists :: [Block] -> FragmentM [Block]
+fragmentAgainAfterLists blocks = case splitAfterLists [] blocks of
+    [] -> pure []
+    [_] -> pure blocks
+    sections@(_ : _) -> do
+        revealID <- RevealID <$> state freshUnique
+        let pauses = length sections - 1
+            triggers = init
+                -- Use init to skip the final counter (we don't want to add
+                -- a pause at the very end since everything is displayed at
+                -- that point).
+                [c | s <- sections, c <- blocksRevealOrder s ++ [revealID]]
+        pure $ pure $ Reveal ConcatWrapper $ RevealSequence
+            revealID
+            triggers
+            [(S.fromList [i .. pauses + 1], s) | (i, s) <- zip [0 ..] sections]
+  where
+    splitAfterLists :: [Block] -> [Block] -> [[Block]]
+    splitAfterLists acc [] = [reverse acc]
+    splitAfterLists acc (b@(Reveal w _) : bs)
+        | isListWrapper w, not (null bs) =
+            reverse (b : acc) : splitAfterLists [] bs
+    splitAfterLists acc (b : bs) = splitAfterLists (b : acc) bs
+
+    isListWrapper BulletListWrapper = True
+    isListWrapper (OrderedListWrapper _) = True
+    isListWrapper ConcatWrapper = False

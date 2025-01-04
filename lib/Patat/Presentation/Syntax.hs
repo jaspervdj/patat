@@ -21,16 +21,18 @@ module Patat.Presentation.Syntax
     , Var (..)
     , variables
 
-    , CounterID (..)
-    , blocksTriggers
-    , blocksApplyFragments
-    , Counters
-    , fragmentToBlocks
-    , triggersToCounters
+    , RevealID (..)
+    , blocksRevealSteps
+    , blocksRevealStep
+    , blocksRevealLastStep
+    , blocksRevealOrder
+    , blocksReveal
+    , RevealState
+    , revealToBlocks
 
-    , FragmentWrapper (..)
-    , fragmentWrapper
-    , Fragment (..)
+    , RevealWrapper (..)
+    , revealWrapper
+    , RevealSequence (..)
     ) where
 
 import           Control.Monad.Identity      (runIdentity)
@@ -54,7 +56,7 @@ import qualified Text.Pandoc.Writers.Shared  as Pandoc
 -- | This is similar to 'Pandoc.Block'.  Having our own datatype has some
 -- advantages:
 --
--- * We can extend it with slide-specific data (eval, fragments)
+-- * We can extend it with slide-specific data (eval, reveals)
 -- * We can remove stuff we don't care about
 -- * We can parse attributes and move them to haskell datatypes
 -- * This conversion can happen in a single parsing phase
@@ -77,7 +79,7 @@ data Block
     | Figure !Pandoc.Attr ![Block]
     | Div !Pandoc.Attr ![Block]
     -- Our own extensions:
-    | Fragmented !FragmentWrapper !(Fragment [Block])
+    | Reveal !RevealWrapper !(RevealSequence [Block])
     | VarBlock !Var
     | SpeakerNote !T.Text
     | Config !(Either String PresentationSettings)
@@ -144,7 +146,7 @@ dftBlocks fb fi = blocks
             <*> traverse (traverse blocks) trows
         Figure attr xs -> Figure attr <$> blocks xs
         Div attr xs -> Div attr <$> blocks xs
-        Fragmented w fragments -> Fragmented w <$> traverse blocks fragments
+        Reveal w revealer-> Reveal w <$> traverse blocks revealer
         b@(VarBlock _var) -> pure b
         b@(SpeakerNote _txt) -> pure b
         b@(Config _cfg) -> pure b
@@ -283,85 +285,98 @@ variables = execWriter . dftBlocks visit (pure . pure)
 
 -- | A counter is used to change state in a slide.  As counters increment,
 -- content may deterministically show or hide.
-newtype CounterID = CounterID Unique deriving (Eq, Ord, Show)
+newtype RevealID = RevealID Unique deriving (Eq, Ord, Show)
 
--- | A fragment stores content which can be hidden or shown depending on
--- counter state.
+-- | A reveal sequence stores content which can be hidden or shown depending on
+-- a counter state.
 --
 -- The easiest example to think about is a bullet list which appears
 -- incrmentally on a slide.  Initially, the counter state is 0.  As it is
 -- incremented (the user goes to the next fragment in the slide), more list
 -- items become visible.
-data Fragment a = Fragment
-    -- The ID of the counter for used this fragment.
-    CounterID
-    -- These counters should be fired in this order.
-    -- Counter IDs will be included multiple times if needed.
-    --
-    -- This should only contain the ID of this counter, and IDs of counters
-    -- nested inside the next field.
-    [CounterID]
-    -- For each piece of content in this fragment, we store a set of ints.
-    -- When the current counter state is included in this set, the item is
-    -- visible.
-    [(S.Set Int, a)]
-    deriving (Foldable, Functor, Eq, Show, Traversable)
+data RevealSequence a = RevealSequence
+    { -- The ID used for this sequence.
+      rsID :: RevealID
+    , -- These reveals should be advanced in this order.
+      -- Reveal IDs will be included multiple times if needed.
+      --
+      -- This should (only) contain the ID of this counter, and IDs of counters
+      -- nested inside the children fields.
+      rsOrder :: [RevealID]
+    , -- For each piece of content in this sequence, we store a set of ints.
+      -- When the current counter state is included in this set, the item is
+      -- visible.
+      rsVisible :: [(S.Set Int, a)]
+    } deriving (Foldable, Functor, Eq, Show, Traversable)
 
--- | This determines how we construct content based on the visble items.
+-- | This determines how we construct content based on the visible items.
 -- This could also be represented as `[[Block]] -> [Block]` but then we lose
 -- the convenient Eq and Show instances.
-data FragmentWrapper
+data RevealWrapper
     = ConcatWrapper
     | BulletListWrapper
     | OrderedListWrapper Pandoc.ListAttributes
     deriving (Eq, Show)
 
-fragmentWrapper :: FragmentWrapper -> [[Block]] -> [Block]
-fragmentWrapper ConcatWrapper             = concat
-fragmentWrapper BulletListWrapper         = pure . BulletList
-fragmentWrapper (OrderedListWrapper attr) = pure . OrderedList attr
+revealWrapper :: RevealWrapper -> [[Block]] -> [Block]
+revealWrapper ConcatWrapper             = concat
+revealWrapper BulletListWrapper         = pure . BulletList
+revealWrapper (OrderedListWrapper attr) = pure . OrderedList attr
 
--- | This does a deep traversal of some blocks, and returns all counters that
--- should be fired in-order.
-blocksTriggers :: [Block] -> [CounterID]
-blocksTriggers blocks = concat $
+-- | Number of reveal steps in some blocks.
+blocksRevealSteps :: [Block] -> Int
+blocksRevealSteps = succ . length . blocksRevealOrder
+
+-- | Construct the reveal state for a specific step.
+blocksRevealStep :: Int -> [Block] -> RevealState
+blocksRevealStep fidx = makeRevealState . take fidx . blocksRevealOrder
+
+-- | Construct the final reveal state.
+blocksRevealLastStep :: [Block] -> RevealState
+blocksRevealLastStep = makeRevealState . blocksRevealOrder
+
+-- | This does a deep traversal of some blocks, and returns all reveals that
+-- should be advanced in-order.
+blocksRevealOrder :: [Block] -> [RevealID]
+blocksRevealOrder blocks = concat $
     execState (dftBlocks visit (pure . pure) blocks) []
   where
-    -- We store a [[CounterID]] state, where each list represents the triggers
-    -- necessary for a single fragmented block.
-    visit :: Block -> State [[CounterID]] [Block]
-    visit (Fragmented w fragment) = do
-        modify $ merge fragment
-        pure [Fragmented w fragment]
+    -- We store a [[RevealID]] state, where each list represents the triggers
+    -- necessary for a single reveal block.
+    visit :: Block -> State [[RevealID]] [Block]
+    visit (Reveal w rs) = do
+        modify $ merge rs
+        pure [Reveal w rs]
     visit block = pure [block]
 
-    -- When we encounter a new fragmented block, we want to merge this into our
-    -- [[CounterID]] state.  However, we need to ensure to remove any children
-    -- of that fragmented block that were already in this list.
-    merge :: Fragment [Block] -> [[CounterID]] -> [[CounterID]]
-    merge (Fragment fid triggers _) known
+    -- When we encounter a new reveal, we want to merge this into our
+    -- [[RevealID]] state.  However, we need to ensure to remove any children
+    -- of that reveal block that were already in this list.
+    merge :: RevealSequence [Block] -> [[RevealID]] -> [[RevealID]]
+    merge (RevealSequence fid triggers _) known
         | any (fid `elem`) known = known
         | otherwise              =
             filter (not . any (`elem` triggers)) known ++ [triggers]
 
 -- | Stores the state of several counters.
-type Counters = M.Map CounterID Int
+type RevealState = M.Map RevealID Int
 
 -- | Convert a list of counters that need to be triggered to the final state.
-triggersToCounters :: [CounterID] -> Counters
-triggersToCounters = foldl' (\acc x -> M.insertWith (+) x 1 acc) M.empty
+makeRevealState :: [RevealID] -> RevealState
+makeRevealState = foldl' (\acc x -> M.insertWith (+) x 1 acc) M.empty
 
--- | Render a fragment by applying its constructor to what is visible.
-fragmentToBlocks :: Counters -> FragmentWrapper -> Fragment [Block] -> [Block]
-fragmentToBlocks counters fw (Fragment cid _ sections) = fragmentWrapper fw
+-- | Render a reveal by applying its constructor to what is visible.
+revealToBlocks
+    :: RevealState -> RevealWrapper -> RevealSequence [Block] -> [Block]
+revealToBlocks revealState rw (RevealSequence cid _ sections) = revealWrapper rw
     [s | (activation, s) <- sections, counter `S.member` activation]
   where
-    counter = fromMaybe 0 $ M.lookup cid counters
+    counter = fromMaybe 0 $ M.lookup cid revealState
 
--- | Apply `fragmentToBlocks` recursively at each position, removing fragments
+-- | Apply `revealToBlocks` recursively at each position, removing reveals
 -- in favor of their currently visible content.
-blocksApplyFragments :: Counters -> [Block] -> [Block]
-blocksApplyFragments counters = runIdentity . dftBlocks visit (pure . pure)
+blocksReveal :: RevealState -> [Block] -> [Block]
+blocksReveal revealState = runIdentity . dftBlocks visit (pure . pure)
   where
-    visit (Fragmented w fragment) = pure $ fragmentToBlocks counters w fragment
-    visit block                   = pure [block]
+    visit (Reveal w rs) = pure $ revealToBlocks revealState w rs
+    visit block         = pure [block]

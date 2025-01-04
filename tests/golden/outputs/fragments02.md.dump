@@ -4,6 +4,10 @@
 
 [mHello[0m
 
+
+
+
+
 [33m                                                                  1 / 3 [0m
 
 [m{fragment}[0m
@@ -14,6 +18,8 @@
 [mHello[0m
 
 [mWorld[0m
+
+
 
 [33m                                                                  1 / 3 [0m
 
@@ -37,6 +43,11 @@
 
 
 
+
+
+
+
+
 [33m                                                                  2 / 3 [0m
 
 [m{fragment}[0m
@@ -45,6 +56,10 @@
 [34m# Slide 2[0m
 
 [35m1.  [0m[mThis is fragmented[0m
+
+
+
+
 
 
 [33m                                                                  2 / 3 [0m
@@ -57,6 +72,8 @@
 [35m1.  [0m[mThis is fragmented[0m
 
 [m    Inside a list[0m
+
+
 
 
 [33m                                                                  2 / 3 [0m
@@ -84,6 +101,22 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 [33m                                                                  3 / 3 [0m
 
 [m{fragment}[0m
@@ -92,6 +125,22 @@
 [34m# Slide 3[0m
 
 [m  [0m[35m- [0m[mA simple list[0m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -104,6 +153,21 @@
 
 [m  [0m[35m- [0m[mA simple list[0m
 [m  [0m[35m- [0m[mAnd two[0m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -117,6 +181,47 @@
 [m  [0m[35m- [0m[mA simple list[0m
 [m  [0m[35m- [0m[mAnd two[0m
 [m  [0m[35m- [0m[mAnd three[0m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[33m                                                                  3 / 3 [0m
+
+[m{fragment}[0m
+[33m                             fragments02.md                             [0m
+
+[34m# Slide 3[0m
+
+[m  [0m[35m- [0m[mA simple list[0m
+[m  [0m[35m- [0m[mAnd two[0m
+[m  [0m[35m- [0m[mAnd three[0m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -132,6 +237,17 @@
 [m  [0m[35m- [0m[mAnd three[0m
 
 [35m1.  [0m[mWhy?[0m
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -150,6 +266,17 @@
 [35m1.  [0m[mWhy?[0m
 
 [m      [0m[35m- [0m[mSome reason[0m
+
+
+
+
+
+
+
+
+
+
+
 
 
 [33m                                                                  3 / 3 [0m
@@ -167,6 +294,16 @@
 
 [m      [0m[35m- [0m[mSome reason[0m
 [m      [0m[35m- [0m[mIDK[0m
+
+
+
+
+
+
+
+
+
+
 
 
 [33m                                                                  3 / 3 [0m
@@ -186,6 +323,12 @@
 [m      [0m[35m- [0m[mIDK[0m
 
 [35m2.  [0m[mWho?[0m
+
+
+
+
+
+
 
 
 
@@ -209,6 +352,12 @@
 [35m2.  [0m[mWho?[0m
 
 [m      [0m[35m- [0m[mSome dude[0m
+
+
+
+
+
+
 
 
 [33m                                                                  3 / 3 [0m
@@ -231,6 +380,11 @@
 
 [m      [0m[35m- [0m[mSome dude[0m
 [m      [0m[35m- [0m[mOr another[0m
+
+
+
+
+
 
 
 [33m                                                                  3 / 3 [0m
@@ -255,6 +409,7 @@
 [m      [0m[35m- [0m[mOr another[0m
 
 [35m3.  [0m[mWhat[0m
+
 
 
 
@@ -283,6 +438,7 @@
 [35m3.  [0m[mWhat[0m
 
 [m      [0m[35m- [0m[mDid something[0m
+
 
 
 [33m                                                                  3 / 3 [0m

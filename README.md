@@ -407,7 +407,7 @@ Now, we will only see one slide, which contains a nested header.
 
 ### Fragmented slides
 
-By default, slides are always displayed "all at once".  If you want to display
+By default, slides are always displayed "all at once".  If you want to reveal
 them fragment by fragment, there are two ways to do that.  The most common
 case is that lists should be displayed incrementally.
 

@@ -55,10 +55,6 @@ displayWithBorders (Size rows columns) pres@Presentation {..} f =
                 wrappedTitle = PP.spaces titleOffset <> PP.string title <> PP.spaces titleRemainder in
         borders wrappedTitle <> PP.hardline) <>
     f ds <> PP.hardline <>
-    -- TODO:
-    -- PP.string (show $ dsCounters ds) <> PP.hardline <>
-    -- PP.string (show $ activeTriggers pres) <> PP.hardline <>
-    -- PP.string (show $ pSlides ) <> PP.hardline <>
     PP.goToLine (rows - 2) <>
     borders (PP.space <> PP.string author <> middleSpaces <> PP.string active <> PP.space) <>
     PP.hardline
@@ -74,10 +70,10 @@ displayWithBorders (Size rows columns) pres@Presentation {..} f =
         , dsTheme         = fromMaybe Theme.defaultTheme (psTheme settings)
         , dsSyntaxMap     = pSyntaxMap
         , dsResolve       = \var -> fromMaybe [] $ HMS.lookup var pVars
-        , dsCounters      = counters
+        , dsRevealState   = revealState
         }
 
-    counters = case activeFragment pres of
+    revealState = case activeFragment pres of
         Just (ActiveContent _ _ c) -> c
         _                          -> mempty
 
@@ -123,11 +119,11 @@ displayPresentation size pres@Presentation {..} =
             DisplayImage $ T.unpack image
         Just (ActiveContent fragment _ _) -> DisplayDoc $
             displayWithBorders size pres $ \theme ->
-                prettyFragment theme fragment
+                prettyMargins theme fragment
         Just (ActiveTitle block) -> DisplayDoc $
             displayWithBorders size pres $ \ds ->
                 let auto = Margins {mTop = Auto, mRight = Auto, mLeft = Auto} in
-                prettyFragment ds {dsMargins = auto} [block]
+                prettyMargins ds {dsMargins = auto} [block]
   where
     -- Check if the fragment consists of "just a single image".  Discard
     -- headers.
@@ -184,31 +180,68 @@ dumpPresentation pres@Presentation {..} =
 
 
 --------------------------------------------------------------------------------
-prettyFragment :: DisplaySettings -> [Block] -> PP.Doc
-prettyFragment ds blocks = vertical $
-    PP.vcat (map (horizontal . prettyBlock ds) blocks) <>
+-- | Renders the given blocks, adding margins based on the settings and wrapping
+-- based on width.
+prettyMargins :: DisplaySettings -> [Block] -> PP.Doc
+prettyMargins ds blocks = vertical $
+    map horizontal blocks ++
     case prettyReferences ds blocks of
-        []   -> mempty
-        refs -> PP.hardline <> PP.vcat (map horizontal refs)
+        []   -> []
+        refs ->
+            let doc0        = PP.vcat refs
+                size@(r, _) = PP.dimensions doc0 in
+            [(horizontalIndent size $ horizontalWrap doc0, r)]
   where
     Size rows columns = dsSize ds
     Margins {..} = dsMargins ds
 
-    vertical doc0 =
-        mconcat (replicate top PP.hardline) <> doc0
+    -- For every block, calculate the size based on its last fragment.
+    blockSize block =
+        let revealState = blocksRevealLastStep [block] in
+        PP.dimensions $ deindent $ horizontalWrap $
+            prettyBlock ds {dsRevealState = revealState} block
+
+    -- Vertically align some blocks by adding spaces in front of it.
+    -- We also take in the number of rows for every block so we don't
+    -- need to recompute it.
+    vertical :: [(PP.Doc, Int)] -> PP.Doc
+    vertical docs0 = mconcat (replicate top PP.hardline) <> doc
       where
         top = case mTop of
-            Auto      -> let (r, _) = PP.dimensions doc0 in (rows - r) `div` 2
+            Auto      -> (rows - actual) `div` 2
             NotAuto x -> x
 
-    horizontal = horizontalIndent . horizontalWrap
+        docs1  = [verticalPad r d | (d, r) <- docs0]
+        actual = sum $ L.intersperse 1 $ map snd docs1
+        doc    = PP.vcat $ map fst docs1
 
-    horizontalIndent doc0 = PP.indent indentation indentation doc1
+    -- Vertically pad a doc by adding lines below it.
+    -- Return the actual size as well as the padded doc.
+    verticalPad :: Int -> PP.Doc -> (PP.Doc, Int)
+    verticalPad desired doc0
+        | actual >= rows = (doc0, actual)
+        | otherwise      = (doc0 <> padding, desired)
       where
-        doc1 = case (mLeft, mRight) of
-            (Auto, Auto) -> PP.deindent doc0
-            _            -> doc0
-        (_, dcols) = PP.dimensions doc1
+        (actual, _) = PP.dimensions doc0
+        padding     = mconcat $ replicate (desired - actual) PP.hardline
+
+    -- Render and horizontally align a block.  Also returns the desired rows.
+    horizontal :: Block -> (PP.Doc, Int)
+    horizontal b@(Reveal ConcatWrapper reveal) =
+        -- Horizontally aligning a fragment with a ConcatWrapper is a special
+        -- case, as we want to horizontal align all the things inside
+        -- individually.
+        let (fblocks, _) = unzip $ map horizontal $
+                revealToBlocks (dsRevealState ds) ConcatWrapper reveal in
+        (PP.vcat fblocks, fst (blockSize b))
+    horizontal block =
+        let size@(r, _) = blockSize block in
+        (horizontalIndent size $ horizontalWrap $ prettyBlock ds block, r)
+
+    horizontalIndent :: (Int, Int) -> PP.Doc -> PP.Doc
+    horizontalIndent (_, dcols) doc0 = PP.indent indentation indentation doc1
+      where
+        doc1 = deindent doc0
         left = case mLeft of
             NotAuto x -> x
             Auto      -> case mRight of
@@ -216,6 +249,13 @@ prettyFragment ds blocks = vertical $
                 Auto      -> (columns - dcols) `div` 2
         indentation = PP.Indentation left mempty
 
+    -- Strip leading spaces to horizontally align code blocks etc.
+    deindent doc0 = case (mLeft, mRight) of
+        (Auto, Auto) -> PP.deindent doc0
+        _            -> doc0
+
+    -- Rearranges lines to fit into the wrap settings.
+    horizontalWrap :: PP.Doc -> PP.Doc
     horizontalWrap doc0 = case dsWrap ds of
         NoWrap     -> doc0
         AutoWrap   -> PP.wrapAt (Just $ columns - right - left) doc0
@@ -331,8 +371,8 @@ prettyBlock ds (LineBlock inliness) =
 
 prettyBlock ds (Figure _attr blocks) = prettyBlocks ds blocks
 
-prettyBlock ds (Fragmented w fragment) = prettyBlocks ds $
-    fragmentToBlocks (dsCounters ds) w fragment
+prettyBlock ds (Reveal w fragment) = prettyBlocks ds $
+    revealToBlocks (dsRevealState ds) w fragment
 
 prettyBlock ds (VarBlock var) = prettyBlocks ds $ dsResolve ds var
 
