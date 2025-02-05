@@ -2,6 +2,14 @@
 
 ## unreleased
 
+ *  Align based on final layout for incremental lists and other fragments
+    (#174).
+
+ *  Refactor the internal AST to use our own derivation of the Pandoc AST.
+
+ *  Rename `fragment` to `reveal` in eval settings.  `fragment` will continue to
+    be available for backwards-compatibility.
+
  *  Use a temporary file to atomically write speaker notes.
 
     We weren't writing the file all-at-once before, so if you were using a
