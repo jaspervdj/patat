@@ -4,7 +4,7 @@ patat:
     eval:
       command: bash
       replace: true
-      fragment: true
+      reveal: true
 ...
 
 # Slide 1

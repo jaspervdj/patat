@@ -77,7 +77,7 @@ evalBlock settings orig@(CodeBlock attr@(_, classes, _) txt)
     | [s@EvalSettings {..}] <- lookupSettings classes settings = do
         var <- Var <$> state freshUnique
         tell $ HMS.singleton var $ EvalBlock s attr txt Nothing
-        case (evalFragment, evalReplace) of
+        case (evalReveal, evalReplace) of
             (False, True) -> pure [VarBlock var]
             (False, False) -> pure [orig, VarBlock var]
             (True, True) -> do

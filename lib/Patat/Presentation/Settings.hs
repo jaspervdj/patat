@@ -249,7 +249,7 @@ instance A.FromJSON EvalSettingsContainer where
 data EvalSettings = EvalSettings
     { evalCommand   :: !T.Text
     , evalReplace   :: !Bool
-    , evalFragment  :: !Bool
+    , evalReveal    :: !Bool
     , evalContainer :: !EvalSettingsContainer
     , evalStderr    :: !Bool
     } deriving (Eq, Show)
@@ -260,7 +260,7 @@ instance A.FromJSON EvalSettings where
     parseJSON = A.withObject "FromJSON EvalSettings" $ \o -> EvalSettings
         <$> o A..:  "command"
         <*> o A..:? "replace"  A..!= False
-        <*> o A..:? "fragment" A..!= True
+        <*> deprecated "fragment" "reveal" True o
         <*> deprecated "wrap" "container" EvalContainerCode o
         <*> o A..:? "stderr" A..!= True
       where

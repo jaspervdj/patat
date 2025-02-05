@@ -650,7 +650,7 @@ write ASCII escape codes directly to the screen with
 In order to do that, for example, we could configure `kitten` code snippets
 to evaluate using [Kitty]'s command `icat`.  This uses the `none` container
 setting to ensure that the resulting output is not wrapped in a code block,
-and the `fragment` and `replace` settings immediately replace the snippet.
+and the `reveal` and `replace` settings immediately replace the snippet.
 
     ---
     patat:
@@ -658,7 +658,7 @@ and the `fragment` and `replace` settings immediately replace the snippet.
         kitten:
           command: sed 's/^/kitten /' | bash
           replace: true
-          fragment: false
+          reveal: false
           container: none
     ...
 
@@ -702,7 +702,7 @@ _evaluator_ by specifying this in the YAML metadata:
       eval:
         ruby:
           command: irb --noecho --noverbose
-          fragment: true  # Optional
+          reveal: true  # Optional
           replace: false  # Optional
           container: code  # Optional
     ...
@@ -722,7 +722,7 @@ contain `eval` settings.
 
 Aside from the command, there are four more options:
 
- -  `fragment`: Introduce a pause (see [fragments](#fragmented-slides)) in
+ -  `reveal`: Introduce a pause (see [fragments](#fragmented-slides)) in
     between showing the original code block and the output.  Defaults to `true`.
  -  `replace`: Remove the original code block and replace it with the output
     rather than appending the output in a new code block.  Defaults to `false`.
@@ -735,8 +735,10 @@ Aside from the command, there are four more options:
  -  `stderr`: Include output from standard error.  Defaults to `true`.
  -  `wrap`: this is a deprecated name for `container`, used in version 0.11 and
     earlier.
+ -  `fragment`: this is a deprecated name for `reveal`, used in version 0.13 and
+    earlier.
 
-Setting `fragment: false` and `replace: true` offers a way to "filter" code
+Setting `reveal: false` and `replace: true` offers a way to "filter" code
 blocks, which can be used to render ASCII graphics.
 
     ---
@@ -744,7 +746,7 @@ blocks, which can be used to render ASCII graphics.
       eval:
         figlet:
           command: figlet
-          fragment: false
+          reveal: false
           replace: true
     ...
 
