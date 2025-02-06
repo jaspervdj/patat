@@ -1,7 +1,7 @@
 🥔 patat
 ========
 
-![CI](https://github.com/jaspervdj/patat/workflows/CI/badge.svg) [![Hackage](https://img.shields.io/hackage/v/patat.svg)](https://hackage.haskell.org/package/patat) [![GitHub tag](https://img.shields.io/github/tag/jaspervdj/patat.svg)]()
+![CI](https://github.com/jaspervdj/patat/actions/workflows/haskell-ci.yml/badge.svg) [![Hackage](https://img.shields.io/hackage/v/patat.svg)](https://hackage.haskell.org/package/patat) [![GitHub tag](https://img.shields.io/github/tag/jaspervdj/patat.svg)]()
 
 `patat` (**P**resentations **A**top **T**he **A**NSI **T**erminal) is a
 feature-rich presentation tool that runs in the terminal.
