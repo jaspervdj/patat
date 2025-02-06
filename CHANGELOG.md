@@ -1,20 +1,23 @@
 # Changelog
 
-## unreleased
+## 0.14.0.0 (2024-02-06)
 
  *  Align based on final layout for incremental lists and other fragments
-    (#174).
+    (#174).  This avoids lists "jumping around" as they are revealed when
+    using `auto` `margins`.
 
- *  Refactor the internal AST to use our own derivation of the Pandoc AST.
-
- *  Rename `fragment` to `reveal` in eval settings.  `fragment` will continue to
-    be available for backwards-compatibility.
+ *  Rename `fragment` to `reveal` in eval settings.  `fragment` will continue
+    to be available for backwards-compatibility.
 
  *  Use a temporary file to atomically write speaker notes.
 
     We weren't writing the file all-at-once before, so if you were using a
     simple tool like `tail -F` before, this could cause some speaker notes to
     not be displayed.
+
+ *  Refactor the internal AST to use our own derivation of the Pandoc AST.
+    This is a major rework of the internals but should not cause any changes
+    visible to the user.
 
 ## 0.13.0.0 (2024-10-30)
 
