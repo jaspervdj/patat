@@ -36,6 +36,7 @@ import           Prelude
 import qualified System.Console.ANSI              as Ansi
 import           System.Directory                 (doesFileExist,
                                                    getModificationTime)
+import           System.Environment (lookupEnv)
 import           System.Exit                      (exitFailure, exitSuccess)
 import qualified System.IO                        as IO
 import qualified Text.Pandoc                      as Pandoc
@@ -306,7 +307,11 @@ interactively reader app = bracket setup teardown $ \(_, _, chan) ->
         buff <- IO.hGetBuffering IO.stdin
         IO.hSetEcho      IO.stdin False
         IO.hSetBuffering IO.stdin IO.NoBuffering
-        Ansi.hideCursor
+
+        -- Suppress cursor hiding for WezTerm image compatibility
+        termProgram <- lookupEnv "TERM_PROGRAM"
+        unless (termProgram == Just "WezTerm") $ Ansi.hideCursor
+
         return (echo, buff, chan)
 
     teardown (echo, buff, _chan) = do

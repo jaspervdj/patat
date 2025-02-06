@@ -44,6 +44,7 @@ Library
     directory            >= 1.2  && < 1.4,
     filepath             >= 1.4  && < 1.6,
     hashable             >= 1.4  && < 1.5,
+    JuicyPixels,
     mtl                  >= 2.2  && < 2.4,
     optparse-applicative >= 0.16 && < 0.19,
     pandoc               >= 3.1  && < 3.6,
@@ -78,6 +79,7 @@ Library
     Patat.Images.ITerm2
     Patat.Images.Kitty
     Patat.Images.W3m
+    Patat.Images.WezTerm
     Patat.Main
     Patat.Presentation
     Patat.Presentation.Comments

@@ -17,6 +17,7 @@ import           Patat.Images.Internal
 import qualified Patat.Images.ITerm2         as ITerm2
 import qualified Patat.Images.Kitty          as Kitty
 import qualified Patat.Images.W3m            as W3m
+import qualified Patat.Images.WezTerm        as WezTerm
 import           Patat.Presentation.Internal
 
 
@@ -55,6 +56,7 @@ backends =
     [ ("iterm2", ITerm2.backend)
     , ("kitty",  Kitty.backend)
     , ("w3m",    W3m.backend)
+    , ("wezterm",WezTerm.backend)
     ]
 
 
