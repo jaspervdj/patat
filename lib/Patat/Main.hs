@@ -36,7 +36,7 @@ import           Prelude
 import qualified System.Console.ANSI              as Ansi
 import           System.Directory                 (doesFileExist,
                                                    getModificationTime)
-import           System.Environment (lookupEnv)
+import           System.Environment               (lookupEnv)
 import           System.Exit                      (exitFailure, exitSuccess)
 import qualified System.IO                        as IO
 import qualified Text.Pandoc                      as Pandoc

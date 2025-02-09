@@ -12,7 +12,6 @@ import           Codec.Picture
 import qualified Data.Aeson                  as A
 import qualified Data.ByteString.Base64      as B64
 import qualified Data.ByteString             as B
-import qualified Data.List                   as L
 import           Patat.Cleanup               (Cleanup)
 import qualified Patat.Images.Internal       as Internal
 import           System.Environment          (lookupEnv)
@@ -43,29 +42,20 @@ new config = do
 drawImage :: FilePath -> IO Cleanup
 drawImage path = do
     content <- B.readFile path
-    image_dim <- return . getAspectRatio . decodeImage $ content
-    withEscapeSequence $ do
+    Internal.withEscapeSequence $ do
         putStr "1337;File=inline=1;doNotMoveCursor=1;"
-        putStr image_dim
+        case decodeImage content of
+            Left _ -> pure () 
+            Right img -> putStr $ getAspectRatio img
         putStr ":"
         B.putStr (B64.encode content)
     return mempty
 
---------------------------------------------------------------------------------
-getAspectRatio :: Either String DynamicImage -> String
-getAspectRatio (Left _) = ""
-getAspectRatio (Right i) | go_ar < 1 = "width=auto;height=95%;"
-                         | otherwise = "width=100%;height=auto;"
-    where go_ar :: Double
-          go_ar = go_w i / go_h i
-          go_h = fromIntegral . (dynamicMap imageHeight)
-          go_w = fromIntegral . (dynamicMap imageWidth)
 
 --------------------------------------------------------------------------------
-withEscapeSequence :: IO () -> IO ()
-withEscapeSequence f = do
-    term <- lookupEnv "TERM"
-    let inScreen = maybe False ("screen" `L.isPrefixOf`) term
-    putStr $ if inScreen then "\ESCPtmux;\ESC\ESC]" else "\ESC]"
-    f
-    putStrLn $ if inScreen then "\a\ESC\\" else "\a"
+getAspectRatio  :: DynamicImage -> String
+getAspectRatio i | go_w i / go_h i < (1 :: Double) = "width=auto;height=95%;"
+                 | otherwise                       = "width=100%;height=auto;"
+    where
+          go_h = fromIntegral . (dynamicMap imageHeight)
+          go_w = fromIntegral . (dynamicMap imageWidth)

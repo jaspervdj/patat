@@ -53,10 +53,10 @@ auto = go [] backends
 -- depending on platform availability.
 backends :: [(T.Text, Backend)]
 backends =
-    [ ("iterm2", ITerm2.backend)
-    , ("kitty",  Kitty.backend)
-    , ("w3m",    W3m.backend)
-    , ("wezterm",WezTerm.backend)
+    [ ("iterm2",  ITerm2.backend)
+    , ("kitty",   Kitty.backend)
+    , ("w3m",     W3m.backend)
+    , ("wezterm", WezTerm.backend)
     ]
 
 
