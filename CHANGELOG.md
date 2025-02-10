@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+ *  Add image support for WezTerm (#177).
+
 ## 0.14.0.0 (2024-02-06)
 
  *  Align based on final layout for incremental lists and other fragments
