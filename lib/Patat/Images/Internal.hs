@@ -11,13 +11,14 @@ module Patat.Images.Internal
 
 
 --------------------------------------------------------------------------------
-import           Control.Exception    (Exception)
-import qualified Data.Aeson           as A
-import           Data.Data            (Data)
-import           Data.Typeable        (Typeable)
+import           Control.Exception  (Exception)
+import qualified Data.Aeson         as A
+import           Data.Data          (Data)
+import qualified Data.List          as L
+import           Data.Typeable      (Typeable)
 import           Patat.Cleanup
 import           System.Environment
-import qualified Data.List            as L
+import qualified System.IO          as IO
 
 --------------------------------------------------------------------------------
 data Config a = Auto | Explicit a deriving (Eq)
@@ -48,4 +49,7 @@ withEscapeSequence f = do
     let inScreen = maybe False ("screen" `L.isPrefixOf`) term
     putStr $ if inScreen then "\ESCPtmux;\ESC\ESC]" else "\ESC]"
     f
-    putStrLn $ if inScreen then "\a\ESC\\" else "\a"
+    putStr $ if inScreen then "\a\ESC\\" else "\a"
+    -- Make sure we don't print a newline after the image, or it may scroll
+    -- slightly out of view to the top.  We flush instead.
+    IO.hFlush IO.stdout

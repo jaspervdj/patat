@@ -625,6 +625,7 @@ patat:
 
 -   `backend: iterm2`: uses [iTerm2](https://iterm2.com/)'s special escape
     sequence to render the image.  This even works with animated GIFs!
+    Note that it can have issues running under `tmux`.
 
 -   `backend: kitty`: uses
     [Kitty's icat command](https://sw.kovidgoyal.net/kitty/kittens/icat.html).
