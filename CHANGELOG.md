@@ -1,8 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.14.1.0 (2024-02-22)
 
  *  Add image support for WezTerm (#177).
+ *  Fix image support in Kitty (#179).
+ *  Fix image scroll issue for iTerm2.
 
 ## 0.14.0.0 (2024-02-06)
 
