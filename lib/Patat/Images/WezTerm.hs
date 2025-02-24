@@ -5,11 +5,6 @@
 
 module Patat.Images.WezTerm
     ( backend
-    , Pane
-    , Size
-    , camelToSnake
-    , camelToSnakeCase
-    , wordsOn
     ) where
 
 
