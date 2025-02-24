@@ -33,6 +33,7 @@ Library
 
   Build-depends:
     aeson                >= 2.0   && < 2.3,
+    aeson-casing         >= 0.1   && < 0.3,
     ansi-terminal        >= 0.6   && < 1.1,
     ansi-wl-pprint       >= 0.6   && < 1.1,
     async                >= 2.2   && < 2.3,
@@ -56,6 +57,7 @@ Library
     text                 >= 1.2   && < 2.2,
     time                 >= 1.4   && < 1.13,
     unordered-containers >= 0.2   && < 0.3,
+    utf8-string          >= 0.3.1 && < 2.0,
     yaml                 >= 0.8   && < 0.12,
     vector               >= 0.13  && < 0.14,
     wcwidth              >= 0.0   && < 0.1,
