@@ -20,6 +20,7 @@ import qualified Data.ByteString.Lazy.UTF8 as BLU
 import           GHC.Generics              (Generic)
 import           Patat.Cleanup             (Cleanup)
 import qualified Patat.Images.Internal     as Internal
+import           System.Directory
 import           System.Environment        (lookupEnv)
 import           System.Process
 
@@ -69,7 +70,9 @@ new config = do
 drawImage :: FilePath -> IO Cleanup
 drawImage path = do
     content <- B.readFile path
-    resp <- fmap BLU.fromString $ readProcess "wezterm.exe" ["cli", "list", "--format", "json"] []
+
+    wez <- wezExecutable
+    resp <- fmap BLU.fromString $ readProcess wez ["cli", "list", "--format", "json"] []
     let panes = (A.decode resp :: Maybe [Pane])
 
     Internal.withEscapeSequence $ do
@@ -86,6 +89,15 @@ drawImage path = do
 wezArString  :: Double -> Double -> String
 wezArString i p | i < p     = "width=auto;height=95%;"
                 | otherwise = "width=100%;height=auto;"
+
+
+--------------------------------------------------------------------------------
+wezExecutable :: IO String
+wezExecutable = do
+    w <- findExecutable "wezterm.exe"
+    case w of
+        Nothing -> return "wezterm"
+        Just x  -> return x
 
 
 --------------------------------------------------------------------------------
