@@ -137,15 +137,15 @@ defaultAr = (4 / 3 :: Double)             -- Good enough for a VT100
 camelToSnake :: String -> String
 camelToSnake [] = []
 camelToSnake (x:xs)
-  | isUpper x = '_' : toLower x : camelToSnake xs
-  | otherwise = x : camelToSnake xs
+    | isUpper x = '_' : toLower x : camelToSnake xs
+    | otherwise = x : camelToSnake xs
 
 
 --------------------------------------------------------------------------------
 camelToSnakeCase :: String -> String
 camelToSnakeCase s = case camelToSnake s of
-  ('_':rest) -> rest                      -- Remove any leading spaces
-  result     -> result
+    ('_':rest) -> rest                    -- Remove any leading dashes
+    result     -> result
 
 
 --------------------------------------------------------------------------------
