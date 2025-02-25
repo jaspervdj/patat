@@ -1,5 +1,4 @@
 --------------------------------------------------------------------------------
-{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell   #-}
 
@@ -17,10 +16,8 @@ import           Control.Monad           (unless, when)
 import qualified Data.Aeson              as A
 import qualified Data.ByteString         as B
 import qualified Data.ByteString.Base64  as B64
-import           Data.Char               (isUpper, toLower)
 import qualified Data.Text.Lazy          as TL
 import           Data.Text.Lazy.Encoding (encodeUtf8)
-import           GHC.Generics            (Generic)
 import           Patat.Cleanup           (Cleanup)
 import qualified Patat.Images.Internal   as Internal
 import           System.Directory        (findExecutable)
@@ -42,20 +39,24 @@ instance A.FromJSON Config where parseJSON _ = return Config
 data Pane =
     Pane { paneSize     :: Size
          , paneIsActive :: Bool
-         } deriving (Show, Generic)
+         } deriving (Show)
 
 instance A.FromJSON Pane where
-    parseJSON = A.genericParseJSON $ A.defaultOptions { A.fieldLabelModifier = camelToSnakeCase . drop 4 }
+    parseJSON = A.withObject "Pane" $ \o -> Pane
+        <$> o A..: "size"
+        <*> o A..: "is_active"
 
 
 --------------------------------------------------------------------------------
 data Size =
     Size { sizePixelWidth  :: Int
          , sizePixelHeight :: Int
-         } deriving (Show, Generic)
+         } deriving (Show)
 
 instance A.FromJSON Size where
-    parseJSON = A.genericParseJSON $ A.defaultOptions { A.fieldLabelModifier = camelToSnakeCase . drop 4 }
+    parseJSON = A.withObject "Size" $ \o -> Size
+        <$> o A..: "pixel_width"
+        <*> o A..: "pixel_height"
 
 
 --------------------------------------------------------------------------------
@@ -133,25 +134,3 @@ defaultAr :: Double
 defaultAr = (4 / 3 :: Double)             -- Good enough for a VT100
 
 
---------------------------------------------------------------------------------
-camelToSnake :: String -> String
-camelToSnake [] = []
-camelToSnake (x:xs)
-    | isUpper x = '_' : toLower x : camelToSnake xs
-    | otherwise = x : camelToSnake xs
-
-
---------------------------------------------------------------------------------
-camelToSnakeCase :: String -> String
-camelToSnakeCase s = case camelToSnake s of
-    ('_':rest) -> rest                    -- Remove any leading dashes
-    result     -> result
-
-
---------------------------------------------------------------------------------
-wordsOn :: (Char -> Bool) -> String -> [String]
-wordsOn t s =
-    case dropWhile t s of
-        "" -> []
-        s' -> w : wordsOn t s''
-            where (w, s'') = break t s'
