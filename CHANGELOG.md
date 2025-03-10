@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.14.2.0 (2024-03-10)
+
+ *  Fix WezTerm image rendering when using panes (#182).
+ *  Bump `ansi-terminal` upper bound to 1.2 and lower bound to 1.1.
+    This adds the ability to set colors on underlines.
+ *  Bump `pandoc` upper bound to 3.7.
+ *  Bump `tasty-quickcheck` upper bound to 0.12.
+
 ## 0.14.1.0 (2024-02-22)
 
  *  Add image support for WezTerm (#177).
