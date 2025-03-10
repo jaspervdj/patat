@@ -20,6 +20,7 @@
         packages = [
           pkgs.cabal-install
           pkgs.entr
+          pkgs.wezterm
           haskell.goldplate
           haskell.stylish-haskell
           (haskell.ghc.withPackages (p: inputs.self.packages.${system}.default.buildInputs))

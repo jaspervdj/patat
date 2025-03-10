@@ -517,6 +517,15 @@ and `onRgb#101060` for a deep purple background).  Naturally, your terminal
 needs to support 24-bit RGB for this to work.  When creating portable
 presentations, it might be better to stick with the named colours listed above.
 
+To customize the color of the `underline`, combine the prefix with a color, for
+example:
+
+```yaml
+patat:
+    theme:
+        strong: [underline, underlineVividBlue]
+```
+
 ### Syntax Highlighting
 
 `patat` uses [Kate] Syntax Highlighting files.  `patat` ships with support for
