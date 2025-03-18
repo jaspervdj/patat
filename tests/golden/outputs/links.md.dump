@@ -10,4 +10,21 @@
 [m[[0m[32minline link[0m[m]([0m[4;36m/url[0m[m)[0m
 [m[[0m[32mone with a title[0m[m]([0m[4;36mhttp://fsf.org[0m[m "click here for a good time!")[0m
 [m[[0m[32mfoo[0m[m]([0m[4;36mhttp://foo.com/[0m[m)[0m
-[33m                                                                  1 / 1 [0m
+[33m                                                                  1 / 2 [0m
+
+[m{slide}[0m
+[33m                                links.md                                [0m
+
+[mSome more links:[0m
+
+[35m1.  [0m[mAn automatic one: <[0m[4;36mhttp://example.com#1[0m[m>[0m
+[35m2.  [0m[mAn [[0m[32minline one[0m[m][0m
+[35m3.  [0m[mA [[0m[32mreference[0m[m] link[0m
+[35m4.  [0m[mA [[0m[32mshortcut reference[0m[m] link[0m
+[35m5.  [0m[mA [[0m[32mtitled[0m[m] link[0m
+
+[m[[0m[32minline one[0m[m]([0m[4;36mhttp://example.com#2[0m[m)[0m
+[m[[0m[32mreference[0m[m]([0m[4;36mhttp://example.com#3[0m[m)[0m
+[m[[0m[32mshortcut reference[0m[m]([0m[4;36mhttp://example.com#4[0m[m)[0m
+[m[[0m[32mtitled[0m[m]([0m[4;36mhttp://example.com#5[0m[m "The title")[0m
+[33m                                                                  2 / 2 [0m

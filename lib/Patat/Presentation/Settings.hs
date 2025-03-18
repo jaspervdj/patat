@@ -204,6 +204,7 @@ defaultExtensionList = ExtensionList $
     , Pandoc.Ext_strikeout
     , Pandoc.Ext_superscript
     , Pandoc.Ext_subscript
+    , Pandoc.Ext_shortcut_reference_links
     ]
 
 

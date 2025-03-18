@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+ *  Enable `shortcut_reference_links` by default.  These are reference links
+    without the second pair of brackets, e.g.:
+
+    ```markdown
+    See [my website].
+
+    [my website]: http://example.com
+    ```
+
 ## 0.14.2.0 (2024-03-10)
 
  *  Fix WezTerm image rendering when using panes (#182).
