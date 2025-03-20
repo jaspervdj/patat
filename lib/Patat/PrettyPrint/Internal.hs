@@ -56,6 +56,7 @@ data Control
 -- | A simple chunk of text.  All ANSI codes are "reset" after printing.
 data Chunk
     = StringChunk [Ansi.SGR] String
+    | HyperlinkChunk [Ansi.SGR] String String -- Codes, title, URL
     | NewlineChunk
     | ControlChunk Control
     deriving (Eq, Show)
@@ -72,6 +73,10 @@ hPutChunk h (StringChunk codes str) = do
     Ansi.hSetSGR h (reverse codes)
     IO.hPutStr h str
     Ansi.hSetSGR h [Ansi.Reset]
+hPutChunk h (HyperlinkChunk codes str url) = do
+    Ansi.hSetSGR h (reverse codes)
+    Ansi.hHyperlink h url str
+    Ansi.hSetSGR h [Ansi.Reset]
 hPutChunk h (ControlChunk ctrl) = case ctrl of
     ClearScreenControl -> Ansi.hClearScreen h
     GoToLineControl l  -> Ansi.hSetCursorPosition h l 0
@@ -79,9 +84,10 @@ hPutChunk h (ControlChunk ctrl) = case ctrl of
 
 --------------------------------------------------------------------------------
 chunkToString :: Chunk -> String
-chunkToString NewlineChunk        = "\n"
-chunkToString (StringChunk _ str) = str
-chunkToString (ControlChunk _)    = ""
+chunkToString NewlineChunk             = "\n"
+chunkToString (StringChunk _ str)      = str
+chunkToString (HyperlinkChunk _ str _) = str
+chunkToString (ControlChunk _)         = ""
 
 
 --------------------------------------------------------------------------------
@@ -106,6 +112,7 @@ chunkLines chunks = case break (== NewlineChunk) chunks of
 --------------------------------------------------------------------------------
 data DocE d
     = String String
+    | Hyperlink String String  -- ^ Title, URL
     | Softspace
     | Hardspace
     | Softline
@@ -129,9 +136,11 @@ data DocE d
 
 --------------------------------------------------------------------------------
 chunkToDocE :: Chunk -> DocE Doc
-chunkToDocE NewlineChunk         = Hardline
-chunkToDocE (StringChunk c1 str) = Ansi (\c0 -> c1 ++ c0) (Doc [String str])
-chunkToDocE (ControlChunk ctrl)  = Control ctrl
+chunkToDocE chunk = case chunk of
+    NewlineChunk            -> Hardline
+    StringChunk c1 s        -> Ansi (\c0 -> c1 ++ c0) (Doc [String s])
+    HyperlinkChunk c1 s url -> Ansi (\c0 -> c1 ++ c0) (Doc [Hyperlink s url])
+    ControlChunk ctrl       -> Control ctrl
 
 
 --------------------------------------------------------------------------------
@@ -216,6 +225,11 @@ docToChunks doc0 =
         appendChunk chunk
         go docs
 
+    go (Hyperlink str url : docs) = do
+        codes <- asks deCodes
+        appendChunk $ HyperlinkChunk codes str url
+        go docs
+
     go (Softspace : docs) = do
         hard <- softConversion Softspace docs
         go (hard : docs)
@@ -289,18 +303,19 @@ docToChunks doc0 =
             _         -> soft
 
     nextWordLength :: [DocE Doc] -> Maybe Int
-    nextWordLength []                 = Nothing
+    nextWordLength []                  = Nothing
     nextWordLength (String x : xs)
-        | L.null x                    = nextWordLength xs
-        | otherwise                   = Just (wcstrwidth x)
-    nextWordLength (Softspace : xs)   = nextWordLength xs
-    nextWordLength (Hardspace : xs)   = nextWordLength xs
-    nextWordLength (Softline : xs)    = nextWordLength xs
-    nextWordLength (Hardline : _)     = Nothing
-    nextWordLength (WrapAt {..} : xs) = nextWordLength (unDoc wrapDoc   ++ xs)
-    nextWordLength (Ansi   {..} : xs) = nextWordLength (unDoc ansiDoc   ++ xs)
-    nextWordLength (Indent {..} : xs) = nextWordLength (unDoc indentDoc ++ xs)
-    nextWordLength (Control _ : _)    = Nothing
+        | L.null x                     = nextWordLength xs
+        | otherwise                    = Just (wcstrwidth x)
+    nextWordLength (Hyperlink t _ : _) = Just (wcstrwidth t)
+    nextWordLength (Softspace : xs)    = nextWordLength xs
+    nextWordLength (Hardspace : xs)    = nextWordLength xs
+    nextWordLength (Softline : xs)     = nextWordLength xs
+    nextWordLength (Hardline : _)      = Nothing
+    nextWordLength (WrapAt {..} : xs)  = nextWordLength (unDoc wrapDoc   ++ xs)
+    nextWordLength (Ansi   {..} : xs)  = nextWordLength (unDoc ansiDoc   ++ xs)
+    nextWordLength (Indent {..} : xs)  = nextWordLength (unDoc indentDoc ++ xs)
+    nextWordLength (Control _ : _)     = Nothing
 
 
 --------------------------------------------------------------------------------

@@ -31,6 +31,7 @@ import qualified Patat.Presentation.SpeakerNotes      as SpeakerNotes
 import           Patat.Presentation.Syntax
 import           Patat.PrettyPrint                    ((<$$>), (<+>))
 import qualified Patat.PrettyPrint                    as PP
+import qualified Patat.PrettyPrint.Internal           as PP  -- TODO: remove
 import           Patat.Size
 import           Patat.Theme                          (Theme (..))
 import qualified Patat.Theme                          as Theme
@@ -410,7 +411,8 @@ prettyInline ds (Code _ txt) =
 
 prettyInline ds link@(Link _attrs _text (target, _title))
     | Just (text, _, _) <- toReferenceLink link =
-        "[" <> themed ds themeLinkText (prettyInlines ds text) <> "]"
+        let text' = concatMap PP.chunkToString $ PP.docToChunks $ prettyInlines ds text in
+        "[" <> themed ds themeLinkText (PP.Doc [PP.Hyperlink text' $ T.unpack target]) <> "]"
     | otherwise =
         "<" <> themed ds themeLinkTarget (PP.text target) <> ">"
 
