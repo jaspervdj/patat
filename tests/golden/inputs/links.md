@@ -20,3 +20,9 @@ Some more links:
 [ref]: http://example.com#3
 [shortcut reference]: http://example.com#4
 [titled]: http://example.com#5 'The title'
+
+---
+
+Some more advanced stuff:
+
+[a **bold**, _italic_, `code` link](http://example.com#fmt)

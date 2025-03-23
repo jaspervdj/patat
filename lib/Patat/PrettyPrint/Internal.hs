@@ -96,8 +96,13 @@ chunkToString (ControlChunk _)         = ""
 optimizeChunks :: Chunks -> Chunks
 optimizeChunks (StringChunk c1 s1 : StringChunk c2 s2 : chunks)
     | c1 == c2  = optimizeChunks (StringChunk c1 (s1 <> s2) : chunks)
-    | otherwise =
-        StringChunk c1 s1 : optimizeChunks (StringChunk c2 s2 : chunks)
+    | otherwise = StringChunk c1 s1 :
+        optimizeChunks (StringChunk c2 s2 : chunks)
+optimizeChunks (HyperlinkChunk c1 s1 u1 : HyperlinkChunk c2 s2 u2 : chunks)
+    | c1 == c2 && u1 == u2 = optimizeChunks $
+        HyperlinkChunk c1 (s1 <> s2) u1 : chunks
+    | otherwise = HyperlinkChunk c1 s1 u1 :
+        optimizeChunks (HyperlinkChunk c2 s2 u2 : chunks)
 optimizeChunks (x : chunks) = x : optimizeChunks chunks
 optimizeChunks [] = []
 
@@ -112,7 +117,6 @@ chunkLines chunks = case break (== NewlineChunk) chunks of
 --------------------------------------------------------------------------------
 data DocE d
     = String String
-    | Hyperlink String String  -- ^ Title, URL
     | Softspace
     | Hardspace
     | Softline
@@ -130,6 +134,7 @@ data DocE d
         , indentOtherLines :: Indentation [Chunk]
         , indentDoc        :: d
         }
+    | Hyperlink String d
     | Control Control
     deriving (Functor)
 
@@ -138,9 +143,10 @@ data DocE d
 chunkToDocE :: Chunk -> DocE Doc
 chunkToDocE chunk = case chunk of
     NewlineChunk            -> Hardline
-    StringChunk c1 s        -> Ansi (\c0 -> c1 ++ c0) (Doc [String s])
-    HyperlinkChunk c1 s url -> Ansi (\c0 -> c1 ++ c0) (Doc [Hyperlink s url])
     ControlChunk ctrl       -> Control ctrl
+    StringChunk c1 s        -> Ansi (\c0 -> c1 ++ c0) $ Doc [String s]
+    HyperlinkChunk c1 s url -> Ansi (\c0 -> c1 ++ c0) $ Doc
+        [Hyperlink url $ Doc [String s]]
 
 
 --------------------------------------------------------------------------------
@@ -160,9 +166,10 @@ instance IsString Doc where
 
 --------------------------------------------------------------------------------
 data DocEnv = DocEnv
-    { deCodes  :: [Ansi.SGR]             -- ^ Most recent ones first in the list
-    , deIndent :: [Indentation [Chunk]]  -- ^ No need to store first-line indent
-    , deWrap   :: Maybe Int              -- ^ Wrap at columns
+    { deCodes     :: [Ansi.SGR]             -- ^ Most recent ones first
+    , deIndent    :: [Indentation [Chunk]]  -- ^ First-line indent not included
+    , deWrap      :: Maybe Int              -- ^ Wrap at columns
+    , deHyperlink :: Maybe String           -- ^ Hyperlink context
     }
 
 
@@ -212,7 +219,7 @@ bufferToChunks (LineBuffer _ ind chunks) = case chunks of
 --------------------------------------------------------------------------------
 docToChunks :: Doc -> Chunks
 docToChunks doc0 =
-    let env0        = DocEnv [] [] Nothing
+    let env0        = DocEnv [] [] Nothing Nothing
         ((), b, cs) = runRWS (go $ unDoc doc0) env0 emptyLineBuffer in
     optimizeChunks (cs <> bufferToChunks b)
   where
@@ -225,9 +232,8 @@ docToChunks doc0 =
         appendChunk chunk
         go docs
 
-    go (Hyperlink str url : docs) = do
-        codes <- asks deCodes
-        appendChunk $ HyperlinkChunk codes str url
+    go (Hyperlink url doc : docs) = do
+        local (\env -> env {deHyperlink = Just url}) (go $ unDoc doc)
         go docs
 
     go (Softspace : docs) = do
@@ -273,11 +279,13 @@ docToChunks doc0 =
         tell [ControlChunk ctrl]
         go docs
 
-
     makeChunk :: String -> DocM Chunk
     makeChunk str = do
         codes <- asks deCodes
-        return $ StringChunk codes str
+        mbUrl <- asks deHyperlink
+        return $ case mbUrl of
+            Just url -> HyperlinkChunk codes str url
+            Nothing  -> StringChunk codes str
 
     appendChunk :: Chunk -> DocM ()
     appendChunk c = modify $ \(LineBuffer w i cs) ->

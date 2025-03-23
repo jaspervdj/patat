@@ -29,6 +29,7 @@ module Patat.PrettyPrint
     , deindent
 
     , ansi
+    , hyperlink
 
     , (<+>)
     , (<$$>)
@@ -126,6 +127,11 @@ deindent = Doc . concatMap go . unDoc
 --------------------------------------------------------------------------------
 ansi :: [Ansi.SGR] -> Doc -> Doc
 ansi codes =  mkDoc . Ansi (codes ++)
+
+
+--------------------------------------------------------------------------------
+hyperlink :: String -> Doc -> Doc
+hyperlink url =  mkDoc . Hyperlink url
 
 
 --------------------------------------------------------------------------------
