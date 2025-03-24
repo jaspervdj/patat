@@ -469,12 +469,11 @@ prettyReferences ds =
         "[" <>
         themed ds themeLinkText
             (prettyInlines ds $ newlineToSpace text) <>
-        "](" <>
+        "]: " <>
         themed ds themeLinkTarget (PP.text target) <>
         (if T.null title
             then mempty
-            else PP.space <> "\"" <> PP.text title <> "\"")
-        <> ")"
+            else PP.space <> PP.text title)
 
     newlineToSpace :: [Inline] -> [Inline]
     newlineToSpace = runIdentity . dftInlines (pure . pure) work
