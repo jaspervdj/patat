@@ -67,6 +67,7 @@ displayWithBorders (Size rows columns) pres@Presentation {..} f =
         , dsMargins       = margins settings
         , dsWrap          = fromMaybe NoWrap $ psWrap settings
         , dsTabStop       = maybe 4 A.unFlexibleNum $ psTabStop settings
+        , dsOSC8          = fromMaybe False (psLinks settings >>= lsOSC8)
         , dsTheme         = fromMaybe Theme.defaultTheme (psTheme settings)
         , dsSyntaxMap     = pSyntaxMap
         , dsResolve       = \var -> fromMaybe [] $ HMS.lookup var pVars
@@ -410,15 +411,10 @@ prettyInline ds (Code _ txt) =
 
 prettyInline ds link@(Link _attrs _text (target, _title))
     | Just (text, _, _) <- toReferenceLink link =
-        let text' = prettyInlines ds text in
-        "[" <>
-        themed ds themeLinkText (PP.hyperlink (T.unpack target) text') <>
-        "]"
+        let doc = Just $ prettyInlines ds text in
+        "[" <> themed ds themeLinkText (hyperlink ds target doc) <> "]"
     | otherwise =
-        "<" <>
-        themed ds themeLinkTarget
-            (PP.hyperlink (T.unpack target) (PP.text target)) <>
-        ">"
+        "<" <> themed ds themeLinkTarget (hyperlink ds target Nothing) <> ">"
 
 prettyInline _ds SoftBreak = PP.softline
 
@@ -495,3 +491,13 @@ toReferenceLink :: Inline -> Maybe Reference
 toReferenceLink (Link _attrs text (target, title))
     | [Str target] /= text = Just (text, target, title)
 toReferenceLink _ = Nothing
+
+
+--------------------------------------------------------------------------------
+hyperlink :: DisplaySettings -> T.Text -> Maybe PP.Doc -> PP.Doc
+hyperlink ds url Nothing
+    | dsOSC8 ds = PP.hyperlink (T.unpack url) (PP.text url)
+    | otherwise = PP.text url
+hyperlink ds url (Just doc)
+    | dsOSC8 ds = PP.hyperlink (T.unpack url) doc
+    | otherwise = doc

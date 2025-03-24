@@ -24,6 +24,8 @@ module Patat.Presentation.Settings
 
     , TransitionSettings (..)
 
+    , LinkSettings (..)
+
     , parseSlideSettings
     ) where
 
@@ -65,6 +67,7 @@ data PresentationSettings = PresentationSettings
     , psSyntaxDefinitions :: !(Maybe [FilePath])
     , psSpeakerNotes      :: !(Maybe SpeakerNotesSettings)
     , psTransition        :: !(Maybe TransitionSettings)
+    , psLinks             :: !(Maybe LinkSettings)
     } deriving (Eq, Show)
 
 
@@ -88,6 +91,7 @@ instance Semigroup PresentationSettings where
         , psSyntaxDefinitions = on (<>)  psSyntaxDefinitions l r
         , psSpeakerNotes      = on mplus psSpeakerNotes      l r
         , psTransition        = on mplus psTransition        l r
+        , psLinks             = on (<>)  psLinks             l r
         }
 
 
@@ -97,7 +101,7 @@ instance Monoid PresentationSettings where
     mempty  = PresentationSettings
                 Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
                 Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-                Nothing
+                Nothing Nothing
 
 
 --------------------------------------------------------------------------------
@@ -294,6 +298,25 @@ data TransitionSettings = TransitionSettings
 instance A.FromJSON TransitionSettings where
     parseJSON = A.withObject "FromJSON TransitionSettings" $ \o ->
         TransitionSettings <$> o A..: "type" <*> pure o
+
+
+--------------------------------------------------------------------------------
+data LinkSettings = LinkSettings
+    { lsOSC8 :: !(Maybe Bool)
+    } deriving (Eq, Show)
+
+
+--------------------------------------------------------------------------------
+instance Semigroup LinkSettings where
+    l <> r = LinkSettings
+        { lsOSC8 = on mplus lsOSC8 l r
+        }
+
+
+--------------------------------------------------------------------------------
+instance A.FromJSON LinkSettings where
+    parseJSON = A.withObject "FromJSON LinkSettings" $ \o ->
+        LinkSettings <$> o A..:? "osc8"
 
 
 --------------------------------------------------------------------------------

@@ -9,6 +9,11 @@ Let's talk about [foo][foosite]
 
 ---
 
+<!--config:
+  links:
+    osc8: true
+-->
+
 Some more links:
 
 1.  An automatic one: <http://example.com#1>
@@ -22,6 +27,11 @@ Some more links:
 [titled]: http://example.com#5 'The title'
 
 ---
+
+<!--config:
+  links:
+    osc8: true
+-->
 
 Some more advanced stuff:
 

@@ -21,6 +21,7 @@ data DisplaySettings = DisplaySettings
     , dsWrap        :: !Wrap
     , dsTabStop     :: !Int
     , dsMargins     :: !Margins
+    , dsOSC8        :: !Bool
     , dsTheme       :: !Theme.Theme
     , dsSyntaxMap   :: !Skylighting.SyntaxMap
     , dsResolve     :: !(Var -> [Block])
