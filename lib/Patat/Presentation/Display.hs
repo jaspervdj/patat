@@ -415,7 +415,10 @@ prettyInline ds link@(Link _attrs _text (target, _title))
         themed ds themeLinkText (PP.hyperlink (T.unpack target) text') <>
         "]"
     | otherwise =
-        "<" <> themed ds themeLinkTarget (PP.text target) <> ">"
+        "<" <>
+        themed ds themeLinkTarget
+            (PP.hyperlink (T.unpack target) (PP.text target)) <>
+        ">"
 
 prettyInline _ds SoftBreak = PP.softline
 
