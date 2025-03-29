@@ -1,6 +1,18 @@
 # Changelog
 
-## Unreleased
+## 0.15.x (Unreleased)
+
+ *  Add [OSC8] support for hyperlinks.  This makes hyperlinks clickable in many
+    terminal emulators (see [OSC8 adoption]).
+
+    There is currently no way to detect if a terminal supports this feature,
+    so for now this needs to be explicitly turned on in the configuration:
+
+    ```yaml
+    patat:
+      links:
+        osc8: true
+    ```
 
  *  Enable `shortcut_reference_links` by default.  These are reference links
     without the second pair of brackets, e.g.:
@@ -10,6 +22,9 @@
 
     [my website]: http://example.com
     ```
+
+[OSC8]: https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda
+[OSC8 adoption]: https://github.com/Alhadis/OSC8-Adoption
 
 ## 0.14.2.0 (2024-03-10)
 
