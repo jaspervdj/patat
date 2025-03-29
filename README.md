@@ -56,6 +56,7 @@ Table of Contents
     -   [Evaluating code](#evaluating-code)
     -   [Speaker notes](#speaker-notes)
     -   [Transitions](#transitions)
+    -   [Links](#links)
 -   [Trivia](#trivia)
 
 Installation
@@ -884,6 +885,23 @@ patat:
 You can optionally set `items` to a non-empty list of transition effects to
 randomly sample from.  If `items` is not set, `patat` will simply sample from
 all transition effects using their respective default settings.
+
+### Links
+
+Version 0.15.0.0 and later support [OSC8] for hyperlinks.  This makes hyperlinks
+clickable in many terminal emulators (see [OSC8 adoption]).
+
+There is currently no way to detect if a terminal supports this feature, so you
+need to explicitly turn this on in the configuration:
+
+```yaml
+patat:
+  links:
+    osc8: true
+```
+
+[OSC8]: https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda
+[OSC8 adoption]: https://github.com/Alhadis/OSC8-Adoption
 
 Trivia
 ------

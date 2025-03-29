@@ -34,7 +34,7 @@ module Patat.PrettyPrint.Internal
 --------------------------------------------------------------------------------
 import           Control.Monad.Reader       (asks, local)
 import           Control.Monad.RWS          (RWS, runRWS)
-import           Control.Monad.State        (get, modify)
+import           Control.Monad.State        (get, modify, state)
 import           Control.Monad.Writer       (tell)
 import           Data.Char.WCWidth.Extended (wcstrwidth)
 import qualified Data.List                  as L
@@ -53,9 +53,16 @@ data Control
 
 
 --------------------------------------------------------------------------------
+-- | Hyperlinks can be printed in multiple parts when formatting is used.  The
+-- ID is used to tell which ones belong to the same link.
+type HyperlinkID = Int
+
+
+--------------------------------------------------------------------------------
 -- | A simple chunk of text.  All ANSI codes are "reset" after printing.
 data Chunk
     = StringChunk [Ansi.SGR] String
+    | HyperlinkChunk HyperlinkID [Ansi.SGR] String String -- Codes, title, URL
     | NewlineChunk
     | ControlChunk Control
     deriving (Eq, Show)
@@ -72,6 +79,10 @@ hPutChunk h (StringChunk codes str) = do
     Ansi.hSetSGR h (reverse codes)
     IO.hPutStr h str
     Ansi.hSetSGR h [Ansi.Reset]
+hPutChunk h (HyperlinkChunk hid codes str url) = do
+    Ansi.hSetSGR h (reverse codes)
+    Ansi.hHyperlinkWithId h (show hid) url str
+    Ansi.hSetSGR h [Ansi.Reset]
 hPutChunk h (ControlChunk ctrl) = case ctrl of
     ClearScreenControl -> Ansi.hClearScreen h
     GoToLineControl l  -> Ansi.hSetCursorPosition h l 0
@@ -79,21 +90,29 @@ hPutChunk h (ControlChunk ctrl) = case ctrl of
 
 --------------------------------------------------------------------------------
 chunkToString :: Chunk -> String
-chunkToString NewlineChunk        = "\n"
-chunkToString (StringChunk _ str) = str
-chunkToString (ControlChunk _)    = ""
+chunkToString NewlineChunk               = "\n"
+chunkToString (StringChunk _ str)        = str
+chunkToString (HyperlinkChunk _ _ str _) = str
+chunkToString (ControlChunk _)           = ""
 
 
 --------------------------------------------------------------------------------
 -- | If two neighboring chunks have the same set of ANSI codes, we can group
 -- them together.
 optimizeChunks :: Chunks -> Chunks
-optimizeChunks (StringChunk c1 s1 : StringChunk c2 s2 : chunks)
-    | c1 == c2  = optimizeChunks (StringChunk c1 (s1 <> s2) : chunks)
-    | otherwise =
-        StringChunk c1 s1 : optimizeChunks (StringChunk c2 s2 : chunks)
-optimizeChunks (x : chunks) = x : optimizeChunks chunks
-optimizeChunks [] = []
+optimizeChunks chunks = case chunks of
+    (StringChunk c1 s1 : StringChunk c2 s2 : t)
+        | c1 == c2 -> optimizeChunks (StringChunk c1 (s1 <> s2) : t)
+        | otherwise ->
+            StringChunk c1 s1 : optimizeChunks (StringChunk c2 s2 : t)
+    (HyperlinkChunk i1 c1 s1 u1 : HyperlinkChunk i2 c2 s2 u2 : t)
+        | i1 == i2 && c1 == c2 && u1 == u2 -> optimizeChunks $
+            HyperlinkChunk i1 c1 (s1 <> s2) u1 : t
+        | otherwise ->
+            HyperlinkChunk i1 c1 s1 u1 :
+            optimizeChunks (HyperlinkChunk i2 c2 s2 u2 : t)
+    x : t -> x : optimizeChunks t
+    [] -> []
 
 
 --------------------------------------------------------------------------------
@@ -123,15 +142,19 @@ data DocE d
         , indentOtherLines :: Indentation [Chunk]
         , indentDoc        :: d
         }
+    | Hyperlink String d
     | Control Control
     deriving (Functor)
 
 
 --------------------------------------------------------------------------------
 chunkToDocE :: Chunk -> DocE Doc
-chunkToDocE NewlineChunk         = Hardline
-chunkToDocE (StringChunk c1 str) = Ansi (\c0 -> c1 ++ c0) (Doc [String str])
-chunkToDocE (ControlChunk ctrl)  = Control ctrl
+chunkToDocE chunk = case chunk of
+    NewlineChunk              -> Hardline
+    ControlChunk ctrl         -> Control ctrl
+    StringChunk c1 s          -> Ansi (\c0 -> c1 ++ c0) $ Doc [String s]
+    HyperlinkChunk _ c1 s url -> Ansi (\c0 -> c1 ++ c0) $ Doc
+        [Hyperlink url $ Doc [String s]]
 
 
 --------------------------------------------------------------------------------
@@ -151,14 +174,26 @@ instance IsString Doc where
 
 --------------------------------------------------------------------------------
 data DocEnv = DocEnv
-    { deCodes  :: [Ansi.SGR]             -- ^ Most recent ones first in the list
-    , deIndent :: [Indentation [Chunk]]  -- ^ No need to store first-line indent
-    , deWrap   :: Maybe Int              -- ^ Wrap at columns
+    { -- | Most recent ones first
+      deCodes     :: [Ansi.SGR]
+    , -- | First-line indent not included
+      deIndent    :: [Indentation [Chunk]]
+    , -- | Wrap at columns
+      deWrap      :: Maybe Int
+    , -- | Hyperlink context
+      deHyperlink :: Maybe (HyperlinkID, String)
     }
 
 
 --------------------------------------------------------------------------------
-type DocM = RWS DocEnv Chunks LineBuffer
+data DocState = DocState
+    { dsLineBuffer  :: LineBuffer
+    , dsHyperlinkID :: Int
+    }
+
+
+--------------------------------------------------------------------------------
+type DocM = RWS DocEnv Chunks DocState
 
 
 --------------------------------------------------------------------------------
@@ -203,9 +238,10 @@ bufferToChunks (LineBuffer _ ind chunks) = case chunks of
 --------------------------------------------------------------------------------
 docToChunks :: Doc -> Chunks
 docToChunks doc0 =
-    let env0        = DocEnv [] [] Nothing
-        ((), b, cs) = runRWS (go $ unDoc doc0) env0 emptyLineBuffer in
-    optimizeChunks (cs <> bufferToChunks b)
+    let env0        = DocEnv [] [] Nothing Nothing
+        state0      = DocState emptyLineBuffer 0
+        ((), finalState, cs) = runRWS (go $ unDoc doc0) env0 state0 in
+    optimizeChunks (cs <> bufferToChunks (dsLineBuffer finalState))
   where
     go :: [DocE Doc] -> DocM ()
 
@@ -214,6 +250,12 @@ docToChunks doc0 =
     go (String str : docs) = do
         chunk <- makeChunk str
         appendChunk chunk
+        go docs
+
+    go (Hyperlink url doc : docs) = do
+        hid <- state $ \s ->
+            let hid = dsHyperlinkID s in (hid, s {dsHyperlinkID = hid + 1})
+        local (\env -> env {deHyperlink = Just (hid, url)}) (go $ unDoc doc)
         go docs
 
     go (Softspace : docs) = do
@@ -230,12 +272,13 @@ docToChunks doc0 =
         go (hard : docs)
 
     go (Hardline : docs) = do
-        buffer <- get
+        buffer <- dsLineBuffer <$> get
         tell $ bufferToChunks buffer <> [NewlineChunk]
         ind <- asks deIndent
-        modify $ \_ -> case docs of
-            []    -> emptyLineBuffer
-            _ : _ -> LineBuffer (sum $ map indentationWidth ind) ind []
+        let indw = sum $ map indentationWidth ind
+        modify $ \s -> case docs of
+            []    -> s {dsLineBuffer = emptyLineBuffer}
+            _ : _ -> s {dsLineBuffer = LineBuffer indw ind []}
         go docs
 
     go (WrapAt {..} : docs) = do
@@ -250,8 +293,10 @@ docToChunks doc0 =
 
     go (Indent {..} : docs) = do
         local (\e -> e {deIndent = indentOtherLines : deIndent e}) $ do
-            modify $ \(LineBuffer w i c) -> LineBuffer
-                (w + indentationWidth indentFirstLine) (indentFirstLine : i) c
+            modify $ \s ->
+                let LineBuffer w i c = dsLineBuffer s
+                    w' = w + indentationWidth indentFirstLine in
+                s {dsLineBuffer = LineBuffer w' (indentFirstLine : i) c}
             go (unDoc indentDoc)
         go docs
 
@@ -259,15 +304,19 @@ docToChunks doc0 =
         tell [ControlChunk ctrl]
         go docs
 
-
     makeChunk :: String -> DocM Chunk
     makeChunk str = do
         codes <- asks deCodes
-        return $ StringChunk codes str
+        mbHyperlink <- asks deHyperlink
+        return $ case mbHyperlink of
+            Just (hid, url) -> HyperlinkChunk hid codes str url
+            Nothing         -> StringChunk codes str
 
     appendChunk :: Chunk -> DocM ()
-    appendChunk c = modify $ \(LineBuffer w i cs) ->
-        LineBuffer (w + wcstrwidth (chunkToString c)) i (c : cs)
+    appendChunk c = modify $ \s ->
+        let LineBuffer w i cs = dsLineBuffer s
+            w' = w + wcstrwidth (chunkToString c) in
+        s {dsLineBuffer = LineBuffer w' i (c : cs)}
 
     -- Convert 'Softspace' or 'Softline' to 'Hardspace' or 'Hardline'
     softConversion :: DocE Doc -> [DocE Doc] -> DocM (DocE Doc)
@@ -276,7 +325,7 @@ docToChunks doc0 =
         case mbWrapCol of
             Nothing     -> return hard
             Just maxCol -> do
-                LineBuffer currentCol _ _ <- get
+                LineBuffer currentCol _ _ <- dsLineBuffer <$> get
                 case nextWordLength docs of
                     Nothing                            -> return hard
                     Just l
@@ -289,18 +338,19 @@ docToChunks doc0 =
             _         -> soft
 
     nextWordLength :: [DocE Doc] -> Maybe Int
-    nextWordLength []                 = Nothing
+    nextWordLength []                  = Nothing
     nextWordLength (String x : xs)
-        | L.null x                    = nextWordLength xs
-        | otherwise                   = Just (wcstrwidth x)
-    nextWordLength (Softspace : xs)   = nextWordLength xs
-    nextWordLength (Hardspace : xs)   = nextWordLength xs
-    nextWordLength (Softline : xs)    = nextWordLength xs
-    nextWordLength (Hardline : _)     = Nothing
-    nextWordLength (WrapAt {..} : xs) = nextWordLength (unDoc wrapDoc   ++ xs)
-    nextWordLength (Ansi   {..} : xs) = nextWordLength (unDoc ansiDoc   ++ xs)
-    nextWordLength (Indent {..} : xs) = nextWordLength (unDoc indentDoc ++ xs)
-    nextWordLength (Control _ : _)    = Nothing
+        | L.null x                     = nextWordLength xs
+        | otherwise                    = Just (wcstrwidth x)
+    nextWordLength (Hyperlink t _ : _) = Just (wcstrwidth t)
+    nextWordLength (Softspace : xs)    = nextWordLength xs
+    nextWordLength (Hardspace : xs)    = nextWordLength xs
+    nextWordLength (Softline : xs)     = nextWordLength xs
+    nextWordLength (Hardline : _)      = Nothing
+    nextWordLength (WrapAt {..} : xs)  = nextWordLength (unDoc wrapDoc   ++ xs)
+    nextWordLength (Ansi   {..} : xs)  = nextWordLength (unDoc ansiDoc   ++ xs)
+    nextWordLength (Indent {..} : xs)  = nextWordLength (unDoc indentDoc ++ xs)
+    nextWordLength (Control _ : _)     = Nothing
 
 
 --------------------------------------------------------------------------------
