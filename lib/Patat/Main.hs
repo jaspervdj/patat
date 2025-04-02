@@ -30,6 +30,7 @@ import           Patat.Presentation
 import qualified Patat.Presentation.SpeakerNotes  as SpeakerNotes
 import qualified Patat.PrettyPrint                as PP
 import           Patat.PrettyPrint.Matrix         (hPutMatrix)
+import           Patat.TerminalInfo
 import           Patat.Transition
 import qualified Paths_patat
 import           Prelude
@@ -154,6 +155,7 @@ main = do
     when (oVersion options) $ do
         putStrLn $ showVersion Paths_patat.version
         putStrLn $ "Using pandoc: " ++ showVersion Pandoc.pandocVersion
+        putStrLn . prettyTerminalInfo =<< detectTerminalInfo
         exitSuccess
 
     filePath <- case oFilePath options of

@@ -97,6 +97,7 @@ Library
     Patat.PrettyPrint.Internal
     Patat.PrettyPrint.Matrix
     Patat.Size
+    Patat.TerminalInfo
     Patat.Theme
     Patat.Transition
     Patat.Transition.Internal

@@ -46,6 +46,7 @@ data Handle = Handle
 withEscapeSequence :: IO () -> IO ()
 withEscapeSequence f = do
     term <- lookupEnv "TERM"
+    -- TODO: Use TerminalInfo
     let inScreen = maybe False ("screen" `L.isPrefixOf`) term
     putStr $ if inScreen then "\ESCPtmux;\ESC\ESC]" else "\ESC]"
     f
