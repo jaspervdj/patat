@@ -7,9 +7,8 @@ module Patat.TerminalInfo
 
 
 --------------------------------------------------------------------------------
-import           Data.List          (isPrefixOf)
+import           Data.List          (isInfixOf, isPrefixOf)
 import           Data.Maybe         (isJust)
-import Control.Applicative ((<|>))
 import           System.Environment (lookupEnv)
 
 
@@ -23,6 +22,8 @@ data TerminalInfo = TerminalInfo
 --------------------------------------------------------------------------------
 data Terminal
     = Alacritty
+    | ITerm2
+    | Kitty
     | WezTerm
     | Unknown
     deriving (Show)
@@ -44,25 +45,22 @@ detectTerminal :: IO Terminal
 detectTerminal = do
     term <- lookupEnv "TERM"
     termProgram <- lookupEnv "TERM_PROGRAM"
-    case (term >>= (`lookup` byTerm)) <|> (termProgram >>= (`lookup` byTerm)) of
-        Just t -> pure t
-        _ -> go detectors
-  where
-    byTerm :: [(String, Terminal)]
-    byTerm =
-        [ ("alacritty", Alacritty)
-        , ("WezTerm", WezTerm)
-        ]
+    let termIs k = Just k == term || Just k == termProgram
 
-    detectors :: [(Terminal, IO Bool)]
-    detectors =
-        [ (Alacritty, isJust <$> lookupEnv "ALACRITTY_WINDOW_ID")
-        ]
+        detectors =
+            [ (Alacritty, pure $ termIs "alacritty")
+            , (WezTerm, pure $ termIs "WezTerm")
+            , (ITerm2, pure $ termIs "iTerm.app")
+            , (Kitty, pure $ maybe False ("kitty" `isInfixOf`) term)
+            , (Alacritty, isJust <$> lookupEnv "ALACRITTY_WINDOW_ID")
+            ]
 
-    go [] = pure Unknown
-    go ((t, mp) : ds) = do
-        p <- mp
-        if p then pure t else go ds
+        go [] = pure Unknown
+        go ((t, mp) : ds) = do
+            p <- mp
+            if p then pure t else go ds
+
+    go detectors
 
 
 --------------------------------------------------------------------------------

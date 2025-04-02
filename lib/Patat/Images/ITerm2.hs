@@ -30,6 +30,7 @@ instance A.FromJSON Config where parseJSON _ = return Config
 new :: Internal.Config Config -> IO Internal.Handle
 new config = do
     when (config == Internal.Auto) $ do
+        -- TODO: Use TerminalInfo
         termProgram <- lookupEnv "TERM_PROGRAM"
         unless (termProgram == Just "iTerm.app") $ throwIO $
             Internal.BackendNotSupported "TERM_PROGRAM not iTerm.app"

@@ -32,6 +32,7 @@ instance A.FromJSON Config where parseJSON _ = return Config
 new :: Internal.Config Config -> IO Internal.Handle
 new config = do
     when (config == Internal.Auto) $ do
+        -- TODO: Use TerminalInfo
         term <- lookupEnv "TERM"
         unless (maybe False ("kitty" `L.isInfixOf`) term) $ throwIO $
             Internal.BackendNotSupported "TERM does not indicate kitty"
