@@ -48,7 +48,8 @@ import qualified Data.Text                   as T
 import qualified Data.Text.Encoding          as T
 import           Data.Traversable            (for)
 import qualified Data.Yaml                   as Yaml
-import           Patat.Presentation.Settings (PresentationSettings)
+import           Patat.Presentation.Settings (PresentationSettings,
+                                              parseSlideSettings)
 import           Patat.Unique
 import qualified Text.Pandoc                 as Pandoc
 import qualified Text.Pandoc.Writers.Shared  as Pandoc
@@ -201,7 +202,7 @@ fromPandocBlock (Pandoc.RawBlock fmt body)
     , Just t2 <- T.stripSuffix "-->" t1 = pure $ Config $
         case Yaml.decodeEither' (T.encodeUtf8 t2) of
             Left err  -> Left (show err)
-            Right obj -> Right obj
+            Right obj -> parseSlideSettings obj
     -- Parse other comments.
     | Just t1 <- T.stripPrefix "<!--" body
     , Just t2 <- T.stripSuffix "-->" t1 = pure $ SpeakerNote $ T.strip t2
@@ -296,13 +297,13 @@ newtype RevealID = RevealID Unique deriving (Eq, Ord, Show)
 -- items become visible.
 data RevealSequence a = RevealSequence
     { -- The ID used for this sequence.
-      rsID :: RevealID
+      rsID      :: RevealID
     , -- These reveals should be advanced in this order.
       -- Reveal IDs will be included multiple times if needed.
       --
       -- This should (only) contain the ID of this counter, and IDs of counters
       -- nested inside the children fields.
-      rsOrder :: [RevealID]
+      rsOrder   :: [RevealID]
     , -- For each piece of content in this sequence, we store a set of ints.
       -- When the current counter state is included in this set, the item is
       -- visible.

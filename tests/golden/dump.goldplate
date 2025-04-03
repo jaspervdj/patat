@@ -1,12 +1,12 @@
 {
     "command": "patat",
-    "input_files": "inputs/*",
+    "input_files": "dump.in/*",
     "arguments": ["--dump", "--force", "${GOLDPLATE_INPUT_FILE}"],
     "environment": {
         "HOME": "/dev/null"
     },
     "asserts": [
         {"exit_code": 0},
-        {"stdout": "outputs/${GOLDPLATE_INPUT_BASENAME}.dump"}
+        {"stdout": "dump.out/${GOLDPLATE_INPUT_BASENAME}.dump"}
     ]
 }
