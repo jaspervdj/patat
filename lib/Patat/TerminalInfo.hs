@@ -1,4 +1,5 @@
 --------------------------------------------------------------------------------
+{-# LANGUAGE OverloadedStrings #-}
 module Patat.TerminalInfo
     ( TerminalInfo (..)
     , prettyTerminalInfo
@@ -7,16 +8,26 @@ module Patat.TerminalInfo
 
 
 --------------------------------------------------------------------------------
-import           Data.List          (isInfixOf, isPrefixOf)
-import           Data.Maybe         (isJust)
-import           System.Environment (lookupEnv)
+import qualified Data.Aeson.Extended as A
+import           Data.List           (isInfixOf, isPrefixOf)
+import           Data.Maybe          (isJust)
+import qualified Data.Text           as T
+import           System.Environment  (lookupEnv)
 
 
 --------------------------------------------------------------------------------
 data TerminalInfo = TerminalInfo
-    { tiTerminal :: Terminal
-    , tiTmux     :: Bool
-    } deriving (Show)
+    { tiTerm :: Terminal
+    , tiTmux :: Bool
+    -- Move size here?
+    } deriving (Eq, Show)
+
+
+--------------------------------------------------------------------------------
+instance A.FromJSON TerminalInfo where
+    parseJSON = A.withObject "FromJSON TerminalInfo" $ \o -> TerminalInfo
+        <$> o A..:? "term" A..!= Unknown
+        <*> o A..:? "tmux" A..!= False
 
 
 --------------------------------------------------------------------------------
@@ -26,13 +37,35 @@ data Terminal
     | Kitty
     | WezTerm
     | Unknown
-    deriving (Show)
+    deriving (Bounded, Enum, Eq, Show)
+
+
+--------------------------------------------------------------------------------
+instance A.FromJSON Terminal where
+    parseJSON = A.withText "FromJSON Terminal" $ \t ->
+        maybe (fail $ "unknown terminal: " ++ T.unpack t) pure $ parseTerminal t
+
+
+--------------------------------------------------------------------------------
+prettyTerminal :: Terminal -> T.Text
+prettyTerminal terminal = case terminal of
+    Alacritty -> "alacritty"
+    ITerm2    -> "iterm2"
+    Kitty     -> "kitty"
+    WezTerm   -> "wezterm"
+    Unknown   -> "unknown"
+
+
+--------------------------------------------------------------------------------
+parseTerminal :: T.Text -> Maybe Terminal
+parseTerminal txt =
+    lookup txt [(prettyTerminal t, t) | t <- [minBound .. maxBound]]
 
 
 --------------------------------------------------------------------------------
 prettyTerminalInfo :: TerminalInfo -> String
 prettyTerminalInfo ti =
-    show (tiTerminal ti) ++ if tiTmux ti then " (tmux)" else ""
+    show (tiTerm ti) ++ if tiTmux ti then " (tmux)" else ""
 
 
 --------------------------------------------------------------------------------

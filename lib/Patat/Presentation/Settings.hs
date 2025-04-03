@@ -40,6 +40,7 @@ import           Data.Function          (on)
 import qualified Data.HashMap.Strict    as HMS
 import           Data.List              (intercalate)
 import qualified Data.Text              as T
+import           Patat.TerminalInfo
 import qualified Patat.Theme            as Theme
 import           Prelude
 import qualified Text.Pandoc            as Pandoc
@@ -68,6 +69,7 @@ data PresentationSettings = PresentationSettings
     , psSpeakerNotes      :: !(Maybe SpeakerNotesSettings)
     , psTransition        :: !(Maybe TransitionSettings)
     , psLinks             :: !(Maybe LinkSettings)
+    , psTerminal          :: !(Maybe TerminalInfo)
     } deriving (Eq, Show)
 
 
@@ -92,6 +94,7 @@ instance Semigroup PresentationSettings where
         , psSpeakerNotes      = on mplus psSpeakerNotes      l r
         , psTransition        = on mplus psTransition        l r
         , psLinks             = on (<>)  psLinks             l r
+        , psTerminal          = on mplus psTerminal          l r
         }
 
 
@@ -99,9 +102,9 @@ instance Semigroup PresentationSettings where
 instance Monoid PresentationSettings where
     mappend = (<>)
     mempty  = PresentationSettings
-                Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-                Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-                Nothing Nothing
+        Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+        Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+        Nothing
 
 
 --------------------------------------------------------------------------------
