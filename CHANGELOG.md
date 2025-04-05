@@ -1,9 +1,9 @@
 # Changelog
 
-## 0.15.x (Unreleased)
+## 0.15.0.0 (2025-04-05)
 
- *  Add [OSC8] support for hyperlinks.  This makes hyperlinks clickable in many
-    terminal emulators (see [OSC8 adoption]).
+ *  Add [OSC8] support for hyperlinks (#185).  This makes hyperlinks clickable
+    in many terminal emulators (see [OSC8 adoption]).
 
     There is currently no way to detect if a terminal supports this feature,
     so for now this needs to be explicitly turned on in the configuration:
@@ -22,6 +22,25 @@
 
     [my website]: http://example.com
     ```
+
+ *  Validate settings on slide (#186).
+
+    This validation was present since the introduction of slide settings, but it
+    was accidentally removed in v0.14.
+
+ *  Improve reference link rendering.
+
+    This changes the way references are rendered from:
+
+        [example](http://example.com/)
+        [example with title](http://example.com/ "title")
+
+    To:
+
+        [example]: http://example.com/
+        [example with title]: http://example.com/ title
+
+    This easier to read and more coherent with Pandoc markdown.
 
 [OSC8]: https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda
 [OSC8 adoption]: https://github.com/Alhadis/OSC8-Adoption
