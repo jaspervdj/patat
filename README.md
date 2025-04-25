@@ -719,12 +719,13 @@ _evaluator_ by specifying this in the YAML metadata:
           reveal: true  # Optional
           replace: false  # Optional
           container: code  # Optional
+          syntax: json  # Output highlighting, optional
     ...
 
     Here is an example of a code block that is evaluated:
 
     ```ruby
-    puts "Hi"
+    puts '{"hello": "world"}'
     ```
 
 An arbitrary amount of evaluators can be specified, and whenever a a class
@@ -746,6 +747,9 @@ Aside from the command, there are four more options:
      *  `code`: the default setting.
      *  `none`: no formatting applied.
      *  `inline`: no formatting applied and no trailing newline.
+ -  `syntax`: When using `container: code` (the default), the output of the eval
+    block will use the same syntax highlighting as the input code block.
+    You can customize this using `syntax`, e.g. `syntax: json`.
  -  `stderr`: Include output from standard error.  Defaults to `true`.
  -  `wrap`: this is a deprecated name for `container`, used in version 0.11 and
     earlier.
