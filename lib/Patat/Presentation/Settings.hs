@@ -257,6 +257,7 @@ data EvalSettings = EvalSettings
     , evalReveal    :: !Bool
     , evalContainer :: !EvalSettingsContainer
     , evalStderr    :: !Bool
+    , evalSyntax    :: !(Maybe T.Text)
     } deriving (Eq, Show)
 
 
@@ -268,6 +269,7 @@ instance A.FromJSON EvalSettings where
         <*> deprecated "fragment" "reveal" True o
         <*> deprecated "wrap" "container" EvalContainerCode o
         <*> o A..:? "stderr" A..!= True
+        <*> o A..:? "syntax"
       where
         deprecated old new def obj = do
             mo <- obj A..:? old
