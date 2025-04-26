@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.15.1.0 (unreleased)
+
+ *  Add a `syntax` option for `eval` blocks (#187).  This allows you to set
+    the syntax highlighting to be used for the _output of the evaluated code_,
+    for example:
+
+        ---
+        patat:
+          eval:
+            ruby:
+              command: irb --noecho --noverbose
+              syntax: json
+        ...
+
+        Here is a code block:
+
+        ```ruby
+        puts '{"hello": "world"}'
+        ```
+
 ## 0.15.0.0 (2025-04-05)
 
  *  Add [OSC8] support for hyperlinks (#185).  This makes hyperlinks clickable
