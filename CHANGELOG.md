@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.15.1.0 (unreleased)
+## 0.15.1.0 (2025-04-26)
 
  *  Add a `syntax` option for `eval` blocks (#187).  This allows you to set
     the syntax highlighting to be used for the _output of the evaluated code_,
