@@ -719,7 +719,7 @@ _evaluator_ by specifying this in the YAML metadata:
           reveal: true  # Optional
           replace: false  # Optional
           container: code  # Optional
-          syntax: json  # Output highlighting, optional
+          syntax: json  # Optional
     ...
 
     Here is an example of a code block that is evaluated:
@@ -735,7 +735,7 @@ attribute on a code block matches the evaluator, it will be used.
 code of presentations downloaded from the internet before running them if they
 contain `eval` settings.
 
-Aside from the command, there are four more options:
+Aside from the command, there are five more options:
 
  -  `reveal`: Introduce a pause (see [fragments](#fragmented-slides)) in
     between showing the original code block and the output.  Defaults to `true`.
@@ -751,10 +751,37 @@ Aside from the command, there are four more options:
     block will use the same syntax highlighting as the input code block.
     You can customize this using `syntax`, e.g. `syntax: json`.
  -  `stderr`: Include output from standard error.  Defaults to `true`.
+
  -  `wrap`: this is a deprecated name for `container`, used in version 0.11 and
     earlier.
  -  `fragment`: this is a deprecated name for `reveal`, used in version 0.13 and
     earlier.
+
+Note that it is possible to set multiple classes on a codeblock by using pandoc
+syntax.  This allows you to to separate syntax highlighting from evaluation.
+You can use this to only evaluate certain snippets, or even evaluate using
+different commands or settings:
+
+    ---
+    patat:
+      eval:
+        python2:
+          command: python2
+        python3:
+          command: python3
+    ...
+
+    Snippet evaluated using an old python version:
+
+    ~~~{.python .python2}
+    print "Hello, world"
+    ~~~
+
+    Snippet evaluated using a more recent python version:
+
+    ~~~{.python .python3}
+    print("Hello, world")
+    ~~~
 
 Setting `reveal: false` and `replace: true` offers a way to "filter" code
 blocks, which can be used to render ASCII graphics.
