@@ -758,9 +758,9 @@ Aside from the command, there are five more options:
     earlier.
 
 Note that it is possible to set multiple classes on a codeblock by using pandoc
-syntax.  This allows you to to separate syntax highlighting from evaluation.
-You can use this to only evaluate certain snippets, or even evaluate using
-different commands or settings:
+fenced code block syntax.  This allows you to to separate syntax highlighting
+from evaluation.  You can use this to only evaluate certain snippets, or even
+evaluate using different commands or settings:
 
     ---
     patat:
