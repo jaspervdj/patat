@@ -1,0 +1,402 @@
+[33m                              margins01.md                              [0m
+
+
+
+
+
+
+
+
+[m                             [0m[34m# Introduction[0m
+
+[mMake sure there is no difference in between using a fragment at the end[0m
+[mof a list, or not. This test case also tests margins very well.[0m
+
+[33m                                                                  1 / 4 [0m
+
+[m{slide}[0m
+[33m                              margins01.md                              [0m
+
+
+
+
+
+
+[m                         [0m[34m# Entirely fragmented[0m
+
+
+
+
+
+
+
+
+
+[33m                                                                  2 / 4 [0m
+
+[m{fragment}[0m
+[33m                              margins01.md                              [0m
+
+
+
+
+
+
+[m                         [0m[34m# Entirely fragmented[0m
+
+[m                          [0m[35m1.  [0m[mThis is[0m
+
+
+
+
+
+
+
+[33m                                                                  2 / 4 [0m
+
+[m{fragment}[0m
+[33m                              margins01.md                              [0m
+
+
+
+
+
+
+[m                         [0m[34m# Entirely fragmented[0m
+
+[m                          [0m[35m1.  [0m[mThis is[0m
+[m                          [0m[35m2.  [0m[mAn ordered list[0m
+
+
+
+
+
+
+[33m                                                                  2 / 4 [0m
+
+[m{fragment}[0m
+[33m                              margins01.md                              [0m
+
+
+
+
+
+
+[m                         [0m[34m# Entirely fragmented[0m
+
+[m                          [0m[35m1.  [0m[mThis is[0m
+[m                          [0m[35m2.  [0m[mAn ordered list[0m
+
+[m                                Hahaha![0m
+
+
+
+
+[33m                                                                  2 / 4 [0m
+
+[m{fragment}[0m
+[33m                              margins01.md                              [0m
+
+
+
+
+
+
+[m                         [0m[34m# Entirely fragmented[0m
+
+[m                          [0m[35m1.  [0m[mThis is[0m
+[m                          [0m[35m2.  [0m[mAn ordered list[0m
+
+[m                                Hahaha![0m
+
+[m                            [0m[35m- [0m[mHere is[0m
+
+
+[33m                                                                  2 / 4 [0m
+
+[m{fragment}[0m
+[33m                              margins01.md                              [0m
+
+
+
+
+
+
+[m                         [0m[34m# Entirely fragmented[0m
+
+[m                          [0m[35m1.  [0m[mThis is[0m
+[m                          [0m[35m2.  [0m[mAn ordered list[0m
+
+[m                                Hahaha![0m
+
+[m                            [0m[35m- [0m[mHere is[0m
+[m                            [0m[35m- [0m[mA second list[0m
+
+[33m                                                                  2 / 4 [0m
+
+[m{slide}[0m
+[33m                              margins01.md                              [0m
+
+
+
+
+
+
+[m                            [0m[34m# Not fragmented[0m
+
+
+
+
+
+
+
+
+
+[33m                                                                  3 / 4 [0m
+
+[m{fragment}[0m
+[33m                              margins01.md                              [0m
+
+
+
+
+
+
+[m                            [0m[34m# Not fragmented[0m
+
+[m                          [0m[35m1.  [0m[mThis is[0m
+
+
+
+
+
+
+
+[33m                                                                  3 / 4 [0m
+
+[m{fragment}[0m
+[33m                              margins01.md                              [0m
+
+
+
+
+
+
+[m                            [0m[34m# Not fragmented[0m
+
+[m                          [0m[35m1.  [0m[mThis is[0m
+[m                          [0m[35m2.  [0m[mAn ordered list[0m
+
+
+
+
+
+
+[33m                                                                  3 / 4 [0m
+
+[m{fragment}[0m
+[33m                              margins01.md                              [0m
+
+
+
+
+
+
+[m                            [0m[34m# Not fragmented[0m
+
+[m                          [0m[35m1.  [0m[mThis is[0m
+[m                          [0m[35m2.  [0m[mAn ordered list[0m
+
+[m                                Hahaha![0m
+
+
+
+
+[33m                                                                  3 / 4 [0m
+
+[m{fragment}[0m
+[33m                              margins01.md                              [0m
+
+
+
+
+
+
+[m                            [0m[34m# Not fragmented[0m
+
+[m                          [0m[35m1.  [0m[mThis is[0m
+[m                          [0m[35m2.  [0m[mAn ordered list[0m
+
+[m                                Hahaha![0m
+
+[m                            [0m[35m- [0m[mHere is[0m
+
+
+[33m                                                                  3 / 4 [0m
+
+[m{fragment}[0m
+[33m                              margins01.md                              [0m
+
+
+
+
+
+
+[m                            [0m[34m# Not fragmented[0m
+
+[m                          [0m[35m1.  [0m[mThis is[0m
+[m                          [0m[35m2.  [0m[mAn ordered list[0m
+
+[m                                Hahaha![0m
+
+[m                            [0m[35m- [0m[mHere is[0m
+[m                            [0m[35m- [0m[mA second list[0m
+
+[33m                                                                  3 / 4 [0m
+
+[m{slide}[0m
+[33m                              margins01.md                              [0m
+
+
+
+
+
+[m                          [0m[34m# Extra stuff at end[0m
+
+
+
+
+
+
+
+
+
+
+
+[33m                                                                  4 / 4 [0m
+
+[m{fragment}[0m
+[33m                              margins01.md                              [0m
+
+
+
+
+
+[m                          [0m[34m# Extra stuff at end[0m
+
+[m                          [0m[35m1.  [0m[mThis is[0m
+
+
+
+
+
+
+
+
+
+[33m                                                                  4 / 4 [0m
+
+[m{fragment}[0m
+[33m                              margins01.md                              [0m
+
+
+
+
+
+[m                          [0m[34m# Extra stuff at end[0m
+
+[m                          [0m[35m1.  [0m[mThis is[0m
+[m                          [0m[35m2.  [0m[mAn ordered list[0m
+
+
+
+
+
+
+
+
+[33m                                                                  4 / 4 [0m
+
+[m{fragment}[0m
+[33m                              margins01.md                              [0m
+
+
+
+
+
+[m                          [0m[34m# Extra stuff at end[0m
+
+[m                          [0m[35m1.  [0m[mThis is[0m
+[m                          [0m[35m2.  [0m[mAn ordered list[0m
+
+[m                                Hahaha![0m
+
+
+
+
+
+
+[33m                                                                  4 / 4 [0m
+
+[m{fragment}[0m
+[33m                              margins01.md                              [0m
+
+
+
+
+
+[m                          [0m[34m# Extra stuff at end[0m
+
+[m                          [0m[35m1.  [0m[mThis is[0m
+[m                          [0m[35m2.  [0m[mAn ordered list[0m
+
+[m                                Hahaha![0m
+
+[m                            [0m[35m- [0m[mHere is[0m
+
+
+
+
+[33m                                                                  4 / 4 [0m
+
+[m{fragment}[0m
+[33m                              margins01.md                              [0m
+
+
+
+
+
+[m                          [0m[34m# Extra stuff at end[0m
+
+[m                          [0m[35m1.  [0m[mThis is[0m
+[m                          [0m[35m2.  [0m[mAn ordered list[0m
+
+[m                                Hahaha![0m
+
+[m                            [0m[35m- [0m[mHere is[0m
+[m                            [0m[35m- [0m[mA second list[0m
+
+
+
+[33m                                                                  4 / 4 [0m
+
+[m{fragment}[0m
+[33m                              margins01.md                              [0m
+
+
+
+
+
+[m                          [0m[34m# Extra stuff at end[0m
+
+[m                          [0m[35m1.  [0m[mThis is[0m
+[m                          [0m[35m2.  [0m[mAn ordered list[0m
+
+[m                                Hahaha![0m
+
+[m                            [0m[35m- [0m[mHere is[0m
+[m                            [0m[35m- [0m[mA second list[0m
+
+[m                              Extra stuff[0m
+
+[33m                                                                  4 / 4 [0m

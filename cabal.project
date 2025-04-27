@@ -1,0 +1,4 @@
+packages: *.cabal
+package patat
+  tests: True
+  flags: +patat-make-man

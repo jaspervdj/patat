@@ -1,0 +1,39 @@
+[33m                              issue-111.md                              [0m
+
+[34m# Test quote[0m
+
+[mThis is not a quote[0m
+
+[42;91;3m> This is a block quote[0m
+
+[33m                                                                  1 / 3 [0m
+
+[m{slide}[0m
+[33m                              issue-111.md                              [0m
+
+[34m# Test[0m
+
+[42;91;3m> This is block quote[0m
+[42;91;3m> [0m
+[42;91;3m> a long quote[0m
+[42;91;3m> [0m
+[42;91;3m> [0m[m   [0m[42;91;3;40;37m                        [0m
+[42;91;3m> [0m[m   [0m[42;91;3;40;37m putStrLn "Hello world" [0m
+[42;91;3m> [0m[m   [0m[42;91;3;40;37m                        [0m
+[42;91;3m> [0m
+[42;91;3m> with some [0m[42;91;3;40;37m code [0m[42;91;3m as well[0m
+
+[33m                                                                  2 / 3 [0m
+
+[m{slide}[0m
+[33m                              issue-111.md                              [0m
+
+[34m# Test[0m
+
+[42;91;3m> This is a block quote with a fairly long paragraph[0m
+[42;91;3m> [0m
+[42;91;3m> [0m[m  [0m[35m- [0m[42;91;3mWith[0m
+[42;91;3m> [0m[m  [0m[35m- [0m[42;91;3ma nice[0m
+[42;91;3m> [0m[m  [0m[35m- [0m[42;91;3mlist[0m
+
+[33m                                                                  3 / 3 [0m

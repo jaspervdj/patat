@@ -46,6 +46,8 @@ docToMatrix (Size rows cols) doc = V.create $ do
     go r y _ (NewlineChunk : cs)                     = go r (y + 1) 0 cs
     go r y x (ControlChunk ClearScreenControl  : cs) = go r y x cs  -- ?
     go r _ x (ControlChunk (GoToLineControl y) : cs) = go r y x cs
+    go r y x (HyperlinkChunk _ codes str _ : cs)       =
+        go r y x (StringChunk codes str : cs)  --  Links are erased
     go r y x chunks@(StringChunk codes (z : zs) : cs)
         | x + w > cols = go r (y + 1) 0 chunks
         | otherwise    = do

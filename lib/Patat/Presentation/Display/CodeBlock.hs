@@ -1,5 +1,6 @@
 --------------------------------------------------------------------------------
 -- | Displaying code blocks, optionally with syntax highlighting.
+{-# LANGUAGE BangPatterns      #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Patat.Presentation.Display.CodeBlock
     ( prettyCodeBlock
@@ -7,6 +8,7 @@ module Patat.Presentation.Display.CodeBlock
 
 
 --------------------------------------------------------------------------------
+import           Data.Char.WCWidth.Extended          (wcstrwidth, wcwidth)
 import           Data.Maybe                          (mapMaybe)
 import qualified Data.Text                           as T
 import           Patat.Presentation.Display.Internal
@@ -50,12 +52,30 @@ zeroHighlight txt =
 
 
 --------------------------------------------------------------------------------
+-- | Expands tabs in code lines.
+expandTabs :: Int -> Skylighting.SourceLine -> Skylighting.SourceLine
+expandTabs tabStop = goTokens 0
+  where
+    goTokens _    []                        = []
+    goTokens col0 ((tokType, txt) : tokens) = goString col0 "" (T.unpack txt) $
+        \col1 str -> (tokType, T.pack str) : goTokens col1 tokens
+
+    goString :: Int -> String -> String -> (Int -> String -> k) -> k
+    goString !col acc str k = case str of
+        []       -> k col (reverse acc)
+        '\t' : t -> goString (col + spaces) (replicate spaces ' ' ++ acc) t k
+        c    : t -> goString (col + wcwidth c) (c : acc) t k
+      where
+        spaces = tabStop - col `mod` tabStop
+
+
+--------------------------------------------------------------------------------
 prettyCodeBlock :: DisplaySettings -> [T.Text] -> T.Text -> PP.Doc
 prettyCodeBlock ds classes rawCodeBlock =
     PP.vcat (map blockified sourceLines) <> PP.hardline
   where
     sourceLines :: [Skylighting.SourceLine]
-    sourceLines =
+    sourceLines = map (expandTabs (dsTabStop ds)) $
         [[]] ++ highlight (dsSyntaxMap ds) classes rawCodeBlock ++ [[]]
 
     prettySourceLine :: Skylighting.SourceLine -> PP.Doc
@@ -65,10 +85,11 @@ prettyCodeBlock ds classes rawCodeBlock =
     prettyToken (tokenType, str) = themed
         ds
         (\theme -> syntaxHighlight theme tokenType)
-        (PP.string $ T.unpack str)
+        (PP.text str)
 
     sourceLineLength :: Skylighting.SourceLine -> Int
-    sourceLineLength line = sum [T.length str | (_, str) <- line]
+    sourceLineLength line =
+        sum [wcstrwidth (T.unpack str) | (_, str) <- line]
 
     blockWidth :: Int
     blockWidth = foldr max 0 (map sourceLineLength sourceLines)
@@ -76,7 +97,7 @@ prettyCodeBlock ds classes rawCodeBlock =
     blockified :: Skylighting.SourceLine -> PP.Doc
     blockified line =
         let len    = sourceLineLength line
-            indent = PP.NotTrimmable "   " in
+            indent = PP.Indentation 3 mempty in
         PP.indent indent indent $
         themed ds themeCodeBlock $
             " " <>

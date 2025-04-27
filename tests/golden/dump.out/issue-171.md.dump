@@ -1,0 +1,11 @@
+[33m                              issue-171.md                              [0m
+
+[34m# what am i running?[0m
+
+[madd to [0m[40;37m $PS1 [0m[m:[0m
+
+[m   [0m[40;37m                                             [0m
+[m   [0m[40;37m 象 $(php -v | grep "^PHP" | cut -d " " -f2) [0m
+[m   [0m[40;37m                                             [0m
+
+[33m                                                                  1 / 1 [0m

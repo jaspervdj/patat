@@ -1,7 +1,7 @@
 🥔 patat
 ========
 
-![CI](https://github.com/jaspervdj/patat/workflows/CI/badge.svg) [![Hackage](https://img.shields.io/hackage/v/patat.svg)](https://hackage.haskell.org/package/patat) [![GitHub tag](https://img.shields.io/github/tag/jaspervdj/patat.svg)]()
+![CI](https://github.com/jaspervdj/patat/actions/workflows/haskell-ci.yml/badge.svg) [![Hackage](https://img.shields.io/hackage/v/patat.svg)](https://hackage.haskell.org/package/patat) [![GitHub tag](https://img.shields.io/github/tag/jaspervdj/patat.svg)]()
 
 `patat` (**P**resentations **A**top **T**he **A**NSI **T**erminal) is a
 feature-rich presentation tool that runs in the terminal.
@@ -18,10 +18,10 @@ feature-rich presentation tool that runs in the terminal.
 - [Transition effects](#transitions).
 - Supports [smart slide splitting](#input-format).
 - [Auto advancing](#auto-advancing) with configurable delay.
-- Optionally [re-wrapping](#line-wrapping) text to terminal width with proper
-  indentation.
+- [Centering](#centering) and [re-wrapping](#line-wrapping) text to terminal
+  width with proper indentation.
 - [Theming](#theming) support including 24-bit RGB.
-- Hihgly portable as it only requires an ANSI terminal as opposed to
+- Highly portable as it only requires an ANSI terminal as opposed to
   something like `ncurses`.
 
 ![screenshot](extra/demo.gif?raw=true)
@@ -42,6 +42,7 @@ Table of Contents
 -   [Input format](#input-format)
 -   [Configuration](#configuration)
     -   [Line wrapping](#line-wrapping)
+    -   [Tab stop](#tab-stop)
     -   [Margins](#margins)
     -   [Auto advancing](#auto-advancing)
     -   [Advanced slide splitting](#advanced-slide-splitting)
@@ -55,6 +56,7 @@ Table of Contents
     -   [Evaluating code](#evaluating-code)
     -   [Speaker notes](#speaker-notes)
     -   [Transitions](#transitions)
+    -   [Links](#links)
 -   [Trivia](#trivia)
 
 Installation
@@ -80,31 +82,11 @@ You can also find generic Linux and Mac OS binaries here:
 
 ### From source
 
-Installation from source is very easy.  You can build from source using `stack
-install` or `cabal install`.  `patat` is also available from [Hackage].
-
-[Hackage]: https://hackage.haskell.org/package/patat
-
-For people unfamiliar with the Haskell ecosystem, this means you can do either
-of the following:
-
-#### Using stack
-
-1. Install [stack] for your platform.
-2. Clone this repository.
-3. Run `stack setup` (if you're running stack for the first time) and
-   `stack install`.
-4. Make sure `$HOME/.local/bin` is in your `$PATH`.
-
-[stack]: https://docs.haskellstack.org/en/stable/README/
-
-#### Using cabal
-
-1. Install [cabal] for your platform.
-2. Run `cabal install patat`.
-3. Make sure `$HOME/.cabal/bin` is in your `$PATH`.
+`patat` is also available from [Hackage].  You can install it using [cabal] by
+running `cabal install patat`.
 
 [cabal]: https://www.haskell.org/cabal/
+[Hackage]: https://hackage.haskell.org/package/patat
 
 Running
 -------
@@ -266,7 +248,8 @@ are several places where you can put your configuration.
     Hello world.
     ```
 
-3.  Within a slide, using a comment starting with `<!--config:`.  These
+3.  In version 0.10 and later slides can be individually configured.
+    Within a slide, using a comment starting with `<!--config:`.  These
     settings can override configuration for that specific slide only.
     There should not be any whitespace between `<!--` and `config:`.
 
@@ -301,7 +284,14 @@ are several places where you can put your configuration.
 ### Line wrapping
 
 Line wrapping can be enabled by setting `wrap: true` in the configuration.  This
-will re-wrap all lines to fit the terminal width better.
+will re-wrap all lines to fit the terminal width better.  You can also ask patat
+to wrap at a specific column using `wrap: number`, e.g. `wrap: 60`.
+
+### Tab stop
+
+In version 0.12 and later, the amount of spaces a `\t` character in a code block
+aligns to can be customized by setting `tabStop: number` in the configuration.
+The default is `4`.
 
 ### Margins
 
@@ -332,6 +322,32 @@ margin.
 
 By default, the `left` and `right` margin are set to 0, and the `top` margin is
 set to 1.
+
+#### Centering
+
+Version 0.11 and later can center content.
+
+ -  To vertically center content, use `top: auto`.
+ -  To horizontally center content, use both `left: auto` and `right: auto`.
+
+For example:
+
+```markdown
+---
+title: Centered presentation
+author: John Doe
+patat:
+    margins:
+        left: auto
+        right: auto
+        top: auto
+...
+
+Hello world
+```
+
+[Line wrapping](#line-wrapping) is recommended when vertically centering content
+if there are any lines that are too wide for the terminal.
 
 ### Auto advancing
 
@@ -392,7 +408,7 @@ Now, we will only see one slide, which contains a nested header.
 
 ### Fragmented slides
 
-By default, slides are always displayed "all at once".  If you want to display
+By default, slides are always displayed "all at once".  If you want to reveal
 them fragment by fragment, there are two ways to do that.  The most common
 case is that lists should be displayed incrementally.
 
@@ -502,6 +518,15 @@ and `onRgb#101060` for a deep purple background).  Naturally, your terminal
 needs to support 24-bit RGB for this to work.  When creating portable
 presentations, it might be better to stick with the named colours listed above.
 
+To customize the color of the `underline`, combine the prefix with a color, for
+example:
+
+```yaml
+patat:
+    theme:
+        strong: [underline, underlineVividBlue]
+```
+
 #### Theming headers
 
 In addition to `header`, individual headers can also be customized.  The
@@ -604,7 +629,7 @@ empty list `[]`.
 
 #### Native Images support
 
-`patat-0.8.0.0` and newer include images support for some terminal emulators.
+Version 0.8 and later include images support for some terminal emulators.
 
 ```markdown
 ---
@@ -626,9 +651,13 @@ patat:
 
 -   `backend: iterm2`: uses [iTerm2](https://iterm2.com/)'s special escape
     sequence to render the image.  This even works with animated GIFs!
+    Note that it can have issues running under `tmux`.
 
 -   `backend: kitty`: uses
     [Kitty's icat command](https://sw.kovidgoyal.net/kitty/kittens/icat.html).
+
+-   `backend: wezterm`: uses the iTerm2 image protocol as implemented by
+    WezTerm.
 
 -   `backend: w3m`: uses the `w3mimgdisplay` executable to draw directly onto
     the window.  This has been tested in `urxvt` and `xterm`, but is known to
@@ -649,9 +678,9 @@ write ASCII escape codes directly to the screen with
 [code evaluation](#evaluating-code).
 
 In order to do that, for example, we could configure `kitten` code snippets
-to evaluate using [Kitty]'s command `icat`.  This uses the `rawInline` code
+to evaluate using [Kitty]'s command `icat`.  This uses the `none` container
 setting to ensure that the resulting output is not wrapped in a code block,
-and the `fragment` and `replace` settings immediately replace the snippet.
+and the `reveal` and `replace` settings immediately replace the snippet.
 
     ---
     patat:
@@ -659,8 +688,8 @@ and the `fragment` and `replace` settings immediately replace the snippet.
         kitten:
           command: sed 's/^/kitten /' | bash
           replace: true
-          fragment: false
-          wrap: rawInline
+          reveal: false
+          container: none
     ...
 
     See, for example:
@@ -703,15 +732,16 @@ _evaluator_ by specifying this in the YAML metadata:
       eval:
         ruby:
           command: irb --noecho --noverbose
-          fragment: true  # Optional
+          reveal: true  # Optional
           replace: false  # Optional
-          wrap: code  # Optional
+          container: code  # Optional
+          syntax: json  # Optional
     ...
 
     Here is an example of a code block that is evaluated:
 
     ```ruby
-    puts "Hi"
+    puts '{"hello": "world"}'
     ```
 
 An arbitrary amount of evaluators can be specified, and whenever a a class
@@ -721,20 +751,55 @@ attribute on a code block matches the evaluator, it will be used.
 code of presentations downloaded from the internet before running them if they
 contain `eval` settings.
 
-Aside from the command, there are two more options:
+Aside from the command, there are five more options:
 
- -  `fragment`: Introduce a pause (see [fragments](#fragmented-slides)) in
+ -  `reveal`: Introduce a pause (see [fragments](#fragmented-slides)) in
     between showing the original code block and the output.  Defaults to `true`.
  -  `replace`: Remove the original code block and replace it with the output
     rather than appending the output in a new code block.  Defaults to `false`.
- -  `wrap`: By default, the output is wrapped in a code block again with the
-    original syntax highlighting.  You can customize this behaviour by setting
-    `wrap` to:
+ -  `container`: By default, the output is wrapped in a code block again with
+    the original syntax highlighting.  You can customize this behaviour by
+    setting `container` to:
      *  `code`: the default setting.
-     *  `raw`: no formatting applied.
-     *  `rawInline`: no formatting applied and no trailing newline.
+     *  `none`: no formatting applied.
+     *  `inline`: no formatting applied and no trailing newline.
+ -  `syntax`: When using `container: code` (the default), the output of the eval
+    block will use the same syntax highlighting as the input code block.
+    You can customize this using `syntax`, e.g. `syntax: json`.
+ -  `stderr`: Include output from standard error.  Defaults to `true`.
 
-Setting `fragment: false` and `replace: true` offers a way to "filter" code
+ -  `wrap`: this is a deprecated name for `container`, used in version 0.11 and
+    earlier.
+ -  `fragment`: this is a deprecated name for `reveal`, used in version 0.13 and
+    earlier.
+
+Note that it is possible to set multiple classes on a codeblock by using pandoc
+fenced code block syntax.  This allows you to to separate syntax highlighting
+from evaluation.  You can use this to only evaluate certain snippets, or even
+evaluate using different commands or settings:
+
+    ---
+    patat:
+      eval:
+        python2:
+          command: python2
+        python3:
+          command: python3
+    ...
+
+    Snippet evaluated using an old python version:
+
+    ~~~{.python .python2}
+    print "Hello, world"
+    ~~~
+
+    Snippet evaluated using a more recent python version:
+
+    ~~~{.python .python3}
+    print("Hello, world")
+    ~~~
+
+Setting `reveal: false` and `replace: true` offers a way to "filter" code
 blocks, which can be used to render ASCII graphics.
 
     ---
@@ -742,7 +807,7 @@ blocks, which can be used to render ASCII graphics.
       eval:
         figlet:
           command: figlet
-          fragment: false
+          reveal: false
           replace: true
     ...
 
@@ -759,7 +824,7 @@ This feature works by simply by:
 
 ### Speaker Notes
 
-`patat` supports comments which can be used as speaker notes.
+Version 0.9 and later support comments which can be used as speaker notes.
 
 ```markdown
 ---
@@ -789,13 +854,11 @@ patat:
 ```
 
 Then, you can display these in a second terminal (presumably on a second
-monitor) by just displaying this file whenever it changes.  [entr] is one
-way to do that:
-
-[entr]: http://eradman.com/entrproject/
+monitor) by just displaying this file whenever it changes. `tail` is a primitive
+way of doing that:
 
 ```bash
-echo /tmp/notes.txt | entr -s 'clear; cat /tmp/notes.txt'
+tail -F /tmp/notes.txt
 ```
 
 Alternatively, just use a second `patat` instance with `--watch` enabled:
@@ -810,10 +873,10 @@ to start with `<!-- config:`; the lack of whitespace matters.
 
 ### Transitions
 
-`patat` supports transitions in between slides.  A relatively fast terminal
-emulator (e.g. [Alacritty], [Kitty], [iTerm2])
-is suggested when enabling this, to avoid too much flickering -- some
-flickering is unavoidable since we redraw the entire screen on each frame.
+Version 0.10 and later support transitions in between slides.  A relatively
+fast terminal emulator (e.g. [Alacritty], [Kitty], [iTerm2]) is suggested when
+enabling this, to avoid too much flickering -- some flickering is unavoidable
+since we redraw the entire screen on each frame.
 
 ```yaml
 patat:
@@ -844,6 +907,7 @@ Supported transitions `type`s:
 
  -  `slideLeft`: slides the new slide in from right to left.
  -  `dissolve`: changes characters over time.
+ -  `matrix`: loosely inspired by the 1999 science fiction movie.
 
 All transitions currently take these arguments:
 
@@ -868,6 +932,23 @@ patat:
 You can optionally set `items` to a non-empty list of transition effects to
 randomly sample from.  If `items` is not set, `patat` will simply sample from
 all transition effects using their respective default settings.
+
+### Links
+
+Version 0.15.0.0 and later support [OSC8] for hyperlinks.  This makes hyperlinks
+clickable in many terminal emulators (see [OSC8 adoption]).
+
+There is currently no way to detect if a terminal supports this feature, so you
+need to explicitly turn this on in the configuration:
+
+```yaml
+patat:
+  links:
+    osc8: true
+```
+
+[OSC8]: https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda
+[OSC8 adoption]: https://github.com/Alhadis/OSC8-Adoption
 
 Trivia
 ------

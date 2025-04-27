@@ -3,7 +3,7 @@ module Data.Char.WCWidth.Extended
     , wcstrwidth
     ) where
 
-import Data.Char.WCWidth
+import           Data.Char.WCWidth
 
 wcstrwidth :: String -> Int
 wcstrwidth = sum . map wcwidth

@@ -2,10 +2,15 @@ module Patat.Presentation
     ( PresentationSettings (..)
     , defaultPresentationSettings
 
+    , UniqueGen
+    , Unique
+    , zeroUniqueGen
+
     , Presentation (..)
     , readPresentation
 
     , activeSpeakerNotes
+    , activeVars
 
     , Size
     , getPresentationSize
@@ -25,3 +30,4 @@ import           Patat.Presentation.Display
 import           Patat.Presentation.Interactive
 import           Patat.Presentation.Internal
 import           Patat.Presentation.Read
+import           Patat.Unique

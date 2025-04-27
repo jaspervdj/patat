@@ -13,42 +13,44 @@ module Patat.Presentation.Read
 
 
 --------------------------------------------------------------------------------
-import           Control.Monad.Except           (ExceptT (..), runExceptT,
-                                                 throwError)
-import           Control.Monad.Trans            (liftIO)
-import qualified Data.Aeson.Extended            as A
-import qualified Data.Aeson.KeyMap              as AKM
-import           Data.Bifunctor                 (first)
-import           Data.Maybe                     (fromMaybe)
-import           Data.Sequence.Extended         (Seq)
-import qualified Data.Sequence.Extended         as Seq
-import qualified Data.Text                      as T
-import qualified Data.Text.Encoding             as T
-import           Data.Traversable               (for)
-import qualified Data.Yaml                      as Yaml
-import           Patat.EncodingFallback         (EncodingFallback)
-import qualified Patat.EncodingFallback         as EncodingFallback
-import           Patat.Eval                     (eval)
-import qualified Patat.Presentation.Comments    as Comments
+import           Control.Monad                   (guard)
+import           Control.Monad.Except            (ExceptT (..), runExceptT,
+                                                  throwError)
+import           Control.Monad.Trans             (liftIO)
+import qualified Data.Aeson.Extended             as A
+import qualified Data.Aeson.KeyMap               as AKM
+import           Data.Bifunctor                  (first)
+import           Data.Maybe                      (fromMaybe)
+import           Data.Sequence.Extended          (Seq)
+import qualified Data.Sequence.Extended          as Seq
+import qualified Data.Text                       as T
+import qualified Data.Text.Encoding              as T
+import           Data.Traversable                (for)
+import qualified Data.Yaml                       as Yaml
+import           Patat.EncodingFallback          (EncodingFallback)
+import qualified Patat.EncodingFallback          as EncodingFallback
+import qualified Patat.Eval                      as Eval
 import           Patat.Presentation.Fragment
-import qualified Patat.Presentation.Instruction as Instruction
 import           Patat.Presentation.Internal
-import           Patat.Transition               (parseTransitionSettings)
+import qualified Patat.Presentation.SpeakerNotes as SpeakerNotes
+import           Patat.Presentation.Syntax
+import           Patat.Transition                (parseTransitionSettings)
+import           Patat.Unique
 import           Prelude
-import qualified Skylighting                    as Skylighting
-import           System.Directory               (XdgDirectory (XdgConfig),
-                                                 doesFileExist,
-                                                 getHomeDirectory,
-                                                 getXdgDirectory)
-import           System.FilePath                (splitFileName, takeExtension,
-                                                 (</>))
-import qualified Text.Pandoc.Error              as Pandoc
-import qualified Text.Pandoc.Extended           as Pandoc
+import qualified Skylighting                     as Skylighting
+import           System.Directory                (XdgDirectory (XdgConfig),
+                                                  doesFileExist,
+                                                  getHomeDirectory,
+                                                  getXdgDirectory)
+import           System.FilePath                 (splitFileName, takeExtension,
+                                                  (</>))
+import qualified Text.Pandoc.Error               as Pandoc
+import qualified Text.Pandoc.Extended            as Pandoc
 
 
 --------------------------------------------------------------------------------
-readPresentation :: FilePath -> IO (Either String Presentation)
-readPresentation filePath = runExceptT $ do
+readPresentation :: UniqueGen -> FilePath -> IO (Either String Presentation)
+readPresentation uniqueGen filePath = runExceptT $ do
     -- We need to read the settings first.
     (enc, src)   <- liftIO $ EncodingFallback.readFile filePath
     homeSettings <- ExceptT readHomeSettings
@@ -71,8 +73,8 @@ readPresentation filePath = runExceptT $ do
         Right x -> return x
 
     pres <- ExceptT $ pure $
-        pandocToPresentation filePath enc settings syntaxMap doc
-    liftIO $ eval pres
+        pandocToPresentation uniqueGen filePath enc settings syntaxMap doc
+    pure $ fragmentPresentation $ Eval.parseEvalBlocks pres
   where
     ext = takeExtension filePath
 
@@ -122,27 +124,29 @@ readExtension (ExtensionList extensions) fileExt = case fileExt of
 
 --------------------------------------------------------------------------------
 pandocToPresentation
-    :: FilePath -> EncodingFallback -> PresentationSettings
+    :: UniqueGen -> FilePath -> EncodingFallback -> PresentationSettings
     -> Skylighting.SyntaxMap -> Pandoc.Pandoc -> Either String Presentation
-pandocToPresentation pFilePath pEncodingFallback pSettings pSyntaxMap
+pandocToPresentation pUniqueGen pFilePath pEncodingFallback pSettings pSyntaxMap
         pandoc@(Pandoc.Pandoc meta _) = do
     let !pTitle          = case Pandoc.docTitle meta of
-            []    -> [Pandoc.Str . T.pack . snd $ splitFileName pFilePath]
-            title -> title
+            []    -> [Str . T.pack . snd $ splitFileName pFilePath]
+            title -> fromPandocInlines title
         !pSlides         = pandocToSlides pSettings pandoc
         !pBreadcrumbs    = collectBreadcrumbs pSlides
         !pActiveFragment = (0, 0)
-        !pAuthor         = concat (Pandoc.docAuthors meta)
+        !pAuthor         = fromPandocInlines $ concat $ Pandoc.docAuthors meta
+        !pEvalBlocks     = mempty
+        !pVars           = mempty
     pSlideSettings <- Seq.traverseWithIndex
-        (\i ->
-            first (\err -> "on slide " ++ show (i + 1) ++ ": " ++ err) .
-            Comments.parseSlideSettings . slideComment)
+        (\i slide -> case slideSettings slide of
+            Left err  -> Left $ "on slide " ++ show (i + 1) ++ ": " ++ err
+            Right cfg -> pure cfg)
         pSlides
     pTransitionGens <- for pSlideSettings $ \slideSettings ->
         case psTransition (slideSettings <> pSettings) of
             Nothing -> pure Nothing
             Just ts -> Just <$> parseTransitionSettings ts
-    return Presentation {..}
+    return $ Presentation {..}
 
 
 --------------------------------------------------------------------------------
@@ -202,38 +206,28 @@ readSettings path = do
 
 --------------------------------------------------------------------------------
 pandocToSlides :: PresentationSettings -> Pandoc.Pandoc -> Seq.Seq Slide
-pandocToSlides settings pandoc =
-    let slideLevel   = fromMaybe (detectSlideLevel pandoc) (psSlideLevel settings)
-        unfragmented = splitSlides slideLevel pandoc
-        fragmented   = map fragmentSlide unfragmented in
-    Seq.fromList fragmented
-  where
-    fragmentSlide slide = case slideContent slide of
-        TitleSlide   _ _     -> slide
-        ContentSlide instrs0 ->
-            let instrs1 = fragmentInstructions fragmentSettings instrs0 in
-            slide {slideContent = ContentSlide instrs1}
-
-    fragmentSettings = FragmentSettings
-        { fsIncrementalLists = fromMaybe False (psIncrementalLists settings)
-        }
+pandocToSlides settings (Pandoc.Pandoc _meta pblocks) =
+    let blocks       = fromPandocBlocks pblocks
+        slideLevel   = fromMaybe (detectSlideLevel blocks) (psSlideLevel settings)
+        unfragmented = splitSlides slideLevel blocks in
+    Seq.fromList unfragmented
 
 
 --------------------------------------------------------------------------------
 -- | Find level of header that starts slides.  This is defined as the least
 -- header that occurs before a non-header in the blocks.
-detectSlideLevel :: Pandoc.Pandoc -> Int
-detectSlideLevel (Pandoc.Pandoc _meta blocks0) =
-    go 6 $ Comments.remove blocks0
+detectSlideLevel :: [Block] -> Int
+detectSlideLevel blocks0 =
+    go 6 $ filter (not . isComment) blocks0
   where
-    go level (Pandoc.Header n _ _ : x : xs)
+    go level (Header n _ _ : x : xs)
         | n < level && not (isHeader x) = go n xs
         | otherwise                     = go level (x:xs)
     go level (_ : xs)                   = go level xs
     go level []                         = level
 
-    isHeader (Pandoc.Header _ _ _) = True
-    isHeader _                     = False
+    isHeader (Header _ _ _) = True
+    isHeader _              = False
 
 
 --------------------------------------------------------------------------------
@@ -241,34 +235,43 @@ detectSlideLevel (Pandoc.Pandoc _meta blocks0) =
 -- rules, we use those as slide delimiters.  If there are no horizontal rules,
 -- we split using headers, determined by the slide level (see
 -- 'detectSlideLevel').
-splitSlides :: Int -> Pandoc.Pandoc -> [Slide]
-splitSlides slideLevel (Pandoc.Pandoc _meta blocks0)
-    | any (== Pandoc.HorizontalRule) blocks0 = splitAtRules   blocks0
-    | otherwise                              = splitAtHeaders [] blocks0
+splitSlides :: Int -> [Block] -> [Slide]
+splitSlides slideLevel blocks0
+    | any isHorizontalRule blocks0 = splitAtRules   blocks0
+    | otherwise                    = splitAtHeaders [] blocks0
   where
-    mkContentSlide :: [Pandoc.Block] -> [Slide]
-    mkContentSlide bs0 = case Comments.partition bs0 of
-        (_,  [])  -> [] -- Never create empty slides
-        (sn, bs1) -> pure . Slide sn . ContentSlide $
-            Instruction.fromList [Instruction.Append bs1]
+    mkContentSlide :: [Block] -> [Slide]
+    mkContentSlide bs0 = do
+        let bs1  = filter (not . isComment) bs0
+            sns  = SpeakerNotes.SpeakerNotes [s | SpeakerNote s <- bs0]
+            cfgs = concatCfgs [cfg | Config cfg <- bs0]
+        guard $ not $ null bs1  -- Never create empty slides
+        pure $ Slide sns cfgs $ ContentSlide bs1
 
-    splitAtRules blocks = case break (== Pandoc.HorizontalRule) blocks of
+    splitAtRules blocks = case break isHorizontalRule blocks of
         (xs, [])           -> mkContentSlide xs
         (xs, (_rule : ys)) -> mkContentSlide xs ++ splitAtRules ys
 
     splitAtHeaders acc [] =
         mkContentSlide (reverse acc)
-    splitAtHeaders acc (b@(Pandoc.Header i _ txt) : bs0)
+    splitAtHeaders acc (b@(Header i _ txt) : bs0)
         | i > slideLevel  = splitAtHeaders (b : acc) bs0
         | i == slideLevel =
             mkContentSlide (reverse acc) ++ splitAtHeaders [b] bs0
         | otherwise       =
-            let (sn, bs1) = Comments.split bs0 in
+            let (cmnts, bs1) = break (not . isComment) bs0
+                sns  = SpeakerNotes.SpeakerNotes [s | SpeakerNote s <- cmnts]
+                cfgs = concatCfgs [cfg | Config cfg <- cmnts] in
             mkContentSlide (reverse acc) ++
-            [Slide sn $ TitleSlide i txt] ++
+            [Slide sns cfgs $ TitleSlide i txt] ++
             splitAtHeaders [] bs1
     splitAtHeaders acc (b : bs) =
         splitAtHeaders (b : acc) bs
+
+    concatCfgs
+        :: [Either String PresentationSettings]
+        -> Either String PresentationSettings
+    concatCfgs = fmap mconcat . sequence
 
 
 --------------------------------------------------------------------------------

@@ -1,0 +1,18 @@
+[33m                               eval03.md                                [0m
+
+[34m# Slide 1[0m
+
+[m  [0m[35m- [0m[mThis is some code that is not evaluated:[0m
+
+[m       [0m[40;37m          [0m
+[m       [0m[40;37m echo foo [0m
+[m       [0m[40;37m          [0m
+
+[m  [0m[35m- [0m[mAnd here is some code that is evaluated:[0m
+
+[m       [0m[40;37m     [0m
+[m       [0m[40;37m foo [0m
+[m       [0m[40;37m     [0m
+
+
+[33m                                                                  1 / 1 [0m

@@ -24,10 +24,12 @@ module Patat.PrettyPrint
 
     , wrapAt
 
-    , Trimmable (..)
+    , Indentation (..)
     , indent
+    , deindent
 
     , ansi
+    , hyperlink
 
     , (<+>)
     , (<$$>)
@@ -91,17 +93,45 @@ wrapAt wrapAtCol wrapDoc = mkDoc WrapAt {..}
 
 
 --------------------------------------------------------------------------------
-indent :: Trimmable Doc -> Trimmable Doc -> Doc -> Doc
+indent :: Indentation Doc -> Indentation Doc -> Doc -> Doc
 indent firstLineDoc otherLinesDoc doc = mkDoc $ Indent
-    { indentFirstLine  = traverse docToChunks firstLineDoc
-    , indentOtherLines = traverse docToChunks otherLinesDoc
+    { indentFirstLine  = fmap docToChunks firstLineDoc
+    , indentOtherLines = fmap docToChunks otherLinesDoc
     , indentDoc        = doc
     }
 
 
 --------------------------------------------------------------------------------
+-- | Only strips leading spaces
+deindent :: Doc -> Doc
+deindent = Doc . concatMap go . unDoc
+  where
+    go :: DocE Doc -> [DocE Doc]
+    go doc@(Indent {..})
+        | fs0 <= 0 && os0 <= 0 = [doc]
+        | fs1 == 0 && os1 == 0 && L.null fc && L.null oc =
+            concatMap go $ unDoc indentDoc
+        | otherwise = pure $ Indent
+            { indentFirstLine  = Indentation fs1 fc
+            , indentOtherLines = Indentation os1 oc
+            , indentDoc        = indentDoc
+            }
+      where
+        Indentation fs0 fc = indentFirstLine
+        Indentation os0 oc = indentOtherLines
+        fs1 = fs0 - min fs0 os0
+        os1 = os0 - min fs0 os0
+    go doc = [doc]
+
+
+--------------------------------------------------------------------------------
 ansi :: [Ansi.SGR] -> Doc -> Doc
 ansi codes =  mkDoc . Ansi (codes ++)
+
+
+--------------------------------------------------------------------------------
+hyperlink :: String -> Doc -> Doc
+hyperlink url =  mkDoc . Hyperlink url
 
 
 --------------------------------------------------------------------------------

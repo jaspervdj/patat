@@ -39,7 +39,7 @@ transition config (Size rows cols) initial final rgen =
     -- Select the initial or final value depending on the noise.
     frame :: Double -> Matrix
     frame t = V.zipWith3
-        (\treshold l r -> if t < treshold then l else r)
+        (\threshold l r -> if t < threshold then l else r)
         noise
         initial
         final

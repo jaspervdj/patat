@@ -6,15 +6,26 @@ module Patat.Presentation.Display.Internal
 
 
 --------------------------------------------------------------------------------
-import qualified Patat.PrettyPrint as PP
-import qualified Patat.Theme       as Theme
-import qualified Skylighting       as Skylighting
+import           Patat.Presentation.Internal (Margins)
+import           Patat.Presentation.Settings (Wrap)
+import           Patat.Presentation.Syntax   (Block, RevealState, Var)
+import qualified Patat.PrettyPrint           as PP
+import           Patat.Size                  (Size)
+import qualified Patat.Theme                 as Theme
+import qualified Skylighting                 as Skylighting
 
 
 --------------------------------------------------------------------------------
 data DisplaySettings = DisplaySettings
-    { dsTheme     :: !Theme.Theme
-    , dsSyntaxMap :: !Skylighting.SyntaxMap
+    { dsSize        :: !Size
+    , dsWrap        :: !Wrap
+    , dsTabStop     :: !Int
+    , dsMargins     :: !Margins
+    , dsOSC8        :: !Bool
+    , dsTheme       :: !Theme.Theme
+    , dsSyntaxMap   :: !Skylighting.SyntaxMap
+    , dsResolve     :: !(Var -> [Block])
+    , dsRevealState :: !RevealState
     }
 
 

@@ -37,7 +37,7 @@ data HeaderTheme = HeaderTheme
     { htStyle     :: !(Maybe Style)
     , htPrefix    :: !(Maybe T.Text)
     , htUnderline :: !(Maybe T.Text)
-    } deriving (Show)
+    } deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -67,7 +67,7 @@ data Theme = Theme
     , themeImageText          :: !(Maybe Style)
     , themeImageTarget        :: !(Maybe Style)
     , themeSyntaxHighlighting :: !(Maybe SyntaxHighlighting)
-    } deriving (Show)
+    } deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -153,7 +153,7 @@ defaultTheme = Theme
 
 --------------------------------------------------------------------------------
 newtype Style = Style {unStyle :: [Ansi.SGR]}
-    deriving (Monoid, Semigroup, Show)
+    deriving (Eq, Monoid, Semigroup, Show)
 
 
 --------------------------------------------------------------------------------
@@ -195,41 +195,41 @@ rgbToSgr layer rgbHex =
 
 --------------------------------------------------------------------------------
 sgrToString :: Ansi.SGR -> Maybe String
-sgrToString (Ansi.SetColor layer intensity color) = Just $
-    (\str -> case layer of
-        Ansi.Foreground -> str
-        Ansi.Background -> "on" ++ capitalize str) $
-    (case intensity of
-        Ansi.Dull  -> "dull"
-        Ansi.Vivid -> "vivid") ++
-    (case color of
-        Ansi.Black   -> "Black"
-        Ansi.Red     -> "Red"
-        Ansi.Green   -> "Green"
-        Ansi.Yellow  -> "Yellow"
-        Ansi.Blue    -> "Blue"
-        Ansi.Magenta -> "Magenta"
-        Ansi.Cyan    -> "Cyan"
-        Ansi.White   -> "White")
+sgrToString sgr = case sgr of
+    Ansi.SetColor layer intensity color -> Just $ layerPrefix layer $
+        (case intensity of
+            Ansi.Dull  -> "dull"
+            Ansi.Vivid -> "vivid") ++
+        (case color of
+            Ansi.Black   -> "Black"
+            Ansi.Red     -> "Red"
+            Ansi.Green   -> "Green"
+            Ansi.Yellow  -> "Yellow"
+            Ansi.Blue    -> "Blue"
+            Ansi.Magenta -> "Magenta"
+            Ansi.Cyan    -> "Cyan"
+            Ansi.White   -> "White")
 
-sgrToString (Ansi.SetUnderlining Ansi.SingleUnderline) = Just "underline"
+    Ansi.SetUnderlining Ansi.SingleUnderline -> Just "underline"
 
-sgrToString (Ansi.SetConsoleIntensity Ansi.BoldIntensity) = Just "bold"
+    Ansi.SetConsoleIntensity Ansi.BoldIntensity -> Just "bold"
 
-sgrToString (Ansi.SetItalicized True) = Just "italic"
+    Ansi.SetItalicized True -> Just "italic"
 
-sgrToString (Ansi.SetRGBColor layer color) = Just $
-    (\str -> case layer of
-        Ansi.Foreground -> str
-        Ansi.Background -> "on" ++ capitalize str) $
-    "rgb#" ++ (toRGBHex $ toSRGB24 color)
+    Ansi.SetRGBColor layer color -> Just $ layerPrefix layer $
+        "rgb#" ++ (toRGBHex $ toSRGB24 color)
+
+    _ -> Nothing
   where
     toRGBHex (RGB r g b) = concat $ map toHexByte [r, g, b]
     toHexByte x = showHex2 x ""
     showHex2 x | x <= 0xf = ("0" ++) . showHex x
                | otherwise = showHex x
 
-sgrToString _ = Nothing
+    layerPrefix layer str = case layer of
+        Ansi.Foreground -> str
+        Ansi.Background -> "on" ++ capitalize str
+        Ansi.Underlining -> "underline" ++ capitalize str
 
 
 --------------------------------------------------------------------------------
@@ -256,7 +256,7 @@ namedSgrs = M.fromList
 --------------------------------------------------------------------------------
 newtype SyntaxHighlighting = SyntaxHighlighting
     { unSyntaxHighlighting :: M.Map String Style
-    } deriving (Monoid, Semigroup, Show, A.ToJSON)
+    } deriving (Eq, Monoid, Semigroup, Show, A.ToJSON)
 
 
 --------------------------------------------------------------------------------

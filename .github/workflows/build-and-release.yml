@@ -7,7 +7,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macOS-latest]
-        ghc: ["9.4.7"]
+        ghc: ["9.4.8"]
 
     steps:
     - run: echo "$HOME/.local/bin" >> $GITHUB_PATH
@@ -20,20 +20,17 @@ jobs:
 
     - uses: actions/checkout@v4
 
-    - uses: actions/cache@v3
-      with:
-        path: ~/.stack
-        key: "${{ runner.os }}-${{ matrix.ghc }}-v8-${{ hashFiles('patat.cabal', 'stack.yaml', 'stack.yaml.lock') }}"
-        restore-keys: |
-          ${{ runner.os }}-${{ matrix.ghc }}-v8-
-
-    - uses: haskell/actions/setup@v2
+    - uses: haskell-actions/setup@v2
+      id: setup
       with:
         ghc-version: ${{ matrix.ghc }}
-        enable-stack: true
-        stack-version: 'latest'
-        stack-no-global: true
-        stack-setup-ghc: true
+
+    - uses: actions/cache@v3
+      with:
+        path: ${{ steps.setup.outputs.cabal-store }}
+        key: ${{ runner.os }}-${{ matrix.ghc }}-v9-${{ hashFiles('patat.cabal') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ matrix.ghc }}-v9-
 
     - run: make build
       id: build
@@ -45,11 +42,11 @@ jobs:
       env:
         PATAT_TAG: ${{ steps.get_version.outputs.version }}
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       if: startsWith(github.ref, 'refs/tags')
       with:
         path: artifacts/*
-        name: artifacts
+        name: artifacts-${{ runner.os }}-${{ matrix.ghc }}
 
   release:
     name: Release
@@ -58,14 +55,15 @@ jobs:
     if: startsWith(github.ref, 'refs/tags')
 
     steps:
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
-        name: artifacts
+        pattern: artifacts-*
 
-    - run: 'sha256sum patat-*'
+    - run: ls -R
+    - run: 'sha256sum artifacts-*/patat-*'
 
     - uses: softprops/action-gh-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        files: 'patat-*'
+        files: 'artifacts-*/patat-*'

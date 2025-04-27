@@ -24,9 +24,10 @@ import qualified Options.Applicative              as OA
 import qualified Options.Applicative.Help.Pretty  as OA.PP
 import           Patat.AutoAdvance
 import qualified Patat.EncodingFallback           as EncodingFallback
+import qualified Patat.Eval                       as Eval
 import qualified Patat.Images                     as Images
 import           Patat.Presentation
-import qualified Patat.Presentation.Comments      as Comments
+import qualified Patat.Presentation.SpeakerNotes  as SpeakerNotes
 import qualified Patat.PrettyPrint                as PP
 import           Patat.PrettyPrint.Matrix         (hPutMatrix)
 import           Patat.Transition
@@ -35,6 +36,7 @@ import           Prelude
 import qualified System.Console.ANSI              as Ansi
 import           System.Directory                 (doesFileExist,
                                                    getModificationTime)
+import           System.Environment               (lookupEnv)
 import           System.Exit                      (exitFailure, exitSuccess)
 import qualified System.IO                        as IO
 import qualified Text.Pandoc                      as Pandoc
@@ -126,7 +128,7 @@ assertAnsiFeatures = do
 data App = App
     { aOptions      :: Options
     , aImages       :: Maybe Images.Handle
-    , aSpeakerNotes :: Maybe Comments.SpeakerNotesHandle
+    , aSpeakerNotes :: Maybe SpeakerNotes.Handle
     , aCommandChan  :: Chan AppCommand
     , aPresentation :: Presentation
     , aView         :: AppView
@@ -160,21 +162,21 @@ main = do
             OA.parserFailure parserPrefs parserInfo
             (OA.ShowHelpText Nothing) mempty
 
-    errOrPres <- readPresentation filePath
+    errOrPres <- readPresentation zeroUniqueGen filePath
     pres      <- either (errorAndExit . return) return errOrPres
     let settings = pSettings pres
 
     unless (oForce options) assertAnsiFeatures
 
     if oDump options then
-        EncodingFallback.withHandle IO.stdout (pEncodingFallback pres) $
-        dumpPresentation pres
+        EncodingFallback.withHandle IO.stdout (pEncodingFallback pres) $ do
+        Eval.evalAllVars pres >>= dumpPresentation
     else
         -- (Maybe) initialize images backend.
         withMaybeHandle Images.withHandle (psImages settings) $ \images ->
 
         -- (Maybe) initialize speaker notes.
-        withMaybeHandle Comments.withSpeakerNotesHandle
+        withMaybeHandle SpeakerNotes.withHandle
             (psSpeakerNotes settings) $ \speakerNotes ->
 
         -- Read presentation commands
@@ -205,19 +207,24 @@ main = do
 --------------------------------------------------------------------------------
 loop :: App -> IO ()
 loop app@App {..} = do
-    for_ aSpeakerNotes $ \sn -> Comments.writeSpeakerNotes sn
+    for_ aSpeakerNotes $ \sn -> SpeakerNotes.write sn
         (pEncodingFallback aPresentation)
         (activeSpeakerNotes aPresentation)
 
-    size <- getPresentationSize aPresentation
+    -- Start necessary eval blocks
+    presentation <- Eval.evalActiveVars
+        (\v -> Chan.writeChan aCommandChan . PresentationCommand . UpdateVar v)
+        aPresentation
+
+    size <- getPresentationSize presentation
     Ansi.clearScreen
     Ansi.setCursorPosition 0 0
     cleanup <- case aView of
-        PresentationView -> case displayPresentation size aPresentation of
+        PresentationView -> case displayPresentation size presentation of
             DisplayDoc doc    -> drawDoc doc
             DisplayImage path -> drawImg size path
         ErrorView err -> drawDoc $
-                displayPresentationError size aPresentation err
+                displayPresentationError size presentation err
         TransitionView tr -> do
             drawMatrix (tiSize tr) . fst . NonEmpty.head $ tiFrames tr
             pure mempty
@@ -234,11 +241,11 @@ loop app@App {..} = do
                     loop app {aView = TransitionView tr1}
                 Nothing -> loop app {aView = PresentationView}
         PresentationCommand c -> do
-            update <- updatePresentation c aPresentation
+            update <- updatePresentation c presentation
             case update of
                 ExitedPresentation       -> return ()
                 UpdatedPresentation pres
-                    | Just tgen <- mbTransition c size aPresentation pres -> do
+                    | Just tgen <- mbTransition c size presentation pres -> do
                         tr <- tgen
                         scheduleTransitionTick tr
                         loop app
@@ -251,7 +258,7 @@ loop app@App {..} = do
     drawDoc doc = EncodingFallback.withHandle
         IO.stdout (pEncodingFallback aPresentation) $
         PP.putDoc doc $> mempty
-    drawImg size path =case aImages of
+    drawImg size path = case aImages of
         Nothing -> drawDoc $ displayPresentationError
             size aPresentation "image backend not initialized"
         Just img -> do
@@ -300,7 +307,11 @@ interactively reader app = bracket setup teardown $ \(_, _, chan) ->
         buff <- IO.hGetBuffering IO.stdin
         IO.hSetEcho      IO.stdin False
         IO.hSetBuffering IO.stdin IO.NoBuffering
-        Ansi.hideCursor
+
+        -- Suppress cursor hiding for WezTerm image compatibility
+        termProgram <- lookupEnv "TERM_PROGRAM"
+        unless (termProgram == Just "WezTerm") $ Ansi.hideCursor
+
         return (echo, buff, chan)
 
     teardown (echo, buff, _chan) = do

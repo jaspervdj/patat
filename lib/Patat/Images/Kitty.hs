@@ -6,15 +6,16 @@ module Patat.Images.Kitty
 
 
 --------------------------------------------------------------------------------
-import           Control.Exception           (throwIO)
-import           Control.Monad               (unless, void, when)
-import qualified Data.Aeson                  as A
-import qualified Data.List                   as L
-import           Patat.Cleanup               (Cleanup)
-import qualified Patat.Images.Internal       as Internal
-import Data.Functor (($>))
-import           System.Environment          (lookupEnv)
-import           System.Process              (readProcess)
+import           Control.Exception     (throwIO)
+import           Control.Monad         (unless, void, when)
+import qualified Data.Aeson            as A
+import           Data.Functor          (($>))
+import qualified Data.List             as L
+import           Patat.Cleanup         (Cleanup)
+import qualified Patat.Images.Internal as Internal
+import           System.Environment    (lookupEnv)
+import qualified System.IO             as IO
+import qualified System.Process        as Process
 
 
 --------------------------------------------------------------------------------
@@ -42,5 +43,10 @@ new config = do
 drawImage :: FilePath -> IO Cleanup
 drawImage path = icat ["--align=center", path] $> icat ["--clear"]
   where
-    icat args = void $ readProcess
-        "kitty" ("+kitten" : "icat" : "--transfer-mode=stream" : args) ""
+    icat args = do
+        (Just inh, _, _, ph) <- Process.createProcess (Process.proc "kitty"
+            ("+kitten" : "icat" : "--transfer-mode=stream" : "--stdin=no" : args))
+            { Process.std_in = Process.CreatePipe
+            }
+        IO.hClose inh
+        void $ Process.waitForProcess ph

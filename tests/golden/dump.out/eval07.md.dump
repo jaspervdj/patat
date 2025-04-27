@@ -1,0 +1,41 @@
+[33m                               eval07.md                                [0m
+
+[34m# Implicit eval slide[0m
+
+[m   [0m[40;37m                    [0m
+[m   [0m[40;37m [1;34mThis is text[m [0m
+[m   [0m[40;37m                    [0m
+
+[33m                                                                  1 / 4 [0m
+
+[m{slide}[0m
+[33m                               eval07.md                                [0m
+
+[34m# Code eval slide[0m
+
+[m   [0m[40;37m                    [0m
+[m   [0m[40;37m [1;34mThis is text[m [0m
+[m   [0m[40;37m                    [0m
+
+[33m                                                                  2 / 4 [0m
+
+[m{slide}[0m
+[33m                               eval07.md                                [0m
+
+[34m# None eval slide[0m
+
+[m[1;34mThis is text[m[0m
+
+[mNewline here...[0m
+
+[33m                                                                  3 / 4 [0m
+
+[m{slide}[0m
+[33m                               eval07.md                                [0m
+
+[34m# Inline eval slide[0m
+
+[m[1;34mThis is text[m[0m
+[mNo newline here...[0m
+
+[33m                                                                  4 / 4 [0m

@@ -1,5 +1,183 @@
 # Changelog
 
+## 0.15.1.0 (2025-04-26)
+
+ *  Add a `syntax` option for `eval` blocks (#187).  This allows you to set
+    the syntax highlighting to be used for the _output of the evaluated code_,
+    for example:
+
+        ---
+        patat:
+          eval:
+            ruby:
+              command: irb --noecho --noverbose
+              syntax: json
+        ...
+
+        Here is a code block:
+
+        ```ruby
+        puts '{"hello": "world"}'
+        ```
+
+## 0.15.0.0 (2025-04-05)
+
+ *  Add [OSC8] support for hyperlinks (#185).  This makes hyperlinks clickable
+    in many terminal emulators (see [OSC8 adoption]).
+
+    There is currently no way to detect if a terminal supports this feature,
+    so for now this needs to be explicitly turned on in the configuration:
+
+    ```yaml
+    patat:
+      links:
+        osc8: true
+    ```
+
+ *  Enable `shortcut_reference_links` by default.  These are reference links
+    without the second pair of brackets, e.g.:
+
+    ```markdown
+    See [my website].
+
+    [my website]: http://example.com
+    ```
+
+ *  Validate settings on slide (#186).
+
+    This validation was present since the introduction of slide settings, but it
+    was accidentally removed in v0.14.
+
+ *  Improve reference link rendering.
+
+    This changes the way references are rendered from:
+
+        [example](http://example.com/)
+        [example with title](http://example.com/ "title")
+
+    To:
+
+        [example]: http://example.com/
+        [example with title]: http://example.com/ title
+
+    This easier to read and more coherent with Pandoc markdown.
+
+[OSC8]: https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda
+[OSC8 adoption]: https://github.com/Alhadis/OSC8-Adoption
+
+## 0.14.2.0 (2024-03-10)
+
+ *  Fix WezTerm image rendering when using panes (#182).
+ *  Bump `ansi-terminal` upper bound to 1.2 and lower bound to 1.1.
+    This adds the ability to set colors on underlines.
+ *  Bump `pandoc` upper bound to 3.7.
+ *  Bump `tasty-quickcheck` upper bound to 0.12.
+
+## 0.14.1.0 (2024-02-22)
+
+ *  Add image support for WezTerm (#177).
+ *  Fix image support in Kitty (#179).
+ *  Fix image scroll issue for iTerm2.
+
+## 0.14.0.0 (2024-02-06)
+
+ *  Align based on final layout for incremental lists and other fragments
+    (#174).  This avoids lists "jumping around" as they are revealed when
+    using `auto` `margins`.
+
+ *  Rename `fragment` to `reveal` in eval settings.  `fragment` will continue
+    to be available for backwards-compatibility.
+
+ *  Use a temporary file to atomically write speaker notes.
+
+    We weren't writing the file all-at-once before, so if you were using a
+    simple tool like `tail -F` before, this could cause some speaker notes to
+    not be displayed.
+
+ *  Refactor the internal AST to use our own derivation of the Pandoc AST.
+    This is a major rework of the internals but should not cause any changes
+    visible to the user.
+
+## 0.13.0.0 (2024-10-30)
+
+ *  Incrementally display output of `eval` commands (#132)
+
+    Rather than waiting for the process to complete and then displaying its
+    output, `patat` now fetches the `stdout` and `stderr` as it becomes
+    available and refreshes the display.
+
+    This means that by default, **stderr is now displayed as well**.
+    To disable displaying `stderr`, you can add `stderr: false` to the eval
+    configuration, e.g.:
+
+    ```yaml
+    patat:
+      eval:
+        bash:
+          command: bash
+          stderr: false
+    ```
+
+## 0.12.0.1 (2024-09-28)
+
+ *  Fix width of code blocks when using wide characters (#171)
+ *  Bump `pandoc` upper bound to 3.3.
+
+## 0.12.0.0 (2024-02-27)
+
+ *  Render tabs in code blocks by expanding them to spaces.  The amount of
+    spaces a tab character aligns to is customizable using `tabStop`, e.g.
+    `tabStop: 8`.  The default is 4.
+
+ *  Rename eval.wrap to eval.container (#167)
+
+    `wrap` is used at the top-level of settings for wrapping at a certain
+    column, and inside `eval` to determine the type in which the result
+    is "wrapped". Using the same name for both is confusing, so this adds
+    `eval.container` as the new name for `eval.wrap`. `eval.wrap` will continue
+    to be supported for the forseeable future, but its use will be discouraged.
+
+    This also changes the values (again keeping the original ones for
+    backwards-compat), so the complete changes to a configuration would be:
+
+     -   `wrap: code` becomes `container: code`
+     -   `wrap: raw` becomes `container: none`
+     -   `wrap: rawInline` becomes `container: inline`
+
+ *  Add a `type: matrix` transition effect, loosely inspired by the 1999 science
+    fiction movie.
+
+## 0.11.0.0 (2024-02-14)
+
+ *  Support wrapping at a specific column (#164)
+
+    Using a specific wrap column, e.g. `wrap: 60`, works well together with
+    `auto` margins (see below).
+
+ *  Support centering content with auto margins (#164)
+
+    Configuration is done through the existing `margins` setting.
+
+    To vertically center content, use `top: auto`. To horizontally center
+    content, use both `left: auto` and `right: auto`.  For example:
+
+    ```markdown
+    ---
+    title: Centered presentation
+    author: John Doe
+    patat:
+        margins:
+            left: auto
+            right: auto
+            top: auto
+    ...
+
+    Hello world
+    ```
+
+    Setting `wrap: true` is recommended when vertically centering content if
+    there are any lines that are too wide for the terminal.
+
 ## 0.10.2.0 (2023-11-25)
 
  *  Add eval.wrap option

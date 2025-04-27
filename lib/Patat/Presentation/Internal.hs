@@ -22,7 +22,6 @@ module Patat.Presentation.Internal
 
     , Slide (..)
     , SlideContent (..)
-    , Instruction.Fragment (..)
     , Index
 
     , getSlide
@@ -31,41 +30,48 @@ module Patat.Presentation.Internal
     , ActiveFragment (..)
     , activeFragment
     , activeSpeakerNotes
+    , activeVars
 
     , getSettings
     , activeSettings
 
     , Size
     , getPresentationSize
+
+    , updateVar
     ) where
 
 
 --------------------------------------------------------------------------------
-import qualified Data.Aeson.Extended            as A
-import           Data.Maybe                     (fromMaybe)
-import           Data.Sequence.Extended         (Seq)
-import qualified Data.Sequence.Extended         as Seq
-import           Patat.EncodingFallback         (EncodingFallback)
-import qualified Patat.Presentation.Comments    as Comments
-import qualified Patat.Presentation.Instruction as Instruction
+import qualified Data.Aeson.Extended             as A
+import qualified Data.HashMap.Strict             as HMS
+import qualified Data.HashSet                    as HS
+import           Data.Maybe                      (fromMaybe)
+import           Data.Sequence.Extended          (Seq)
+import qualified Data.Sequence.Extended          as Seq
+import           Patat.EncodingFallback          (EncodingFallback)
+import qualified Patat.Eval.Internal             as Eval
 import           Patat.Presentation.Settings
+import qualified Patat.Presentation.SpeakerNotes as SpeakerNotes
+import           Patat.Presentation.Syntax
 import           Patat.Size
-import           Patat.Transition               (TransitionGen)
+import           Patat.Transition                (TransitionGen)
+import           Patat.Unique
 import           Prelude
-import qualified Skylighting                    as Skylighting
-import qualified Text.Pandoc                    as Pandoc
+import qualified Skylighting                     as Skylighting
+import qualified Text.Pandoc                     as Pandoc
 
 
 --------------------------------------------------------------------------------
-type Breadcrumbs = [(Int, [Pandoc.Inline])]
+type Breadcrumbs = [(Int, [Inline])]
 
 
 --------------------------------------------------------------------------------
 data Presentation = Presentation
     { pFilePath         :: !FilePath
     , pEncodingFallback :: !EncodingFallback
-    , pTitle            :: ![Pandoc.Inline]
-    , pAuthor           :: ![Pandoc.Inline]
+    , pTitle            :: ![Inline]
+    , pAuthor           :: ![Inline]
     , pSettings         :: !PresentationSettings
     , pSlides           :: !(Seq Slide)
     , pBreadcrumbs      :: !(Seq Breadcrumbs)            -- One for each slide.
@@ -73,14 +79,17 @@ data Presentation = Presentation
     , pTransitionGens   :: !(Seq (Maybe TransitionGen))  -- One for each slide.
     , pActiveFragment   :: !Index
     , pSyntaxMap        :: !Skylighting.SyntaxMap
+    , pEvalBlocks       :: !Eval.EvalBlocks
+    , pUniqueGen        :: !UniqueGen
+    , pVars             :: !(HMS.HashMap Var [Block])
     }
 
 
 --------------------------------------------------------------------------------
 data Margins = Margins
-    { mTop   :: Int
-    , mLeft  :: Int
-    , mRight :: Int
+    { mTop   :: AutoOr Int
+    , mLeft  :: AutoOr Int
+    , mRight :: AutoOr Int
     } deriving (Show)
 
 
@@ -92,20 +101,23 @@ margins ps = Margins
     , mTop   = get 1 msTop
     }
   where
-    get def f = fromMaybe def . fmap A.unFlexibleNum $ psMargins ps >>= f
-
+    get def f = case psMargins ps >>= f of
+        Just Auto         -> Auto
+        Nothing           -> NotAuto def
+        Just (NotAuto fn) -> NotAuto $ A.unFlexibleNum fn
 
 --------------------------------------------------------------------------------
 data Slide = Slide
-    { slideComment :: !Comments.Comment
-    , slideContent :: !SlideContent
+    { slideSpeakerNotes :: !SpeakerNotes.SpeakerNotes
+    , slideSettings     :: !(Either String PresentationSettings)
+    , slideContent      :: !SlideContent
     } deriving (Show)
 
 
 --------------------------------------------------------------------------------
 data SlideContent
-    = ContentSlide (Instruction.Instructions Pandoc.Block)
-    | TitleSlide   Int [Pandoc.Inline]
+    = ContentSlide [Block]
+    | TitleSlide   Int [Inline]
     deriving (Show)
 
 
@@ -122,14 +134,17 @@ getSlide sidx = (`Seq.safeIndex` sidx) . pSlides
 --------------------------------------------------------------------------------
 numFragments :: Slide -> Int
 numFragments slide = case slideContent slide of
-    ContentSlide instrs -> Instruction.numFragments instrs
+    ContentSlide blocks -> blocksRevealSteps blocks
     TitleSlide _ _      -> 1
 
 
 --------------------------------------------------------------------------------
 data ActiveFragment
-    = ActiveContent Instruction.Fragment
-    | ActiveTitle Pandoc.Block
+    = ActiveContent
+        [Block]
+        (HS.HashSet Var)
+        RevealState
+    | ActiveTitle Block
     deriving (Show)
 
 
@@ -140,17 +155,26 @@ activeFragment presentation = do
     slide <- getSlide sidx presentation
     pure $ case slideContent slide of
         TitleSlide lvl is -> ActiveTitle $
-            Pandoc.Header lvl Pandoc.nullAttr is
-        ContentSlide instrs -> ActiveContent $
-            Instruction.renderFragment fidx instrs
+            Header lvl Pandoc.nullAttr is
+        ContentSlide blocks ->
+            let vars = variables $ blocksReveal revealState blocks
+                revealState = blocksRevealStep fidx blocks in
+            ActiveContent blocks vars revealState
 
 
 --------------------------------------------------------------------------------
-activeSpeakerNotes :: Presentation -> Comments.SpeakerNotes
+activeSpeakerNotes :: Presentation -> SpeakerNotes.SpeakerNotes
 activeSpeakerNotes presentation = fromMaybe mempty $ do
     let (sidx, _) = pActiveFragment presentation
     slide <- getSlide sidx presentation
-    pure . Comments.cSpeakerNotes $ slideComment slide
+    pure $ slideSpeakerNotes slide
+
+
+--------------------------------------------------------------------------------
+activeVars :: Presentation -> HS.HashSet Var
+activeVars presentation = case activeFragment presentation of
+    Just (ActiveContent _ vars _) -> vars
+    _                             -> mempty
 
 
 --------------------------------------------------------------------------------
@@ -175,3 +199,8 @@ getPresentationSize pres = do
     pure $ Size {sRows = rows, sCols = cols}
   where
     settings = activeSettings pres
+
+
+--------------------------------------------------------------------------------
+updateVar :: Var -> [Block] -> Presentation -> Presentation
+updateVar var blocks pres = pres {pVars = HMS.insert var blocks $ pVars pres}

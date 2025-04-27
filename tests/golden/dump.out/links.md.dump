@@ -1,0 +1,40 @@
+[33m                                links.md                                [0m
+
+[mThis is an "automatic link": <[0m[4;36mhttps://jaspervdj.be[0m[m>.[0m
+
+[mThis is an [[0m[32minline link[0m[m], and here's [[0m[32mone with[0m
+[32ma title[0m[m].[0m
+
+[mLet's talk about [[0m[32mfoo[0m[m][0m
+
+[m[[0m[32minline link[0m[m]: [0m[4;36m/url[0m
+[m[[0m[32mone with a title[0m[m]: [0m[4;36mhttp://fsf.org[0m[m click here for a good time![0m
+[m[[0m[32mfoo[0m[m]: [0m[4;36mhttp://foo.com/[0m
+[33m                                                                  1 / 3 [0m
+
+[m{slide}[0m
+[33m                                links.md                                [0m
+
+[mSome more links:[0m
+
+[35m1.  [0m[mAn automatic one: <[0m[4;36m]8;id=0;http://example.com#1\http://example.com#1]8;;\[0m[m>[0m
+[35m2.  [0m[mAn [[0m[32m]8;id=1;http://example.com#2\inline one]8;;\[0m[m][0m
+[35m3.  [0m[mA [[0m[32m]8;id=2;http://example.com#3\reference]8;;\[0m[m] link[0m
+[35m4.  [0m[mA [[0m[32m]8;id=3;http://example.com#4\shortcut reference]8;;\[0m[m] link[0m
+[35m5.  [0m[mA [[0m[32m]8;id=4;http://example.com#5\titled]8;;\[0m[m] link[0m
+
+[m[[0m[32minline one[0m[m]: [0m[4;36mhttp://example.com#2[0m
+[m[[0m[32mreference[0m[m]: [0m[4;36mhttp://example.com#3[0m
+[m[[0m[32mshortcut reference[0m[m]: [0m[4;36mhttp://example.com#4[0m
+[m[[0m[32mtitled[0m[m]: [0m[4;36mhttp://example.com#5[0m[m The title[0m
+[33m                                                                  2 / 3 [0m
+
+[m{slide}[0m
+[33m                                links.md                                [0m
+
+[mSome more advanced stuff:[0m
+
+[m[[0m[32m]8;id=5;http://example.com#fmt\a ]8;;\[0m[32;1;31m]8;id=5;http://example.com#fmt\bold]8;;\[0m[32m]8;id=5;http://example.com#fmt\, ]8;;\[0m[32;32m]8;id=5;http://example.com#fmt\italic]8;;\[0m[32m]8;id=5;http://example.com#fmt\, ]8;;\[0m[32;40;37m]8;id=5;http://example.com#fmt\ code ]8;;\[0m[32m]8;id=5;http://example.com#fmt\ link]8;;\[0m[m][0m
+
+[m[[0m[32ma [0m[32;1;31mbold[0m[32m, [0m[32;32mitalic[0m[32m, [0m[32;40;37m code [0m[32m link[0m[m]: [0m[4;36mhttp://example.com#fmt[0m
+[33m                                                                  3 / 3 [0m

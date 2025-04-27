@@ -1,4 +1,5 @@
 --------------------------------------------------------------------------------
+{-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE TemplateHaskell            #-}
@@ -6,6 +7,8 @@ module Patat.Presentation.Settings
     ( PresentationSettings (..)
     , defaultPresentationSettings
 
+    , Wrap (..)
+    , AutoOr (..)
     , MarginSettings (..)
 
     , ExtensionList (..)
@@ -14,17 +17,22 @@ module Patat.Presentation.Settings
     , ImageSettings (..)
 
     , EvalSettingsMap
-    , EvalSettingsWrap (..)
+    , EvalSettingsContainer (..)
     , EvalSettings (..)
 
     , SpeakerNotesSettings (..)
 
     , TransitionSettings (..)
+
+    , LinkSettings (..)
+
+    , parseSlideSettings
     ) where
 
 
 --------------------------------------------------------------------------------
-import           Control.Monad          (mplus)
+import           Control.Applicative    ((<|>))
+import           Control.Monad          (mplus, unless)
 import qualified Data.Aeson.Extended    as A
 import qualified Data.Aeson.TH.Extended as A
 import qualified Data.Foldable          as Foldable
@@ -45,7 +53,8 @@ data PresentationSettings = PresentationSettings
     { psRows              :: !(Maybe (A.FlexibleNum Int))
     , psColumns           :: !(Maybe (A.FlexibleNum Int))
     , psMargins           :: !(Maybe MarginSettings)
-    , psWrap              :: !(Maybe Bool)
+    , psWrap              :: !(Maybe Wrap)
+    , psTabStop           :: !(Maybe (A.FlexibleNum Int))
     , psTheme             :: !(Maybe Theme.Theme)
     , psIncrementalLists  :: !(Maybe Bool)
     , psAutoAdvanceDelay  :: !(Maybe (A.FlexibleNum Int))
@@ -58,7 +67,8 @@ data PresentationSettings = PresentationSettings
     , psSyntaxDefinitions :: !(Maybe [FilePath])
     , psSpeakerNotes      :: !(Maybe SpeakerNotesSettings)
     , psTransition        :: !(Maybe TransitionSettings)
-    } deriving (Show)
+    , psLinks             :: !(Maybe LinkSettings)
+    } deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -68,6 +78,7 @@ instance Semigroup PresentationSettings where
         , psColumns           = on mplus psColumns           l r
         , psMargins           = on (<>)  psMargins           l r
         , psWrap              = on mplus psWrap              l r
+        , psTabStop           = on mplus psTabStop           l r
         , psTheme             = on (<>)  psTheme             l r
         , psIncrementalLists  = on mplus psIncrementalLists  l r
         , psAutoAdvanceDelay  = on mplus psAutoAdvanceDelay  l r
@@ -80,6 +91,7 @@ instance Semigroup PresentationSettings where
         , psSyntaxDefinitions = on (<>)  psSyntaxDefinitions l r
         , psSpeakerNotes      = on mplus psSpeakerNotes      l r
         , psTransition        = on mplus psTransition        l r
+        , psLinks             = on (<>)  psLinks             l r
         }
 
 
@@ -87,9 +99,9 @@ instance Semigroup PresentationSettings where
 instance Monoid PresentationSettings where
     mappend = (<>)
     mempty  = PresentationSettings
-                    Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-                    Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-                    Nothing Nothing
+                Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+                Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+                Nothing Nothing
 
 
 --------------------------------------------------------------------------------
@@ -101,11 +113,32 @@ defaultPresentationSettings = mempty
 
 
 --------------------------------------------------------------------------------
+data Wrap = NoWrap | AutoWrap | WrapAt Int deriving (Eq, Show)
+
+
+--------------------------------------------------------------------------------
+instance A.FromJSON Wrap where
+    parseJSON val =
+        ((\w -> if w then AutoWrap else NoWrap) <$> A.parseJSON val) <|>
+        (WrapAt <$> A.parseJSON val)
+
+
+--------------------------------------------------------------------------------
+data AutoOr a = Auto | NotAuto a deriving (Eq, Show)
+
+
+--------------------------------------------------------------------------------
+instance A.FromJSON a => A.FromJSON (AutoOr a) where
+    parseJSON (A.String "auto") = pure Auto
+    parseJSON val               = NotAuto <$> A.parseJSON val
+
+
+--------------------------------------------------------------------------------
 data MarginSettings = MarginSettings
-    { msTop   :: !(Maybe (A.FlexibleNum Int))
-    , msLeft  :: !(Maybe (A.FlexibleNum Int))
-    , msRight :: !(Maybe (A.FlexibleNum Int))
-    } deriving (Show)
+    { msTop   :: !(Maybe (AutoOr (A.FlexibleNum Int)))
+    , msLeft  :: !(Maybe (AutoOr (A.FlexibleNum Int)))
+    , msRight :: !(Maybe (AutoOr (A.FlexibleNum Int)))
+    } deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -125,7 +158,7 @@ instance Monoid MarginSettings where
 
 --------------------------------------------------------------------------------
 newtype ExtensionList = ExtensionList {unExtensionList :: Pandoc.Extensions}
-    deriving (Show)
+    deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -175,6 +208,7 @@ defaultExtensionList = ExtensionList $
     , Pandoc.Ext_strikeout
     , Pandoc.Ext_superscript
     , Pandoc.Ext_subscript
+    , Pandoc.Ext_shortcut_reference_links
     ]
 
 
@@ -182,7 +216,7 @@ defaultExtensionList = ExtensionList $
 data ImageSettings = ImageSettings
     { isBackend :: !T.Text
     , isParams  :: !A.Object
-    } deriving (Show)
+    } deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -197,51 +231,69 @@ type EvalSettingsMap = HMS.HashMap T.Text EvalSettings
 
 
 --------------------------------------------------------------------------------
-data EvalSettingsWrap
-    = EvalWrapCode
-    | EvalWrapRaw
-    | EvalWrapRawInline
-    deriving (Show)
+data EvalSettingsContainer
+    = EvalContainerCode
+    | EvalContainerNone
+    | EvalContainerInline
+    deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
-instance A.FromJSON EvalSettingsWrap where
-    parseJSON = A.withText "FromJSON EvalSettingsWrap" $ \txt -> case txt of
-        "code"      -> pure EvalWrapCode
-        "raw"       -> pure EvalWrapRaw
-        "rawInline" -> pure EvalWrapRawInline
-        _           -> fail $ "unknown wrap: " <> show txt
+instance A.FromJSON EvalSettingsContainer where
+    parseJSON = A.withText "FromJSON EvalSettingsContainer" $ \t -> case t of
+        "code"      -> pure EvalContainerCode
+        "none"      -> pure EvalContainerNone
+        "inline"    -> pure EvalContainerInline
+        -- Deprecated names
+        "raw"       -> pure EvalContainerNone
+        "rawInline" -> pure EvalContainerInline
+        _           -> fail $ "unknown container: " <> show t
 
 
 --------------------------------------------------------------------------------
 data EvalSettings = EvalSettings
-    { evalCommand  :: !T.Text
-    , evalReplace  :: !Bool
-    , evalFragment :: !Bool
-    , evalWrap     :: !EvalSettingsWrap
-    } deriving (Show)
+    { evalCommand   :: !T.Text
+    , evalReplace   :: !Bool
+    , evalReveal    :: !Bool
+    , evalContainer :: !EvalSettingsContainer
+    , evalStderr    :: !Bool
+    , evalSyntax    :: !(Maybe T.Text)
+    } deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
 instance A.FromJSON EvalSettings where
     parseJSON = A.withObject "FromJSON EvalSettings" $ \o -> EvalSettings
-        <$> o A..: "command"
+        <$> o A..:  "command"
         <*> o A..:? "replace"  A..!= False
-        <*> o A..:? "fragment" A..!= True
-        <*> o A..:? "wrap"     A..!= EvalWrapCode
+        <*> deprecated "fragment" "reveal" True o
+        <*> deprecated "wrap" "container" EvalContainerCode o
+        <*> o A..:? "stderr" A..!= True
+        <*> o A..:? "syntax"
+      where
+        deprecated old new def obj = do
+            mo <- obj A..:? old
+            mn <- obj A..:? new
+            case (mo, mn) of
+                (Just _, Just _)   -> fail $
+                    show old ++ " (deprecated) and " ++ show new ++ " " ++
+                    "are both specified, please remove " ++ show old
+                (Just o, Nothing)  -> pure o
+                (Nothing, Just n)  -> pure n
+                (Nothing, Nothing) -> pure def
 
 
 --------------------------------------------------------------------------------
 data SpeakerNotesSettings = SpeakerNotesSettings
     { snsFile :: !FilePath
-    } deriving (Show)
+    } deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
 data TransitionSettings = TransitionSettings
     { tsType   :: !T.Text
     , tsParams :: !A.Object
-    } deriving (Show)
+    } deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -251,6 +303,58 @@ instance A.FromJSON TransitionSettings where
 
 
 --------------------------------------------------------------------------------
+data LinkSettings = LinkSettings
+    { lsOSC8 :: !(Maybe Bool)
+    } deriving (Eq, Show)
+
+
+--------------------------------------------------------------------------------
+instance Semigroup LinkSettings where
+    l <> r = LinkSettings
+        { lsOSC8 = on mplus lsOSC8 l r
+        }
+
+
+--------------------------------------------------------------------------------
+instance A.FromJSON LinkSettings where
+    parseJSON = A.withObject "FromJSON LinkSettings" $ \o ->
+        LinkSettings <$> o A..:? "osc8"
+
+
+--------------------------------------------------------------------------------
 $(A.deriveFromJSON A.dropPrefixOptions ''MarginSettings)
 $(A.deriveFromJSON A.dropPrefixOptions ''SpeakerNotesSettings)
 $(A.deriveFromJSON A.dropPrefixOptions ''PresentationSettings)
+
+
+--------------------------------------------------------------------------------
+data Setting where
+    Setting :: String -> (PresentationSettings -> Maybe a) -> Setting
+
+
+--------------------------------------------------------------------------------
+unsupportedSlideSettings :: [Setting]
+unsupportedSlideSettings =
+    [ Setting "incrementalLists" psIncrementalLists
+    , Setting "autoAdvanceDelay" psAutoAdvanceDelay
+    , Setting "slideLevel"       psSlideLevel
+    , Setting "pandocExtensions" psPandocExtensions
+    , Setting "images"           psImages
+    , Setting "eval"             psEval
+    , Setting "speakerNotes"     psSpeakerNotes
+    ]
+
+
+--------------------------------------------------------------------------------
+parseSlideSettings :: PresentationSettings -> Either String PresentationSettings
+parseSlideSettings settings = do
+    unless (null unsupported) $ Left $
+        "the following settings are not supported in slide config blocks: " ++
+        intercalate ", " unsupported
+    pure settings
+  where
+    unsupported = do
+        setting <- unsupportedSlideSettings
+        case setting of
+            Setting name f | Just _ <- f settings -> [name]
+            Setting _    _                        -> []
