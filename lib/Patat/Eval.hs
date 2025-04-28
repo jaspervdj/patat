@@ -16,6 +16,8 @@ import           Control.Exception           (IOException, catch, finally)
 import           Control.Monad               (foldM, when)
 import           Control.Monad.State         (StateT, runStateT, state)
 import           Control.Monad.Writer        (Writer, runWriter, tell)
+import           Data.CaseInsensitive        (CI)
+import qualified Data.CaseInsensitive        as CI
 import           Data.Foldable               (for_)
 import qualified Data.HashMap.Strict         as HMS
 import qualified Data.IORef                  as IORef
@@ -48,8 +50,8 @@ parseEvalBlocks presentation =
 
 
 --------------------------------------------------------------------------------
-lookupSettings :: [T.Text] -> EvalSettingsMap -> [EvalSettings]
-lookupSettings classes settings = do
+lookupSettings :: [CI T.Text] -> EvalSettingsMap -> [EvalSettings]
+lookupSettings classes (EvalSettingsMap settings) = do
     c <- classes
     maybeToList $ HMS.lookup c settings
 
@@ -73,10 +75,10 @@ evalSlide settings slide = case slideContent slide of
 evalBlock
     :: EvalSettingsMap -> Block
     -> ExtractEvalM [Block]
-evalBlock settings orig@(CodeBlock attr@(_, classes, _) txt)
+evalBlock settings orig@(CodeBlock classes txt)
     | [s@EvalSettings {..}] <- lookupSettings classes settings = do
         var <- Var <$> state freshUnique
-        tell $ HMS.singleton var $ EvalBlock s attr txt Nothing
+        tell $ HMS.singleton var $ EvalBlock s classes txt Nothing
         case (evalReveal, evalReplace) of
             (False, True) -> pure [VarBlock var]
             (False, False) -> pure [orig, VarBlock var]
@@ -98,8 +100,8 @@ evalBlock settings orig@(CodeBlock attr@(_, classes, _) txt)
                     ]
     | _ : _ : _ <- lookupSettings classes settings =
         let msg = "patat eval matched multiple settings for " <>
-                T.intercalate "," classes in
-        pure [CodeBlock attr msg]
+                T.intercalate "," (map CI.original classes) in
+        pure [CodeBlock classes msg]
 evalBlock _ block =
     pure [block]
 

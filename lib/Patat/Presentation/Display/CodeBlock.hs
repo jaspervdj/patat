@@ -8,6 +8,8 @@ module Patat.Presentation.Display.CodeBlock
 
 
 --------------------------------------------------------------------------------
+import           Data.CaseInsensitive                (CI)
+import qualified Data.CaseInsensitive                as CI
 import           Data.Char.WCWidth.Extended          (wcstrwidth, wcwidth)
 import           Data.Maybe                          (mapMaybe)
 import qualified Data.Text                           as T
@@ -20,7 +22,8 @@ import qualified Skylighting                         as Skylighting
 
 --------------------------------------------------------------------------------
 highlight
-    :: Skylighting.SyntaxMap -> [T.Text] -> T.Text -> [Skylighting.SourceLine]
+    :: Skylighting.SyntaxMap -> [CI T.Text] -> T.Text
+    -> [Skylighting.SourceLine]
 highlight extraSyntaxMap classes rawCodeBlock =
     case mapMaybe getSyntax classes of
         []        -> zeroHighlight rawCodeBlock
@@ -29,8 +32,9 @@ highlight extraSyntaxMap classes rawCodeBlock =
                 Left  _  -> zeroHighlight rawCodeBlock
                 Right sl -> sl
   where
-    getSyntax :: T.Text -> Maybe Skylighting.Syntax
-    getSyntax c = Skylighting.lookupSyntax c syntaxMap
+    -- Note that SyntaxMap always uses lowercase keys.
+    getSyntax :: CI T.Text -> Maybe Skylighting.Syntax
+    getSyntax c = Skylighting.lookupSyntax (T.toLower $ CI.original c) syntaxMap
 
     config :: Skylighting.TokenizerConfig
     config = Skylighting.TokenizerConfig
@@ -70,7 +74,7 @@ expandTabs tabStop = goTokens 0
 
 
 --------------------------------------------------------------------------------
-prettyCodeBlock :: DisplaySettings -> [T.Text] -> T.Text -> PP.Doc
+prettyCodeBlock :: DisplaySettings -> [CI T.Text] -> T.Text -> PP.Doc
 prettyCodeBlock ds classes rawCodeBlock =
     PP.vcat (map blockified sourceLines) <> PP.hardline
   where

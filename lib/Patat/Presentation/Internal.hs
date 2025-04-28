@@ -17,7 +17,7 @@ module Patat.Presentation.Internal
 
     , ImageSettings (..)
 
-    , EvalSettingsMap
+    , EvalSettingsMap (..)
     , EvalSettings (..)
 
     , Slide (..)
