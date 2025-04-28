@@ -2,7 +2,7 @@
 
 ## unreleased
 
- *  Fix case-insensitivity of class names for `eval` code blocks.
+ *  Fix case-insensitivity of class names for `eval` code blocks (#192).
     Class names are case-insensitive (like in HTML), but we were treating them
     as case-sensitive.
 
