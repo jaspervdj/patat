@@ -1,0 +1,11 @@
+[33m                        eval-case-insensitive.md                        [0m
+
+[m   [0m[40;37m          [0m
+[m   [0m[40;37m echo foo [0m
+[m   [0m[40;37m          [0m
+
+[m   [0m[40;37m     [0m
+[m   [0m[40;37m foo [0m
+[m   [0m[40;37m     [0m
+
+[33m                                                                  1 / 1 [0m

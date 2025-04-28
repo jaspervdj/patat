@@ -282,7 +282,7 @@ prettyBlock ds (Header i _ inlines) =
     themed ds themeHeader (PP.string (replicate i '#') <+> prettyInlines ds inlines) <>
     PP.hardline
 
-prettyBlock ds (CodeBlock (_, classes, _) txt) =
+prettyBlock ds (CodeBlock classes txt) =
     prettyCodeBlock ds classes txt
 
 prettyBlock ds (BulletList bss) = PP.vcat

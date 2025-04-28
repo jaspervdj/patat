@@ -38,6 +38,8 @@ module Patat.Presentation.Syntax
 import           Control.Monad.Identity      (runIdentity)
 import           Control.Monad.State         (State, execState, modify)
 import           Control.Monad.Writer        (Writer, execWriter, tell)
+import           Data.CaseInsensitive        (CI)
+import qualified Data.CaseInsensitive        as CI
 import           Data.Hashable               (Hashable)
 import qualified Data.HashSet                as HS
 import           Data.List                   (foldl')
@@ -68,7 +70,7 @@ data Block
     = Plain ![Inline]
     | Para ![Inline]
     | LineBlock ![[Inline]]
-    | CodeBlock !Pandoc.Attr !T.Text
+    | CodeBlock ![CI T.Text] !T.Text
     | RawBlock !Pandoc.Format !T.Text
     | BlockQuote ![Block]
     | OrderedList !Pandoc.ListAttributes ![[Block]]
@@ -194,7 +196,8 @@ fromPandocBlock (Pandoc.Plain xs) = [Plain (fromPandocInlines xs)]
 fromPandocBlock (Pandoc.Para xs) = [Para (fromPandocInlines xs)]
 fromPandocBlock (Pandoc.LineBlock xs) =
     [LineBlock (map fromPandocInlines xs)]
-fromPandocBlock (Pandoc.CodeBlock attrs body) = [CodeBlock attrs body]
+fromPandocBlock (Pandoc.CodeBlock (_, classes, _) body) =
+    [CodeBlock (map CI.mk classes) body]
 fromPandocBlock (Pandoc.RawBlock fmt body)
     -- Parse config blocks.
     | fmt == "html"
