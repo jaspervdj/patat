@@ -11,7 +11,7 @@ module Patat.Presentation.Display
 
 
 --------------------------------------------------------------------------------
-import           Control.Monad                        (guard)
+import           Control.Monad                        (guard, mplus)
 import           Control.Monad.Identity               (runIdentity)
 import           Control.Monad.Writer                 (Writer, execWriter, tell)
 import qualified Data.Aeson.Extended                  as A
@@ -19,6 +19,7 @@ import           Data.Char.WCWidth.Extended           (wcstrwidth)
 import           Data.Foldable                        (for_)
 import qualified Data.HashMap.Strict                  as HMS
 import qualified Data.List                            as L
+import qualified Data.Map                             as M
 import           Data.Maybe                           (fromMaybe, maybeToList)
 import qualified Data.Sequence.Extended               as Seq
 import qualified Data.Text                            as T
@@ -278,9 +279,21 @@ prettyBlock ds (Plain inlines) = prettyInlines ds inlines
 prettyBlock ds (Para inlines) =
     prettyInlines ds inlines <> PP.hardline
 
-prettyBlock ds (Header i _ inlines) =
-    themed ds themeHeader (PP.string (replicate i '#') <+> prettyInlines ds inlines) <>
-    PP.hardline
+prettyBlock ds (Header n _ inlines) =
+    themed ds style content <> PP.hardline <>
+    (case underline of
+        Nothing -> mempty
+        Just t  ->
+            themed ds style (PP.string $ take cols $ cycle $ T.unpack t) <>
+            PP.hardline)
+  where
+    prefix    = fromMaybe mempty $ config (dsTheme ds) >>= Theme.htPrefix
+    content   = PP.text prefix <> prettyInlines ds inlines
+    (_, cols) = PP.dimensions content
+    underline = config (dsTheme ds) >>= Theme.htUnderline
+
+    style  t = (config t >>= Theme.htStyle) `mplus` themeHeader t
+    config t = themeHeaders t >>= M.lookup ("h" ++ show n)
 
 prettyBlock ds (CodeBlock classes txt) =
     prettyCodeBlock ds classes txt
