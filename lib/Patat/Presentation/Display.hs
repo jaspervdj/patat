@@ -295,7 +295,7 @@ prettyBlock ds (Header n _ inlines) =
     style  t = (config t >>= Theme.htStyle) `mplus` themeHeader t
     config t = themeHeaders t >>= M.lookup ("h" ++ show n)
 
-prettyBlock ds (CodeBlock (_, classes, _) txt) =
+prettyBlock ds (CodeBlock classes txt) =
     prettyCodeBlock ds classes txt
 
 prettyBlock ds (BulletList bss) = PP.vcat

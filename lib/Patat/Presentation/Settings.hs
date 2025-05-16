@@ -16,7 +16,7 @@ module Patat.Presentation.Settings
 
     , ImageSettings (..)
 
-    , EvalSettingsMap
+    , EvalSettingsMap (..)
     , EvalSettingsContainer (..)
     , EvalSettings (..)
 
@@ -35,6 +35,9 @@ import           Control.Applicative    ((<|>))
 import           Control.Monad          (mplus, unless)
 import qualified Data.Aeson.Extended    as A
 import qualified Data.Aeson.TH.Extended as A
+import           Data.Bifunctor         (first)
+import           Data.CaseInsensitive   (CI)
+import qualified Data.CaseInsensitive   as CI
 import qualified Data.Foldable          as Foldable
 import           Data.Function          (on)
 import qualified Data.HashMap.Strict    as HMS
@@ -227,7 +230,15 @@ instance A.FromJSON ImageSettings where
 
 
 --------------------------------------------------------------------------------
-type EvalSettingsMap = HMS.HashMap T.Text EvalSettings
+newtype EvalSettingsMap = EvalSettingsMap (HMS.HashMap (CI T.Text) EvalSettings)
+    deriving (Eq, Show, Semigroup)
+
+
+--------------------------------------------------------------------------------
+instance A.FromJSON EvalSettingsMap where
+    parseJSON =
+        fmap (EvalSettingsMap . HMS.fromList . map (first CI.mk) . HMS.toList) .
+        A.parseJSON
 
 
 --------------------------------------------------------------------------------
@@ -257,7 +268,7 @@ data EvalSettings = EvalSettings
     , evalReveal    :: !Bool
     , evalContainer :: !EvalSettingsContainer
     , evalStderr    :: !Bool
-    , evalSyntax    :: !(Maybe T.Text)
+    , evalSyntax    :: !(Maybe (CI T.Text))
     } deriving (Eq, Show)
 
 
@@ -269,7 +280,7 @@ instance A.FromJSON EvalSettings where
         <*> deprecated "fragment" "reveal" True o
         <*> deprecated "wrap" "container" EvalContainerCode o
         <*> o A..:? "stderr" A..!= True
-        <*> o A..:? "syntax"
+        <*> (fmap CI.mk <$> o A..:? "syntax")
       where
         deprecated old new def obj = do
             mo <- obj A..:? old

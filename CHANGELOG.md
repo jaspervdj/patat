@@ -1,5 +1,11 @@
 # Changelog
 
+## unreleased
+
+ *  Fix case-insensitivity of class names for `eval` code blocks (#192).
+    Class names are case-insensitive (like in HTML), but we were treating them
+    as case-sensitive.
+
 ## 0.15.1.0 (2025-04-26)
 
  *  Add a `syntax` option for `eval` blocks (#187).  This allows you to set
