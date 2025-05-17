@@ -11,7 +11,7 @@ module Patat.Presentation.Display
 
 
 --------------------------------------------------------------------------------
-import           Control.Monad                        (guard)
+import           Control.Monad                        (guard, mplus)
 import           Control.Monad.Identity               (runIdentity)
 import           Control.Monad.Writer                 (Writer, execWriter, tell)
 import qualified Data.Aeson.Extended                  as A
@@ -19,6 +19,7 @@ import           Data.Char.WCWidth.Extended           (wcstrwidth)
 import           Data.Foldable                        (for_)
 import qualified Data.HashMap.Strict                  as HMS
 import qualified Data.List                            as L
+import qualified Data.Map                             as M
 import           Data.Maybe                           (fromMaybe, maybeToList)
 import qualified Data.Sequence.Extended               as Seq
 import qualified Data.Text                            as T
@@ -29,7 +30,7 @@ import           Patat.Presentation.Internal
 import           Patat.Presentation.Settings
 import qualified Patat.Presentation.SpeakerNotes      as SpeakerNotes
 import           Patat.Presentation.Syntax
-import           Patat.PrettyPrint                    ((<$$>), (<+>))
+import           Patat.PrettyPrint                    ((<$$>))
 import qualified Patat.PrettyPrint                    as PP
 import           Patat.Size
 import           Patat.Theme                          (Theme (..))
@@ -191,15 +192,15 @@ prettyMargins ds blocks = vertical $
         refs ->
             let doc0        = PP.vcat refs
                 size@(r, _) = PP.dimensions doc0 in
-            [(horizontalIndent size $ horizontalWrap doc0, r)]
+            [(horizontalIndent size gmargins $ horizontalWrap gmargins doc0, r)]
   where
     Size rows columns = dsSize ds
-    Margins {..} = dsMargins ds
+    gmargins = dsMargins ds
 
     -- For every block, calculate the size based on its last fragment.
     blockSize block =
         let revealState = blocksRevealLastStep [block] in
-        PP.dimensions $ deindent $ horizontalWrap $
+        PP.dimensions $ deindent gmargins $ horizontalWrap gmargins $
             prettyBlock ds {dsRevealState = revealState} block
 
     -- Vertically align some blocks by adding spaces in front of it.
@@ -208,7 +209,7 @@ prettyMargins ds blocks = vertical $
     vertical :: [(PP.Doc, Int)] -> PP.Doc
     vertical docs0 = mconcat (replicate top PP.hardline) <> doc
       where
-        top = case mTop of
+        top = case mTop gmargins of
             Auto      -> (rows - actual) `div` 2
             NotAuto x -> x
 
@@ -237,12 +238,16 @@ prettyMargins ds blocks = vertical $
         (PP.vcat fblocks, fst (blockSize b))
     horizontal block =
         let size@(r, _) = blockSize block in
-        (horizontalIndent size $ horizontalWrap $ prettyBlock ds block, r)
+        ( horizontalIndent size gmargins $ horizontalWrap gmargins $
+            prettyBlock ds block
+        , r
+        )
 
-    horizontalIndent :: (Int, Int) -> PP.Doc -> PP.Doc
-    horizontalIndent (_, dcols) doc0 = PP.indent indentation indentation doc1
+    horizontalIndent :: (Int, Int) -> Margins -> PP.Doc -> PP.Doc
+    horizontalIndent (_, dcols) dmargins@Margins {..} doc0 =
+        PP.indent indentation indentation doc1
       where
-        doc1 = deindent doc0
+        doc1 = deindent dmargins doc0
         left = case mLeft of
             NotAuto x -> x
             Auto      -> case mRight of
@@ -251,13 +256,13 @@ prettyMargins ds blocks = vertical $
         indentation = PP.Indentation left mempty
 
     -- Strip leading spaces to horizontally align code blocks etc.
-    deindent doc0 = case (mLeft, mRight) of
+    deindent Margins {..} doc0 = case (mLeft, mRight) of
         (Auto, Auto) -> PP.deindent doc0
         _            -> doc0
 
     -- Rearranges lines to fit into the wrap settings.
-    horizontalWrap :: PP.Doc -> PP.Doc
-    horizontalWrap doc0 = case dsWrap ds of
+    horizontalWrap :: Margins -> PP.Doc -> PP.Doc
+    horizontalWrap Margins {..} doc0 = case dsWrap ds of
         NoWrap     -> doc0
         AutoWrap   -> PP.wrapAt (Just $ columns - right - left) doc0
         WrapAt col -> PP.wrapAt (Just col) doc0
@@ -278,9 +283,21 @@ prettyBlock ds (Plain inlines) = prettyInlines ds inlines
 prettyBlock ds (Para inlines) =
     prettyInlines ds inlines <> PP.hardline
 
-prettyBlock ds (Header i _ inlines) =
-    themed ds themeHeader (PP.string (replicate i '#') <+> prettyInlines ds inlines) <>
-    PP.hardline
+prettyBlock ds (Header n _ inlines) =
+    themed ds style content <> PP.hardline <>
+    (case underline of
+        Nothing -> mempty
+        Just t  ->
+            themed ds style (PP.string $ take cols $ cycle $ T.unpack t) <>
+            PP.hardline)
+  where
+    prefix    = fromMaybe mempty $ config (dsTheme ds) >>= Theme.htPrefix
+    content   = PP.text prefix <> prettyInlines ds inlines
+    (_, cols) = PP.dimensions content
+    underline = config (dsTheme ds) >>= Theme.htUnderline
+
+    style  t = (config t >>= Theme.htStyle) `mplus` themeHeader t
+    config t = themeHeaders t >>= M.lookup ("h" ++ show n)
 
 prettyBlock ds (CodeBlock classes txt) =
     prettyCodeBlock ds classes txt
