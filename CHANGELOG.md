@@ -6,6 +6,23 @@
     Class names are case-insensitive (like in HTML), but we were treating them
     as case-sensitive.
 
+ *  Under `theme:`, individual headers can now also be customized (#162).
+
+    The configuration blocks under `headers` accepts a `style` list, a `prefix`
+    string and an `underline` string that is repeated match the width of the
+    header. `align: center` can be used to horizontally center the header.
+
+    ```yaml
+    patat:
+      theme:
+        headers:
+          h3:
+            style: [vividRed]
+            prefix: '### '
+            underline: '-~-~'
+            align: center
+    ```
+
 ## 0.15.1.0 (2025-04-26)
 
  *  Add a `syntax` option for `eval` blocks (#187).  This allows you to set
