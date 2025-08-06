@@ -4,6 +4,7 @@
 {-# LANGUAGE TemplateHaskell            #-}
 module Patat.Theme
     ( Style (..)
+    , HeaderAlign (..)
     , HeaderTheme (..)
     , HeaderThemes (..)
     , Theme (..)
@@ -160,11 +161,30 @@ namedSgrs = M.fromList
 
 
 --------------------------------------------------------------------------------
+data HeaderAlign = LeftHeaderAlign | CenterHeaderAlign
+    deriving (Eq, Show)
+
+
+--------------------------------------------------------------------------------
+instance A.ToJSON HeaderAlign where
+    toJSON LeftHeaderAlign   = "left"
+    toJSON CenterHeaderAlign = "center"
+
+
+--------------------------------------------------------------------------------
+instance A.FromJSON HeaderAlign where
+    parseJSON = A.withText "FromJSON HeaderAlign" $ \txt -> case txt of
+        "left"   -> pure LeftHeaderAlign
+        "center" -> pure CenterHeaderAlign
+        _        -> fail $ "Unknown align: " ++ show txt
+
+
+--------------------------------------------------------------------------------
 data HeaderTheme = HeaderTheme
     { htStyle     :: !(Maybe Style)
     , htPrefix    :: !(Maybe T.Text)
     , htUnderline :: !(Maybe T.Text)
-    , htCenter    :: !(Maybe Bool)
+    , htAlign     :: !(Maybe HeaderAlign)
     } deriving (Eq, Show)
 
 
@@ -178,7 +198,7 @@ instance Semigroup HeaderTheme where
         { htStyle     = htStyle     l `mplus` htStyle     r
         , htPrefix    = htPrefix    l `mplus` htPrefix    r
         , htUnderline = htUnderline l `mplus` htUnderline r
-        , htCenter    = htCenter    l `mplus` htCenter    r
+        , htAlign     = htAlign     l `mplus` htAlign     r
         }
 
 

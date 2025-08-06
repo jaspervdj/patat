@@ -9,7 +9,7 @@ patat:
         prefix: '== '
         underline: '^ '
       h4:
-        center: true
+        align: center
         underline: ''
 ...
 

@@ -282,8 +282,8 @@ prettyMargins ds blocks = vertical $
     marginsFor (Header n _ _) = fromMaybe gmargins $ do
         Theme.HeaderThemes config <- themeHeaders (dsTheme ds)
         headerTheme <- M.lookup ("h" ++ show n) config
-        center <- Theme.htCenter headerTheme
-        guard center
+        align <- Theme.htAlign headerTheme
+        guard $ align == Theme.CenterHeaderAlign
         pure gmargins {mLeft = Auto, mRight = Auto}
     marginsFor _ = gmargins
 

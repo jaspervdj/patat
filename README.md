@@ -532,6 +532,7 @@ patat:
 In addition to `header`, individual headers can also be customized.  The
 configuration blocks under `headers` accepts a `style` list, a `prefix` string
 and an `underline` string that is repeated match the width of the header.
+`align: center` can be used to horizontally center the header.
 
 ```yaml
 patat:
@@ -541,6 +542,7 @@ patat:
         style: [vividRed]
         prefix: '### '
         underline: '-~-~'
+        align: center
 ```
 
 ### Syntax Highlighting
