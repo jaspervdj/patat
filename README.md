@@ -527,6 +527,24 @@ patat:
         strong: [underline, underlineVividBlue]
 ```
 
+#### Theming headers
+
+In addition to `header`, individual headers can also be customized.  The
+configuration blocks under `headers` accepts a `style` list, a `prefix` string
+and an `underline` string that is repeated match the width of the header.
+`align: center` can be used to horizontally center the header.
+
+```yaml
+patat:
+  theme:
+    headers:
+      h3:
+        style: [vividRed]
+        prefix: '### '
+        underline: '-~-~'
+        align: center
+```
+
 ### Syntax Highlighting
 
 `patat` uses [Kate] Syntax Highlighting files.  `patat` ships with support for

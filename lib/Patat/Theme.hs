@@ -3,10 +3,13 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE TemplateHaskell            #-}
 module Patat.Theme
-    ( Theme (..)
+    ( Style (..)
+    , HeaderAlign (..)
+    , HeaderTheme (..)
+    , HeaderThemes (..)
+    , Theme (..)
     , defaultTheme
-
-    , Style (..)
+    , themeForHeader
 
     , SyntaxHighlighting (..)
     , defaultSyntaxHighlighting
@@ -29,111 +32,6 @@ import           Prelude
 import qualified Skylighting            as Skylighting
 import qualified System.Console.ANSI    as Ansi
 import           Text.Read              (readMaybe)
-
-
---------------------------------------------------------------------------------
-data Theme = Theme
-    { themeBorders            :: !(Maybe Style)
-    , themeHeader             :: !(Maybe Style)
-    , themeCodeBlock          :: !(Maybe Style)
-    , themeBulletList         :: !(Maybe Style)
-    , themeBulletListMarkers  :: !(Maybe T.Text)
-    , themeOrderedList        :: !(Maybe Style)
-    , themeBlockQuote         :: !(Maybe Style)
-    , themeDefinitionTerm     :: !(Maybe Style)
-    , themeDefinitionList     :: !(Maybe Style)
-    , themeTableHeader        :: !(Maybe Style)
-    , themeTableSeparator     :: !(Maybe Style)
-    , themeLineBlock          :: !(Maybe Style)
-    , themeEmph               :: !(Maybe Style)
-    , themeStrong             :: !(Maybe Style)
-    , themeUnderline          :: !(Maybe Style)
-    , themeCode               :: !(Maybe Style)
-    , themeLinkText           :: !(Maybe Style)
-    , themeLinkTarget         :: !(Maybe Style)
-    , themeStrikeout          :: !(Maybe Style)
-    , themeQuoted             :: !(Maybe Style)
-    , themeMath               :: !(Maybe Style)
-    , themeImageText          :: !(Maybe Style)
-    , themeImageTarget        :: !(Maybe Style)
-    , themeSyntaxHighlighting :: !(Maybe SyntaxHighlighting)
-    } deriving (Eq, Show)
-
-
---------------------------------------------------------------------------------
-instance Semigroup Theme where
-    l <> r = Theme
-        { themeBorders            = mplusOn   themeBorders
-        , themeHeader             = mplusOn   themeHeader
-        , themeCodeBlock          = mplusOn   themeCodeBlock
-        , themeBulletList         = mplusOn   themeBulletList
-        , themeBulletListMarkers  = mplusOn   themeBulletListMarkers
-        , themeOrderedList        = mplusOn   themeOrderedList
-        , themeBlockQuote         = mplusOn   themeBlockQuote
-        , themeDefinitionTerm     = mplusOn   themeDefinitionTerm
-        , themeDefinitionList     = mplusOn   themeDefinitionList
-        , themeTableHeader        = mplusOn   themeTableHeader
-        , themeTableSeparator     = mplusOn   themeTableSeparator
-        , themeLineBlock          = mplusOn   themeLineBlock
-        , themeEmph               = mplusOn   themeEmph
-        , themeStrong             = mplusOn   themeStrong
-        , themeUnderline          = mplusOn   themeUnderline
-        , themeCode               = mplusOn   themeCode
-        , themeLinkText           = mplusOn   themeLinkText
-        , themeLinkTarget         = mplusOn   themeLinkTarget
-        , themeStrikeout          = mplusOn   themeStrikeout
-        , themeQuoted             = mplusOn   themeQuoted
-        , themeMath               = mplusOn   themeMath
-        , themeImageText          = mplusOn   themeImageText
-        , themeImageTarget        = mplusOn   themeImageTarget
-        , themeSyntaxHighlighting = mappendOn themeSyntaxHighlighting
-        }
-      where
-        mplusOn   f = f l `mplus`   f r
-        mappendOn f = f l `mappend` f r
-
-
---------------------------------------------------------------------------------
-instance Monoid Theme where
-    mappend = (<>)
-    mempty  = Theme
-        Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-        Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-        Nothing Nothing Nothing Nothing Nothing Nothing
-
---------------------------------------------------------------------------------
-defaultTheme :: Theme
-defaultTheme = Theme
-    { themeBorders            = dull Ansi.Yellow
-    , themeHeader             = dull Ansi.Blue
-    , themeCodeBlock          = dull Ansi.White `mappend` ondull Ansi.Black
-    , themeBulletList         = dull Ansi.Magenta
-    , themeBulletListMarkers  = Just "-*"
-    , themeOrderedList        = dull Ansi.Magenta
-    , themeBlockQuote         = dull Ansi.Green
-    , themeDefinitionTerm     = dull Ansi.Blue
-    , themeDefinitionList     = dull Ansi.Magenta
-    , themeTableHeader        = dull Ansi.Magenta `mappend` bold
-    , themeTableSeparator     = dull Ansi.Magenta
-    , themeLineBlock          = dull Ansi.Magenta
-    , themeEmph               = dull Ansi.Green
-    , themeStrong             = dull Ansi.Red `mappend` bold
-    , themeUnderline          = dull Ansi.Red `mappend` underline
-    , themeCode               = dull Ansi.White `mappend` ondull Ansi.Black
-    , themeLinkText           = dull Ansi.Green
-    , themeLinkTarget         = dull Ansi.Cyan `mappend` underline
-    , themeStrikeout          = ondull Ansi.Red
-    , themeQuoted             = dull Ansi.Green
-    , themeMath               = dull Ansi.Green
-    , themeImageText          = dull Ansi.Green
-    , themeImageTarget        = dull Ansi.Cyan `mappend` underline
-    , themeSyntaxHighlighting = Just defaultSyntaxHighlighting
-    }
-  where
-    dull   c  = Just $ Style [Ansi.SetColor Ansi.Foreground Ansi.Dull c]
-    ondull c  = Just $ Style [Ansi.SetColor Ansi.Background Ansi.Dull c]
-    bold      = Just $ Style [Ansi.SetConsoleIntensity Ansi.BoldIntensity]
-    underline = Just $ Style [Ansi.SetUnderlining Ansi.SingleUnderline]
 
 
 --------------------------------------------------------------------------------
@@ -218,6 +116,31 @@ sgrToString sgr = case sgr of
 
 
 --------------------------------------------------------------------------------
+nameForTokenType :: Skylighting.TokenType -> String
+nameForTokenType =
+    unCapitalize . dropTok . show
+  where
+    unCapitalize (x : xs) = toLower x : xs
+    unCapitalize xs       = xs
+
+    dropTok :: String -> String
+    dropTok str
+        | "Tok" `isSuffixOf` str = take (length str - 3) str
+        | otherwise              = str
+
+
+--------------------------------------------------------------------------------
+nameToTokenType :: String -> Maybe Skylighting.TokenType
+nameToTokenType = readMaybe . capitalize . (++ "Tok")
+
+
+--------------------------------------------------------------------------------
+capitalize :: String -> String
+capitalize ""       = ""
+capitalize (x : xs) = toUpper x : xs
+
+
+--------------------------------------------------------------------------------
 namedSgrs :: M.Map String Ansi.SGR
 namedSgrs = M.fromList
     [ (name, sgr)
@@ -236,6 +159,178 @@ namedSgrs = M.fromList
         [Ansi.SetUnderlining      u | u <- [minBound .. maxBound]] ++
         [Ansi.SetConsoleIntensity c | c <- [minBound .. maxBound]] ++
         [Ansi.SetItalicized       i | i <- [minBound .. maxBound]]
+
+
+--------------------------------------------------------------------------------
+data HeaderAlign = LeftHeaderAlign | CenterHeaderAlign
+    deriving (Eq, Show)
+
+
+--------------------------------------------------------------------------------
+instance A.ToJSON HeaderAlign where
+    toJSON LeftHeaderAlign   = "left"
+    toJSON CenterHeaderAlign = "center"
+
+
+--------------------------------------------------------------------------------
+instance A.FromJSON HeaderAlign where
+    parseJSON = A.withText "FromJSON HeaderAlign" $ \txt -> case txt of
+        "left"   -> pure LeftHeaderAlign
+        "center" -> pure CenterHeaderAlign
+        _        -> fail $ "Unknown align: " ++ show txt
+
+
+--------------------------------------------------------------------------------
+data HeaderTheme = HeaderTheme
+    { htStyle     :: !(Maybe Style)
+    , htPrefix    :: !(Maybe T.Text)
+    , htUnderline :: !(Maybe T.Text)
+    , htAlign     :: !(Maybe HeaderAlign)
+    } deriving (Eq, Show)
+
+
+--------------------------------------------------------------------------------
+$(A.deriveJSON A.dropPrefixOptions ''HeaderTheme)
+
+
+--------------------------------------------------------------------------------
+instance Semigroup HeaderTheme where
+    l <> r = HeaderTheme
+        { htStyle     = htStyle     l `mplus` htStyle     r
+        , htPrefix    = htPrefix    l `mplus` htPrefix    r
+        , htUnderline = htUnderline l `mplus` htUnderline r
+        , htAlign     = htAlign     l `mplus` htAlign     r
+        }
+
+
+--------------------------------------------------------------------------------
+newtype HeaderThemes = HeaderThemes (M.Map String HeaderTheme)
+    deriving (Eq, Show, A.FromJSON, A.ToJSON)
+
+
+--------------------------------------------------------------------------------
+instance Semigroup HeaderThemes where
+    HeaderThemes l <> HeaderThemes r = HeaderThemes $ M.unionWith (<>) l r
+
+
+--------------------------------------------------------------------------------
+data Theme = Theme
+    { themeBorders            :: !(Maybe Style)
+    , themeHeader             :: !(Maybe Style)
+    , themeHeaders            :: !(Maybe HeaderThemes)
+    , themeCodeBlock          :: !(Maybe Style)
+    , themeBulletList         :: !(Maybe Style)
+    , themeBulletListMarkers  :: !(Maybe T.Text)
+    , themeOrderedList        :: !(Maybe Style)
+    , themeBlockQuote         :: !(Maybe Style)
+    , themeDefinitionTerm     :: !(Maybe Style)
+    , themeDefinitionList     :: !(Maybe Style)
+    , themeTableHeader        :: !(Maybe Style)
+    , themeTableSeparator     :: !(Maybe Style)
+    , themeLineBlock          :: !(Maybe Style)
+    , themeEmph               :: !(Maybe Style)
+    , themeStrong             :: !(Maybe Style)
+    , themeUnderline          :: !(Maybe Style)
+    , themeCode               :: !(Maybe Style)
+    , themeLinkText           :: !(Maybe Style)
+    , themeLinkTarget         :: !(Maybe Style)
+    , themeStrikeout          :: !(Maybe Style)
+    , themeQuoted             :: !(Maybe Style)
+    , themeMath               :: !(Maybe Style)
+    , themeImageText          :: !(Maybe Style)
+    , themeImageTarget        :: !(Maybe Style)
+    , themeSyntaxHighlighting :: !(Maybe SyntaxHighlighting)
+    } deriving (Eq, Show)
+
+
+--------------------------------------------------------------------------------
+instance Semigroup Theme where
+    l <> r = Theme
+        { themeBorders            = mplusOn   themeBorders
+        , themeHeader             = mplusOn   themeHeader
+        , themeHeaders            = mappendOn themeHeaders
+        , themeCodeBlock          = mplusOn   themeCodeBlock
+        , themeBulletList         = mplusOn   themeBulletList
+        , themeBulletListMarkers  = mplusOn   themeBulletListMarkers
+        , themeOrderedList        = mplusOn   themeOrderedList
+        , themeBlockQuote         = mplusOn   themeBlockQuote
+        , themeDefinitionTerm     = mplusOn   themeDefinitionTerm
+        , themeDefinitionList     = mplusOn   themeDefinitionList
+        , themeTableHeader        = mplusOn   themeTableHeader
+        , themeTableSeparator     = mplusOn   themeTableSeparator
+        , themeLineBlock          = mplusOn   themeLineBlock
+        , themeEmph               = mplusOn   themeEmph
+        , themeStrong             = mplusOn   themeStrong
+        , themeUnderline          = mplusOn   themeUnderline
+        , themeCode               = mplusOn   themeCode
+        , themeLinkText           = mplusOn   themeLinkText
+        , themeLinkTarget         = mplusOn   themeLinkTarget
+        , themeStrikeout          = mplusOn   themeStrikeout
+        , themeQuoted             = mplusOn   themeQuoted
+        , themeMath               = mplusOn   themeMath
+        , themeImageText          = mplusOn   themeImageText
+        , themeImageTarget        = mplusOn   themeImageTarget
+        , themeSyntaxHighlighting = mappendOn themeSyntaxHighlighting
+        }
+      where
+        mplusOn   f = f l `mplus`   f r
+        mappendOn f = f l `mappend` f r
+
+
+--------------------------------------------------------------------------------
+instance Monoid Theme where
+    mappend = (<>)
+    mempty  = Theme
+        Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+        Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+        Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+
+--------------------------------------------------------------------------------
+defaultTheme :: Theme
+defaultTheme = Theme
+    { themeBorders            = dull Ansi.Yellow
+    , themeHeader             = dull Ansi.Blue
+    , themeHeaders            = Just $ HeaderThemes $ M.fromList $ do
+        n <- [1 .. 6]
+        let prefix = T.replicate n "#" <> " "
+        pure ("h" <> show n, HeaderTheme Nothing (Just prefix) Nothing Nothing)
+    , themeCodeBlock          = dull Ansi.White `mappend` ondull Ansi.Black
+    , themeBulletList         = dull Ansi.Magenta
+    , themeBulletListMarkers  = Just "-*"
+    , themeOrderedList        = dull Ansi.Magenta
+    , themeBlockQuote         = dull Ansi.Green
+    , themeDefinitionTerm     = dull Ansi.Blue
+    , themeDefinitionList     = dull Ansi.Magenta
+    , themeTableHeader        = dull Ansi.Magenta `mappend` bold
+    , themeTableSeparator     = dull Ansi.Magenta
+    , themeLineBlock          = dull Ansi.Magenta
+    , themeEmph               = dull Ansi.Green
+    , themeStrong             = dull Ansi.Red `mappend` bold
+    , themeUnderline          = dull Ansi.Red `mappend` underline
+    , themeCode               = dull Ansi.White `mappend` ondull Ansi.Black
+    , themeLinkText           = dull Ansi.Green
+    , themeLinkTarget         = dull Ansi.Cyan `mappend` underline
+    , themeStrikeout          = ondull Ansi.Red
+    , themeQuoted             = dull Ansi.Green
+    , themeMath               = dull Ansi.Green
+    , themeImageText          = dull Ansi.Green
+    , themeImageTarget        = dull Ansi.Cyan `mappend` underline
+    , themeSyntaxHighlighting = Just defaultSyntaxHighlighting
+    }
+  where
+    dull   c  = Just $ Style [Ansi.SetColor Ansi.Foreground Ansi.Dull c]
+    ondull c  = Just $ Style [Ansi.SetColor Ansi.Background Ansi.Dull c]
+    bold      = Just $ Style [Ansi.SetConsoleIntensity Ansi.BoldIntensity]
+    underline = Just $ Style [Ansi.SetUnderlining Ansi.SingleUnderline]
+
+
+--------------------------------------------------------------------------------
+themeForHeader :: Int -> Theme -> HeaderTheme
+themeForHeader n theme = maybe def (<> def) $ do
+    HeaderThemes m <- themeHeaders theme
+    M.lookup ("h" ++ show n) m
+  where
+    def = HeaderTheme (themeHeader theme) Nothing Nothing Nothing
 
 
 --------------------------------------------------------------------------------
@@ -287,31 +382,6 @@ defaultSyntaxHighlighting = mkSyntaxHighlighting
 
     mkSyntaxHighlighting ls = SyntaxHighlighting $
         M.fromList [(nameForTokenType tt, s) | (tt, s) <- ls]
-
-
---------------------------------------------------------------------------------
-nameForTokenType :: Skylighting.TokenType -> String
-nameForTokenType =
-    unCapitalize . dropTok . show
-  where
-    unCapitalize (x : xs) = toLower x : xs
-    unCapitalize xs       = xs
-
-    dropTok :: String -> String
-    dropTok str
-        | "Tok" `isSuffixOf` str = take (length str - 3) str
-        | otherwise              = str
-
-
---------------------------------------------------------------------------------
-nameToTokenType :: String -> Maybe Skylighting.TokenType
-nameToTokenType = readMaybe . capitalize . (++ "Tok")
-
-
---------------------------------------------------------------------------------
-capitalize :: String -> String
-capitalize ""       = ""
-capitalize (x : xs) = toUpper x : xs
 
 
 --------------------------------------------------------------------------------
