@@ -8,8 +8,8 @@
 
 
 
-[m                                [0m[34mHeader 1[0m
-[m                                [0m[34m=~=~=~=~[0m
+[m                               [0m[34m# Header 1[0m
+[m                               [0m[34m=~=~=~=~=~[0m
 
 [33m                                                                  1 / 4 [0m
 
@@ -46,5 +46,10 @@
 [91m^ ^ ^ ^ ^ ^ ^ ^ ^ [0m
 
 [mMore Content[0m
+
+[m                         [0m[34m#### A centered header[0m
+
+[mHey actually the header above needs to be centered, it looks better since it is[0m
+[mkinda short and the text is long, etc.[0m
 
 [33m                                                                  4 / 4 [0m

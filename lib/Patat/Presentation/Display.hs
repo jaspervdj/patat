@@ -199,8 +199,9 @@ prettyMargins ds blocks = vertical $
 
     -- For every block, calculate the size based on its last fragment.
     blockSize block =
-        let revealState = blocksRevealLastStep [block] in
-        PP.dimensions $ deindent gmargins $ horizontalWrap gmargins $
+        let revealState = blocksRevealLastStep [block]
+            bmargins    = marginsFor block
+        in PP.dimensions $ deindent bmargins $ horizontalWrap bmargins $
             prettyBlock ds {dsRevealState = revealState} block
 
     -- Vertically align some blocks by adding spaces in front of it.
@@ -237,8 +238,9 @@ prettyMargins ds blocks = vertical $
                 revealToBlocks (dsRevealState ds) ConcatWrapper reveal in
         (PP.vcat fblocks, fst (blockSize b))
     horizontal block =
-        let size@(r, _) = blockSize block in
-        ( horizontalIndent size gmargins $ horizontalWrap gmargins $
+        let size@(r, _) = blockSize block
+            bmargins    = marginsFor block in
+        ( horizontalIndent size bmargins $ horizontalWrap bmargins $
             prettyBlock ds block
         , r
         )
@@ -274,6 +276,17 @@ prettyMargins ds blocks = vertical $
             Auto      -> 0
             NotAuto x -> x
 
+    -- Find the right margins for the specific block.  Currently, only headers
+    -- can have different margins.
+    marginsFor :: Block -> Margins
+    marginsFor (Header n _ _) = fromMaybe gmargins $ do
+        Theme.HeaderThemes config <- themeHeaders (dsTheme ds)
+        headerTheme <- M.lookup ("h" ++ show n) config
+        center <- Theme.htCenter headerTheme
+        guard center
+        pure gmargins {mLeft = Auto, mRight = Auto}
+    marginsFor _ = gmargins
+
 
 --------------------------------------------------------------------------------
 prettyBlock :: DisplaySettings -> Block -> PP.Doc
@@ -286,10 +299,10 @@ prettyBlock ds (Para inlines) =
 prettyBlock ds (Header n _ inlines) =
     themed ds style content <> PP.hardline <>
     (case underline of
-        Nothing -> mempty
-        Just t  ->
+        Just t | t /= "" ->
             themed ds style (PP.string $ take cols $ cycle $ T.unpack t) <>
-            PP.hardline)
+            PP.hardline
+        _ -> mempty)
   where
     prefix    = fromMaybe mempty $ config (dsTheme ds) >>= Theme.htPrefix
     content   = PP.text prefix <> prettyInlines ds inlines
@@ -297,7 +310,9 @@ prettyBlock ds (Header n _ inlines) =
     underline = config (dsTheme ds) >>= Theme.htUnderline
 
     style  t = (config t >>= Theme.htStyle) `mplus` themeHeader t
-    config t = themeHeaders t >>= M.lookup ("h" ++ show n)
+    config t = do
+        Theme.HeaderThemes th <- themeHeaders t
+        M.lookup ("h" ++ show n) th
 
 prettyBlock ds (CodeBlock classes txt) =
     prettyCodeBlock ds classes txt
