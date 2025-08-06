@@ -9,6 +9,7 @@ module Patat.Theme
     , HeaderThemes (..)
     , Theme (..)
     , defaultTheme
+    , themeForHeader
 
     , SyntaxHighlighting (..)
     , defaultSyntaxHighlighting
@@ -321,6 +322,15 @@ defaultTheme = Theme
     ondull c  = Just $ Style [Ansi.SetColor Ansi.Background Ansi.Dull c]
     bold      = Just $ Style [Ansi.SetConsoleIntensity Ansi.BoldIntensity]
     underline = Just $ Style [Ansi.SetUnderlining Ansi.SingleUnderline]
+
+
+--------------------------------------------------------------------------------
+themeForHeader :: Int -> Theme -> HeaderTheme
+themeForHeader n theme = maybe def (<> def) $ do
+    HeaderThemes m <- themeHeaders theme
+    M.lookup ("h" ++ show n) m
+  where
+    def = HeaderTheme (themeHeader theme) Nothing Nothing Nothing
 
 
 --------------------------------------------------------------------------------

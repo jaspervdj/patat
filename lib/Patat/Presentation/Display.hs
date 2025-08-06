@@ -11,7 +11,7 @@ module Patat.Presentation.Display
 
 
 --------------------------------------------------------------------------------
-import           Control.Monad                        (guard, mplus)
+import           Control.Monad                        (guard)
 import           Control.Monad.Identity               (runIdentity)
 import           Control.Monad.Writer                 (Writer, execWriter, tell)
 import qualified Data.Aeson.Extended                  as A
@@ -19,7 +19,6 @@ import           Data.Char.WCWidth.Extended           (wcstrwidth)
 import           Data.Foldable                        (for_)
 import qualified Data.HashMap.Strict                  as HMS
 import qualified Data.List                            as L
-import qualified Data.Map                             as M
 import           Data.Maybe                           (fromMaybe, maybeToList)
 import qualified Data.Sequence.Extended               as Seq
 import qualified Data.Text                            as T
@@ -280,9 +279,7 @@ prettyMargins ds blocks = vertical $
     -- can have different margins.
     marginsFor :: Block -> Margins
     marginsFor (Header n _ _) = fromMaybe gmargins $ do
-        Theme.HeaderThemes config <- themeHeaders (dsTheme ds)
-        headerTheme <- M.lookup ("h" ++ show n) config
-        align <- Theme.htAlign headerTheme
+        align <- Theme.htAlign $ Theme.themeForHeader n (dsTheme ds)
         guard $ align == Theme.CenterHeaderAlign
         pure gmargins {mLeft = Auto, mRight = Auto}
     marginsFor _ = gmargins
@@ -304,15 +301,14 @@ prettyBlock ds (Header n _ inlines) =
             PP.hardline
         _ -> mempty)
   where
-    prefix    = fromMaybe mempty $ config (dsTheme ds) >>= Theme.htPrefix
+    prefix    = fromMaybe mempty $ Theme.htPrefix headerTheme
     content   = PP.text prefix <> prettyInlines ds inlines
     (_, cols) = PP.dimensions content
-    underline = config (dsTheme ds) >>= Theme.htUnderline
+    underline = Theme.htUnderline headerTheme
 
-    style  t = (config t >>= Theme.htStyle) `mplus` themeHeader t
-    config t = do
-        Theme.HeaderThemes th <- themeHeaders t
-        M.lookup ("h" ++ show n) th
+    headerTheme = Theme.themeForHeader n (dsTheme ds)
+
+    style _ = Theme.htStyle headerTheme
 
 prettyBlock ds (CodeBlock classes txt) =
     prettyCodeBlock ds classes txt
