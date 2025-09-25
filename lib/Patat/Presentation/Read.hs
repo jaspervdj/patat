@@ -231,7 +231,7 @@ detectSlideLevel blocks0 =
 
 
 --------------------------------------------------------------------------------
--- | Split a pandoc document into slides.  If the document contains horizonal
+-- | Split a pandoc document into slides.  If the document contains horizontal
 -- rules, we use those as slide delimiters.  If there are no horizontal rules,
 -- we split using headers, determined by the slide level (see
 -- 'detectSlideLevel').

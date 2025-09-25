@@ -158,7 +158,7 @@
     column, and inside `eval` to determine the type in which the result
     is "wrapped". Using the same name for both is confusing, so this adds
     `eval.container` as the new name for `eval.wrap`. `eval.wrap` will continue
-    to be supported for the forseeable future, but its use will be discouraged.
+    to be supported for the foreseeable future, but its use will be discouraged.
 
     This also changes the values (again keeping the original ones for
     backwards-compat), so the complete changes to a configuration would be:
@@ -403,7 +403,7 @@
 
 ## 0.8.6.1 (2020-09-18)
 
-* Fix issue with laziness for evaluted code blocks, they should only be
+* Fix issue with laziness for evaluated code blocks, they should only be
   evaluated when we actually want to show them
 * Bump stack resolver to `lts-16.9`
 

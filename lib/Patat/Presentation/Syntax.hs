@@ -295,7 +295,7 @@ newtype RevealID = RevealID Unique deriving (Eq, Ord, Show)
 -- a counter state.
 --
 -- The easiest example to think about is a bullet list which appears
--- incrmentally on a slide.  Initially, the counter state is 0.  As it is
+-- incrementally on a slide.  Initially, the counter state is 0.  As it is
 -- incremented (the user goes to the next fragment in the slide), more list
 -- items become visible.
 data RevealSequence a = RevealSequence
