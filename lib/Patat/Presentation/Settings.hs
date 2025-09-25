@@ -1,4 +1,5 @@
 --------------------------------------------------------------------------------
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
@@ -206,7 +207,6 @@ defaultExtensionList = ExtensionList $
     , Pandoc.Ext_fancy_lists
     , Pandoc.Ext_four_space_rule
     , Pandoc.Ext_definition_lists
-    , Pandoc.Ext_compact_definition_lists
     , Pandoc.Ext_example_lists
     , Pandoc.Ext_strikeout
     , Pandoc.Ext_superscript
