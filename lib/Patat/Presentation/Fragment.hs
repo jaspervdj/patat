@@ -100,11 +100,11 @@ fragmentBlock _ block@(Table {})          = pure [block]
 fragmentBlock _ block@(Div {})            = pure [block]
 fragmentBlock _ block@HorizontalRule      = pure [block]
 fragmentBlock _ block@(LineBlock {})      = pure [block]
-fragmentBlock _ block@(Figure {})         = pure [block]
 fragmentBlock _ block@(VarBlock {})       = pure [block]
 fragmentBlock _ block@(SpeakerNote {})    = pure [block]
 fragmentBlock _ block@(Config {})         = pure [block]
 fragmentBlock _ block@(Reveal {})         = pure [block]  -- Should not happen
+fragmentBlock _ block@(Image {})          = pure [block]
 
 fragmentList
     :: FragmentSettings   -- ^ Global settings

@@ -129,11 +129,9 @@ displayPresentation size pres@Presentation {..} =
   where
     -- Check if the fragment consists of "just a single image".  Discard
     -- headers.
-    onlyImage (Header{} : bs) = onlyImage bs
-    onlyImage bs = case bs of
-        [Figure _ bs']                 -> onlyImage bs'
-        [Para [Image _ _ (target, _)]] -> Just target
-        _                              -> Nothing
+    onlyImage (Header{} : bs)         = onlyImage bs
+    onlyImage [Image _ _ (target, _)] = Just target
+    onlyImage _                       = Nothing
 
 
 --------------------------------------------------------------------------------
@@ -400,7 +398,9 @@ prettyBlock ds (LineBlock inliness) =
     PP.vcat $
     map (prettyInlines ds) inliness
 
-prettyBlock ds (Figure _attr blocks) = prettyBlocks ds blocks
+prettyBlock ds (Image _attrs text (target, _title)) =
+    "![" <> themed ds themeImageText (prettyInlines ds text) <> "](" <>
+    themed ds themeImageTarget (PP.text target) <> ")"
 
 prettyBlock ds (Reveal w fragment) = prettyBlocks ds $
     revealToBlocks (dsRevealState ds) w fragment
@@ -460,10 +460,6 @@ prettyInline ds (Quoted Pandoc.DoubleQuote t) =
 
 prettyInline ds (Math _ t) =
     themed ds themeMath (PP.text t)
-
-prettyInline ds (Image _attrs text (target, _title)) =
-    "![" <> themed ds themeImageText (prettyInlines ds text) <> "](" <>
-    themed ds themeImageTarget (PP.text target) <> ")"
 
 prettyInline _ (RawInline _ t) = PP.text t
 
