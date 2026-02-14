@@ -25,6 +25,7 @@ module Patat.Presentation.Settings
 
     , TransitionSettings (..)
 
+    , LinkPlacement (..)
     , LinkSettings (..)
 
     , parseSlideSettings
@@ -314,22 +315,40 @@ instance A.FromJSON TransitionSettings where
 
 
 --------------------------------------------------------------------------------
+data LinkPlacement
+    = ReferenceLinkPlacement
+    | DropLinkPlacement
+    deriving (Eq, Show)
+
+
+--------------------------------------------------------------------------------
+instance A.FromJSON LinkPlacement where
+    parseJSON = A.withText "FromJSON LinkPlacement" $ \t -> case t of
+        "reference" -> pure ReferenceLinkPlacement
+        "drop"      -> pure DropLinkPlacement
+        _           -> fail $ "unknown placement: " <> show t
+
+
+--------------------------------------------------------------------------------
 data LinkSettings = LinkSettings
-    { lsOSC8 :: !(Maybe Bool)
+    { lsOSC8      :: !(Maybe Bool)
+    , lsPlacement :: !(Maybe LinkPlacement)
     } deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
 instance Semigroup LinkSettings where
     l <> r = LinkSettings
-        { lsOSC8 = on mplus lsOSC8 l r
+        { lsOSC8      = on mplus lsOSC8      l r
+        , lsPlacement = on mplus lsPlacement l r
         }
 
 
 --------------------------------------------------------------------------------
 instance A.FromJSON LinkSettings where
-    parseJSON = A.withObject "FromJSON LinkSettings" $ \o ->
-        LinkSettings <$> o A..:? "osc8"
+    parseJSON = A.withObject "FromJSON LinkSettings" $ \o -> LinkSettings
+        <$> o A..:? "osc8"
+        <*> o A..:? "placement"
 
 
 --------------------------------------------------------------------------------

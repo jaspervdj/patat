@@ -36,3 +36,39 @@ Some more links:
 Some more advanced stuff:
 
 [a **bold**, _italic_, `code` link](http://example.com#fmt)
+
+---
+
+<!--config:
+  links:
+    osc8: true
+    placement: drop
+-->
+
+With `placement: drop`:
+
+1.  An automatic one: <http://example.com#1>
+2.  An [inline one](http://example.com#2)
+3.  A [reference][ref] link
+4.  A [shortcut reference] link
+5.  A [titled] link
+
+[ref]: http://example.com#3
+[shortcut reference]: http://example.com#4
+[titled]: http://example.com#5 'The title'
+
+---
+
+<!--config:
+  theme:
+    linkOSC8: []
+  links:
+    osc8: true
+    placement: drop
+-->
+
+For the weird usecase you would want to turn of underlining OSC8 links?
+
+[not underlined](http://example.com#fmt)
+
+---

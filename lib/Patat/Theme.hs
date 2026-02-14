@@ -234,6 +234,7 @@ data Theme = Theme
     , themeCode               :: !(Maybe Style)
     , themeLinkText           :: !(Maybe Style)
     , themeLinkTarget         :: !(Maybe Style)
+    , themeLinkOSC8           :: !(Maybe Style)  -- Undocumented
     , themeStrikeout          :: !(Maybe Style)
     , themeQuoted             :: !(Maybe Style)
     , themeMath               :: !(Maybe Style)
@@ -265,6 +266,7 @@ instance Semigroup Theme where
         , themeCode               = mplusOn   themeCode
         , themeLinkText           = mplusOn   themeLinkText
         , themeLinkTarget         = mplusOn   themeLinkTarget
+        , themeLinkOSC8           = mplusOn   themeLinkOSC8
         , themeStrikeout          = mplusOn   themeStrikeout
         , themeQuoted             = mplusOn   themeQuoted
         , themeMath               = mplusOn   themeMath
@@ -283,7 +285,7 @@ instance Monoid Theme where
     mempty  = Theme
         Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
         Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-        Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+        Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 --------------------------------------------------------------------------------
 defaultTheme :: Theme
@@ -310,6 +312,7 @@ defaultTheme = Theme
     , themeCode               = dull Ansi.White `mappend` ondull Ansi.Black
     , themeLinkText           = dull Ansi.Green
     , themeLinkTarget         = dull Ansi.Cyan `mappend` underline
+    , themeLinkOSC8           = underline
     , themeStrikeout          = ondull Ansi.Red
     , themeQuoted             = dull Ansi.Green
     , themeMath               = dull Ansi.Green

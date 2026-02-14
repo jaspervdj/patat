@@ -937,7 +937,9 @@ all transition effects using their respective default settings.
 
 ### Links
 
-Version 0.15.0.0 and later support [OSC8] for hyperlinks.  This makes hyperlinks
+#### OSC8
+
+Version 0.15 and later support [OSC8] for hyperlinks.  This makes hyperlinks
 clickable in many terminal emulators (see [OSC8 adoption]).
 
 There is currently no way to detect if a terminal supports this feature, so you
@@ -951,6 +953,24 @@ patat:
 
 [OSC8]: https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda
 [OSC8 adoption]: https://github.com/Alhadis/OSC8-Adoption
+
+#### Placement
+
+Version 0.16 and later support link placement.
+
+ -  `reference` (default): show URLs reference-style at the bottom of each
+    slide.
+ -  `drop`: Do not show the URLs at all (this only makes sense if [OSC8](#OSC8)
+    is turned on).
+
+For example:
+
+```yaml
+patat:
+  links:
+    osc8: true
+    placement: drop
+```
 
 Trivia
 ------
