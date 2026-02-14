@@ -59,16 +59,17 @@ displayWithBorders (Size rows columns) pres@Presentation {..} f =
     borders (PP.space <> PP.string author <> middleSpaces <> PP.string active <> PP.space) <>
     PP.hardline
   where
-    -- Get terminal width/title
-    settings     = activeSettings pres
+    settings@PresentationSettings {..} = activeSettings pres
+
     (sidx, _)    = pActiveFragment
     ds           = DisplaySettings
         { dsSize          = canvasSize
         , dsMargins       = margins settings
-        , dsWrap          = fromMaybe NoWrap $ psWrap settings
-        , dsTabStop       = maybe 4 A.unFlexibleNum $ psTabStop settings
-        , dsOSC8          = fromMaybe False (psLinks settings >>= lsOSC8)
-        , dsTheme         = fromMaybe Theme.defaultTheme (psTheme settings)
+        , dsWrap          = fromMaybe NoWrap psWrap
+        , dsTabStop       = maybe 4 A.unFlexibleNum psTabStop
+        , dsOSC8          = fromMaybe False (psLinks >>= lsOSC8)
+        , dsLinkPlacement = fromMaybe ReferenceLinkPlacement (psLinks >>= lsPlacement)
+        , dsTheme         = fromMaybe Theme.defaultTheme psTheme
         , dsSyntaxMap     = pSyntaxMap
         , dsResolve       = \var -> fromMaybe [] $ HMS.lookup var pVars
         , dsRevealState   = revealState
@@ -87,9 +88,9 @@ displayWithBorders (Size rows columns) pres@Presentation {..} f =
         , s <- [" > ", PP.toString b]
         ]
     title
-        | not . fromMaybe True $ psBreadcrumbs settings = plainTitle
-        | wcstrwidth breadTitle > columns               = plainTitle
-        | otherwise                                     = breadTitle
+        | not . fromMaybe True $ psBreadcrumbs = plainTitle
+        | wcstrwidth breadTitle > columns      = plainTitle
+        | otherwise                            = breadTitle
 
     -- Dimensions of title.
     titleWidth  = wcstrwidth title
@@ -101,8 +102,8 @@ displayWithBorders (Size rows columns) pres@Presentation {..} f =
 
     -- Compute footer.
     active
-        | fromMaybe True $ psSlideNumber settings = show (sidx + 1) ++ " / " ++ show (length pSlides)
-        | otherwise                               = ""
+        | fromMaybe True psSlideNumber = show (sidx + 1) ++ " / " ++ show (length pSlides)
+        | otherwise                    = ""
     activeWidth  = wcstrwidth active
     author       = PP.toString (prettyInlines ds pAuthor)
     authorWidth  = wcstrwidth author
@@ -187,6 +188,7 @@ prettyMargins :: DisplaySettings -> [Block] -> PP.Doc
 prettyMargins ds blocks = vertical $
     map horizontal blocks ++
     case prettyReferences ds blocks of
+        _ | DropLinkPlacement <- dsLinkPlacement ds -> []
         []   -> []
         refs ->
             let doc0        = PP.vcat refs
@@ -497,10 +499,11 @@ prettyReferences ds =
     prettyReference :: Reference -> PP.Doc
     prettyReference (text, target, title) =
         "[" <>
-        themed ds themeLinkText
-            (prettyInlines ds $ newlineToSpace text) <>
+        (themed ds themeLinkText $
+            hyperlink ds target $ Just $
+                prettyInlines ds $ newlineToSpace text) <>
         "]: " <>
-        themed ds themeLinkTarget (PP.text target) <>
+        (themed ds themeLinkTarget $ hyperlink ds target Nothing) <>
         (if T.null title
             then mempty
             else PP.space <> PP.text title)
@@ -524,8 +527,9 @@ toReferenceLink _ = Nothing
 --------------------------------------------------------------------------------
 hyperlink :: DisplaySettings -> T.Text -> Maybe PP.Doc -> PP.Doc
 hyperlink ds url Nothing
-    | dsOSC8 ds = PP.hyperlink (T.unpack url) (PP.text url)
+    | dsOSC8 ds = themed ds themeLinkOSC8 $
+                    PP.hyperlink (T.unpack url) (PP.text url)
     | otherwise = PP.text url
 hyperlink ds url (Just doc)
-    | dsOSC8 ds = PP.hyperlink (T.unpack url) doc
+    | dsOSC8 ds = themed ds themeLinkOSC8 $ PP.hyperlink (T.unpack url) doc
     | otherwise = doc

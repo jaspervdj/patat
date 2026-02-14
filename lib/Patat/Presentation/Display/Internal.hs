@@ -7,7 +7,7 @@ module Patat.Presentation.Display.Internal
 
 --------------------------------------------------------------------------------
 import           Patat.Presentation.Internal (Margins)
-import           Patat.Presentation.Settings (Wrap)
+import           Patat.Presentation.Settings (Wrap, LinkPlacement)
 import           Patat.Presentation.Syntax   (Block, RevealState, Var)
 import qualified Patat.PrettyPrint           as PP
 import           Patat.Size                  (Size)
@@ -17,15 +17,16 @@ import qualified Skylighting                 as Skylighting
 
 --------------------------------------------------------------------------------
 data DisplaySettings = DisplaySettings
-    { dsSize        :: !Size
-    , dsWrap        :: !Wrap
-    , dsTabStop     :: !Int
-    , dsMargins     :: !Margins
-    , dsOSC8        :: !Bool
-    , dsTheme       :: !Theme.Theme
-    , dsSyntaxMap   :: !Skylighting.SyntaxMap
-    , dsResolve     :: !(Var -> [Block])
-    , dsRevealState :: !RevealState
+    { dsSize          :: !Size
+    , dsWrap          :: !Wrap
+    , dsTabStop       :: !Int
+    , dsMargins       :: !Margins
+    , dsOSC8          :: !Bool
+    , dsLinkPlacement :: !LinkPlacement
+    , dsTheme         :: !Theme.Theme
+    , dsSyntaxMap     :: !Skylighting.SyntaxMap
+    , dsResolve       :: !(Var -> [Block])
+    , dsRevealState   :: !RevealState
     }
 
 

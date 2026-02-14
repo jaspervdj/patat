@@ -18,12 +18,13 @@
     devShells = {
       default = pkgs.mkShell {
         packages = [
+          haskell.ghc
+          haskell.goldplate
+          haskell.stylish-haskell
           pkgs.cabal-install
           pkgs.entr
           pkgs.wezterm
-          haskell.goldplate
-          haskell.stylish-haskell
-          (haskell.ghc.withPackages (p: inputs.self.packages.${system}.default.buildInputs))
+          pkgs.zlib
         ];
       };
     };
