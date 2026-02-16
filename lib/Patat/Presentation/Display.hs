@@ -39,7 +39,10 @@ import qualified Text.Pandoc.Extended                 as Pandoc
 
 
 --------------------------------------------------------------------------------
-data Display = DisplayDoc PP.Doc | DisplayImage FilePath deriving (Show)
+data Display
+    = DisplayDoc PP.Doc
+    | DisplayImage ImageAttrs FilePath
+    deriving (Show)
 
 
 --------------------------------------------------------------------------------
@@ -117,8 +120,8 @@ displayPresentation size pres@Presentation {..} =
         Nothing -> DisplayDoc $ displayWithBorders size pres mempty
         Just (ActiveContent fragment _ _)
                 | Just _ <- psImages pSettings
-                , Just image <- onlyImage fragment ->
-            DisplayImage $ T.unpack image
+                , Just (attr, image) <- onlyImage fragment ->
+            DisplayImage attr $ T.unpack image
         Just (ActiveContent fragment _ _) -> DisplayDoc $
             displayWithBorders size pres $ \theme ->
                 prettyMargins theme fragment
@@ -129,9 +132,9 @@ displayPresentation size pres@Presentation {..} =
   where
     -- Check if the fragment consists of "just a single image".  Discard
     -- headers.
-    onlyImage (Header{} : bs)         = onlyImage bs
-    onlyImage [Image _ _ (target, _)] = Just target
-    onlyImage _                       = Nothing
+    onlyImage (Header{} : bs   )         = onlyImage bs
+    onlyImage [Image attr _ (target, _)] = Just (attr, target)
+    onlyImage _                          = Nothing
 
 
 --------------------------------------------------------------------------------
@@ -168,8 +171,8 @@ dumpPresentation pres@Presentation {..} =
     dumpFragment :: Index -> [PP.Doc]
     dumpFragment idx =
         case displayPresentation (getSize idx) pres {pActiveFragment = idx} of
-            DisplayDoc   doc      -> [doc]
-            DisplayImage filepath -> [PP.string $ "{image: " ++ filepath ++ "}"]
+            DisplayDoc     doc  -> [doc]
+            DisplayImage _ path -> [PP.string $ "{image: " ++ path ++ "}"]
 
     getSize :: Index -> Size
     getSize idx =

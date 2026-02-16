@@ -67,7 +67,7 @@ new config = do
         unless (termProgram == Just "WezTerm") $ throwIO $
             Internal.BackendNotSupported "TERM_PROGRAM not WezTerm"
 
-    return Internal.Handle {Internal.hDrawImage = drawImage}
+    return Internal.Handle {Internal.hDrawImage = \_opts -> drawImage}
 
 
 --------------------------------------------------------------------------------

@@ -40,7 +40,7 @@ new config = do
         Internal.Explicit c -> cPath c
         _                   -> Nothing
 
-    return Internal.Handle {Internal.hDrawImage = drawImage w3m}
+    return Internal.Handle {Internal.hDrawImage = \_opts -> drawImage w3m}
 
 
 --------------------------------------------------------------------------------

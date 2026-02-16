@@ -28,6 +28,7 @@ import qualified Patat.Eval                       as Eval
 import qualified Patat.Images                     as Images
 import           Patat.Presentation
 import qualified Patat.Presentation.SpeakerNotes  as SpeakerNotes
+import           Patat.Presentation.Syntax
 import qualified Patat.PrettyPrint                as PP
 import           Patat.PrettyPrint.Matrix         (hPutMatrix)
 import           Patat.Transition
@@ -221,8 +222,8 @@ loop app@App {..} = do
     Ansi.setCursorPosition 0 0
     cleanup <- case aView of
         PresentationView -> case displayPresentation size presentation of
-            DisplayDoc doc    -> drawDoc doc
-            DisplayImage path -> drawImg size path
+            DisplayDoc doc          -> drawDoc doc
+            DisplayImage attrs path -> drawImg size attrs path
         ErrorView err -> drawDoc $
                 displayPresentationError size presentation err
         TransitionView tr -> do
@@ -258,13 +259,18 @@ loop app@App {..} = do
     drawDoc doc = EncodingFallback.withHandle
         IO.stdout (pEncodingFallback aPresentation) $
         PP.putDoc doc $> mempty
-    drawImg size path = case aImages of
+    drawImg size attrs path = case aImages of
         Nothing -> drawDoc $ displayPresentationError
             size aPresentation "image backend not initialized"
         Just img -> do
             putStrLn ""
             IO.hFlush IO.stdout
-            Images.drawImage img path
+            Images.drawImage img
+                Images.DrawImageOptions
+                    { Images.dioWidthPercentage  = iaWidthPercentage  attrs
+                    , Images.dioHeightPercentage = iaHeightPercentage attrs
+                    }
+                path
     drawMatrix size raster = hPutMatrix IO.stdout size raster
 
     mbTransition c size old new

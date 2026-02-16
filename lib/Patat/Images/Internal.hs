@@ -5,6 +5,8 @@ module Patat.Images.Internal
     ( Config (..)
     , Backend (..)
     , BackendNotSupported (..)
+    , DrawImageOptions (..)
+    , defaultDrawImageOptions
     , Handle (..)
     , withEscapeSequence
     ) where
@@ -38,8 +40,20 @@ instance Exception BackendNotSupported
 
 
 --------------------------------------------------------------------------------
+data DrawImageOptions = DrawImageOptions
+    { dioWidthPercentage  :: Maybe Int
+    , dioHeightPercentage :: Maybe Int
+    } deriving (Show)
+
+
+--------------------------------------------------------------------------------
+defaultDrawImageOptions :: DrawImageOptions
+defaultDrawImageOptions = DrawImageOptions Nothing Nothing
+
+
+--------------------------------------------------------------------------------
 data Handle = Handle
-    { hDrawImage  :: FilePath -> IO Cleanup
+    { hDrawImage :: DrawImageOptions -> FilePath -> IO Cleanup
     }
 
 --------------------------------------------------------------------------------

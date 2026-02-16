@@ -6,7 +6,8 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 module Patat.Presentation.Syntax
-    ( Block (..)
+    ( ImageAttrs (..)
+    , Block (..)
     , Inline (..)
 
     , dftBlocks
@@ -55,6 +56,12 @@ import           Patat.Presentation.Settings (PresentationSettings,
 import           Patat.Unique
 import qualified Text.Pandoc                 as Pandoc
 import qualified Text.Pandoc.Writers.Shared  as Pandoc
+import           Text.Read                   (readMaybe)
+
+data ImageAttrs = ImageAttrs
+    { iaWidthPercentage  :: Maybe Int
+    , iaHeightPercentage :: Maybe Int
+    } deriving (Eq, Show)
 
 -- | This is similar to 'Pandoc.Block'.  Having our own datatype has some
 -- advantages:
@@ -85,7 +92,7 @@ data Block
     | VarBlock !Var
     | SpeakerNote !T.Text
     | Config !(Either String PresentationSettings)
-    | Image !Pandoc.Attr ![Inline] !Pandoc.Target
+    | Image !ImageAttrs ![Inline] !Pandoc.Target
     deriving (Eq, Show)
 
 -- | See comment on 'Block'.
@@ -192,7 +199,7 @@ fromPandocBlocks = concatMap fromPandocBlock
 fromPandocBlock :: Pandoc.Block -> [Block]
 fromPandocBlock (Pandoc.Plain xs) = [Plain (fromPandocInlines xs)]
 fromPandocBlock (Pandoc.Para [Pandoc.Image attrs caption tgt]) =
-    [Image attrs (fromPandocInlines caption) tgt]
+    [Image (fromImageAttrs attrs) (fromPandocInlines caption) tgt]
 fromPandocBlock (Pandoc.Para xs) = [Para (fromPandocInlines xs)]
 fromPandocBlock (Pandoc.LineBlock xs) =
     [LineBlock (map fromPandocInlines xs)]
@@ -234,7 +241,7 @@ fromPandocBlock (Pandoc.Table _ cptn specs thead tbodies tfoot) = pure $ Table
 
 fromPandocBlock (Pandoc.Figure _figattrs _figcaption blocks)
     | [Pandoc.Para [Pandoc.Image attrs caption target]] <- blocks =
-        [Image attrs (fromPandocInlines caption) target]
+        [Image (fromImageAttrs attrs) (fromPandocInlines caption) target]
     | otherwise = []
   where
 fromPandocBlock (Pandoc.Div attrs blocks) =
@@ -265,6 +272,18 @@ fromPandocInline inline = case inline of
     Pandoc.Image _attr xs _tgt -> fromPandocInlines xs
     Pandoc.Note xs             -> pure $ Note (fromPandocBlocks xs)
     Pandoc.Span attr xs        -> pure $ Span attr (fromPandocInlines xs)
+
+fromImageAttrs :: Pandoc.Attr -> ImageAttrs
+fromImageAttrs (_, _, kvs) = ImageAttrs
+    { iaWidthPercentage  = lookupPercentage "width"
+    , iaHeightPercentage = lookupPercentage "height"
+    }
+  where
+    lookupPercentage :: T.Text -> Maybe Int
+    lookupPercentage key = do
+        val <- lookup key kvs
+        numeric <- T.stripSuffix "%" val
+        readMaybe $ T.unpack numeric
 
 isHorizontalRule :: Block -> Bool
 isHorizontalRule HorizontalRule = True

@@ -34,7 +34,7 @@ new config = do
         unless (termProgram == Just "iTerm.app") $ throwIO $
             Internal.BackendNotSupported "TERM_PROGRAM not iTerm.app"
 
-    return Internal.Handle {Internal.hDrawImage = drawImage}
+    return Internal.Handle {Internal.hDrawImage = \_opts -> drawImage}
 
 
 --------------------------------------------------------------------------------

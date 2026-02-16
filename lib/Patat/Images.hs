@@ -4,6 +4,8 @@ module Patat.Images
     ( Backend
     , Handle
     , withHandle
+    , DrawImageOptions (..)
+    , defaultDrawImageOptions
     , drawImage
     ) where
 
@@ -61,5 +63,5 @@ backends =
 
 
 --------------------------------------------------------------------------------
-drawImage :: Handle -> FilePath -> IO Cleanup
+drawImage :: Handle -> DrawImageOptions -> FilePath -> IO Cleanup
 drawImage = hDrawImage
