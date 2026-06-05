@@ -193,26 +193,27 @@ instance A.FromJSON ExtensionList where
 defaultExtensionList :: ExtensionList
 defaultExtensionList = ExtensionList $
     Pandoc.readerExtensions Pandoc.def `mappend` Pandoc.extensionsFromList
-    [ Pandoc.Ext_yaml_metadata_block
-    , Pandoc.Ext_table_captions
-    , Pandoc.Ext_simple_tables
-    , Pandoc.Ext_multiline_tables
-    , Pandoc.Ext_grid_tables
-    , Pandoc.Ext_pipe_tables
-    , Pandoc.Ext_raw_html
-    , Pandoc.Ext_tex_math_dollars
-    , Pandoc.Ext_fenced_code_blocks
-    , Pandoc.Ext_fenced_code_attributes
-    , Pandoc.Ext_backtick_code_blocks
-    , Pandoc.Ext_inline_code_attributes
-    , Pandoc.Ext_fancy_lists
-    , Pandoc.Ext_four_space_rule
+    [ Pandoc.Ext_backtick_code_blocks
     , Pandoc.Ext_definition_lists
     , Pandoc.Ext_example_lists
-    , Pandoc.Ext_strikeout
-    , Pandoc.Ext_superscript
-    , Pandoc.Ext_subscript
+    , Pandoc.Ext_fancy_lists
+    , Pandoc.Ext_fenced_code_attributes
+    , Pandoc.Ext_fenced_code_blocks
+    , Pandoc.Ext_four_space_rule
+    , Pandoc.Ext_grid_tables
+    , Pandoc.Ext_header_attributes
+    , Pandoc.Ext_inline_code_attributes
+    , Pandoc.Ext_multiline_tables
+    , Pandoc.Ext_pipe_tables
+    , Pandoc.Ext_raw_html
     , Pandoc.Ext_shortcut_reference_links
+    , Pandoc.Ext_simple_tables
+    , Pandoc.Ext_strikeout
+    , Pandoc.Ext_subscript
+    , Pandoc.Ext_superscript
+    , Pandoc.Ext_table_captions
+    , Pandoc.Ext_tex_math_dollars
+    , Pandoc.Ext_yaml_metadata_block
     ]
 
 

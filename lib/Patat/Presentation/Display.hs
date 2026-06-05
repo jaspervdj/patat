@@ -278,9 +278,9 @@ prettyMargins ds blocks = vertical $
     -- Find the right margins for the specific block.  Currently, only headers
     -- can have different margins.
     marginsFor :: Block -> Margins
-    marginsFor (Header n _ _) = fromMaybe gmargins $ do
-        align <- Theme.htAlign $ Theme.themeForHeader n (dsTheme ds)
-        guard $ align == Theme.CenterHeaderAlign
+    marginsFor (Header n (_, classes, _) _) = fromMaybe gmargins $ do
+        align <- Theme.btAlign $ Theme.themeForHeader n classes (dsTheme ds)
+        guard $ align == Theme.CenterBlockAlign
         pure gmargins {mLeft = Auto, mRight = Auto}
     marginsFor _ = gmargins
 
@@ -293,7 +293,7 @@ prettyBlock ds (Plain inlines) = prettyInlines ds inlines
 prettyBlock ds (Para inlines) =
     prettyInlines ds inlines <> PP.hardline
 
-prettyBlock ds (Header n _ inlines) =
+prettyBlock ds (Header n (_, classes, _) inlines) =
     themed ds style content <> PP.hardline <>
     (case underline of
         Just t | t /= "" ->
@@ -301,14 +301,14 @@ prettyBlock ds (Header n _ inlines) =
             PP.hardline
         _ -> mempty)
   where
-    prefix    = fromMaybe mempty $ Theme.htPrefix headerTheme
+    prefix    = fromMaybe mempty $ Theme.btPrefix headerTheme
     content   = PP.text prefix <> prettyInlines ds inlines
     (_, cols) = PP.dimensions content
-    underline = Theme.htUnderline headerTheme
+    underline = Theme.btUnderline headerTheme
 
-    headerTheme = Theme.themeForHeader n (dsTheme ds)
+    headerTheme = Theme.themeForHeader n classes (dsTheme ds)
 
-    style _ = Theme.htStyle headerTheme
+    style _ = Theme.btStyle headerTheme
 
 prettyBlock ds (CodeBlock classes txt) =
     prettyCodeBlock ds classes txt

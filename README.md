@@ -48,6 +48,8 @@ Table of Contents
     -   [Advanced slide splitting](#advanced-slide-splitting)
     -   [Fragmented slides](#fragmented-slides)
     -   [Theming](#theming)
+        -   [Theming headers](#theming-headers)
+        -   [Class-based theming](#class-based-theming)
     -   [Syntax Highlighting](#syntax-highlighting)
     -   [Pandoc Extensions](#pandoc-extensions)
     -   [Images](#images)
@@ -544,6 +546,37 @@ patat:
         underline: '-~-~'
         align: center
 ```
+
+#### Class-based theming
+
+Version 0.15.3 and later support class-based theming.  This allows you to
+customize elements (currently only [headers](#theming-headers)) with specific
+classes.
+
+```markdown
+---
+patat:
+  theme:
+    class:
+      warning:
+        prefix: "⚠ "
+        style: [vividRed]
+      info:
+        prefix: "💡 "
+        style: [dullYellow]
+...
+
+# Dynamically Typed Languages {.warning}
+
+A dynamically typed language is a programming language where type checking is
+performed at runtime (during execution) rather than beforehand.
+```
+
+Note that `.warning` is already included in the default theme, so that will
+work out of the box.
+
+# Dynamically Typed Languages {.warning}
+
 
 ### Syntax Highlighting
 
