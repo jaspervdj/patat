@@ -575,9 +575,6 @@ performed at runtime (during execution) rather than beforehand.
 Note that `.warning` is already included in the default theme, so that will
 work out of the box.
 
-# Dynamically Typed Languages {.warning}
-
-
 ### Syntax Highlighting
 
 `patat` uses [Kate] Syntax Highlighting files.  `patat` ships with support for
