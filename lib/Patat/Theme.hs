@@ -322,7 +322,17 @@ defaultTheme = Theme
     , themeImageText          = dull Ansi.Green
     , themeImageTarget        = dull Ansi.Cyan `mappend` underline
     , themeSyntaxHighlighting = Just defaultSyntaxHighlighting
-    , themeClass              = Nothing
+    , themeClass              = Just $ BlockThemes $ M.fromList
+        [ ( "warning"
+          , BlockTheme
+              { btAlign     = Just LeftBlockAlign
+              , btPrefix    = Just "⚠ "
+              , btStyle     = Just $ Style
+                  [Ansi.SetColor Ansi.Foreground Ansi.Vivid Ansi.Red]
+              , btUnderline = Nothing
+              }
+          )
+        ]
     }
   where
     dull   c  = Just $ Style [Ansi.SetColor Ansi.Foreground Ansi.Dull c]

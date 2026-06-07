@@ -5,9 +5,6 @@ patat:
       h2:
         underline: "=*"
     class:
-      warning:
-        prefix: "⚠ "
-        style: [vividRed]
       info:
         prefix: "💡 "
         style: [dullYellow]
@@ -26,3 +23,14 @@ The header above should mix the class and h2-based styles.
 ## Hybrid approaches {.info}
 
 Some programming languages take a hybrid approach...
+
+# Override warning
+
+<!--config:
+  theme:
+    class:
+      warning:
+        prefix: "⚠⚠⚠ "
+-->
+
+## Override the default warning with more emoji {.warning}
