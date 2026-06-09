@@ -1,0 +1,28 @@
+[33m                         theme-headers-class.md                         [0m
+
+[91m⚠ Dynamically Typed Languages[0m
+
+[mA dynamically typed language is a programming language where type checking is[0m
+[mperformed at runtime (during execution) rather than beforehand.[0m
+
+[91m⚠ More information[0m
+[91m=*=*=*=*=*=*=*=*=*[0m
+
+[mThe header above should mix the class and h2-based styles.[0m
+
+[33m💡 Hybrid approaches[0m
+[33m=*=*=*=*=*=*=*=*=*=*[0m
+
+[mSome programming languages take a hybrid approach...[0m
+
+[33m                                                                  1 / 2 [0m
+
+[m{slide}[0m
+[33m                         theme-headers-class.md                         [0m
+
+[34m# Override alert[0m
+
+[91m⚠⚠⚠ Override the default alert with more emoji[0m
+[91m=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*[0m
+
+[33m                                                                  2 / 2 [0m

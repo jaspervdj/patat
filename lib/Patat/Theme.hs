@@ -4,9 +4,9 @@
 {-# LANGUAGE TemplateHaskell            #-}
 module Patat.Theme
     ( Style (..)
-    , HeaderAlign (..)
-    , HeaderTheme (..)
-    , HeaderThemes (..)
+    , BlockAlign (..)
+    , BlockTheme (..)
+    , BlockThemes (..)
     , Theme (..)
     , defaultTheme
     , themeForHeader
@@ -23,7 +23,7 @@ import qualified Data.Aeson             as A
 import qualified Data.Aeson.TH.Extended as A
 import           Data.Char              (toLower, toUpper)
 import           Data.Colour.SRGB       (RGB (..), sRGB24reads, toSRGB24)
-import           Data.List              (intercalate, isPrefixOf, isSuffixOf)
+import           Data.List              (intercalate, isPrefixOf, isSuffixOf, foldl')
 import qualified Data.Map               as M
 import           Data.Maybe             (mapMaybe, maybeToList)
 import qualified Data.Text              as T
@@ -162,62 +162,62 @@ namedSgrs = M.fromList
 
 
 --------------------------------------------------------------------------------
-data HeaderAlign = LeftHeaderAlign | CenterHeaderAlign
+data BlockAlign = LeftBlockAlign | CenterBlockAlign
     deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
-instance A.ToJSON HeaderAlign where
-    toJSON LeftHeaderAlign   = "left"
-    toJSON CenterHeaderAlign = "center"
+instance A.ToJSON BlockAlign where
+    toJSON LeftBlockAlign   = "left"
+    toJSON CenterBlockAlign = "center"
 
 
 --------------------------------------------------------------------------------
-instance A.FromJSON HeaderAlign where
-    parseJSON = A.withText "FromJSON HeaderAlign" $ \txt -> case txt of
-        "left"   -> pure LeftHeaderAlign
-        "center" -> pure CenterHeaderAlign
+instance A.FromJSON BlockAlign where
+    parseJSON = A.withText "FromJSON BlockAlign" $ \txt -> case txt of
+        "left"   -> pure LeftBlockAlign
+        "center" -> pure CenterBlockAlign
         _        -> fail $ "Unknown align: " ++ show txt
 
 
 --------------------------------------------------------------------------------
-data HeaderTheme = HeaderTheme
-    { htStyle     :: !(Maybe Style)
-    , htPrefix    :: !(Maybe T.Text)
-    , htUnderline :: !(Maybe T.Text)
-    , htAlign     :: !(Maybe HeaderAlign)
+data BlockTheme = BlockTheme
+    { btStyle     :: !(Maybe Style)
+    , btPrefix    :: !(Maybe T.Text)
+    , btUnderline :: !(Maybe T.Text)
+    , btAlign     :: !(Maybe BlockAlign)
     } deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
-$(A.deriveJSON A.dropPrefixOptions ''HeaderTheme)
+$(A.deriveJSON A.dropPrefixOptions ''BlockTheme)
 
 
 --------------------------------------------------------------------------------
-instance Semigroup HeaderTheme where
-    l <> r = HeaderTheme
-        { htStyle     = htStyle     l `mplus` htStyle     r
-        , htPrefix    = htPrefix    l `mplus` htPrefix    r
-        , htUnderline = htUnderline l `mplus` htUnderline r
-        , htAlign     = htAlign     l `mplus` htAlign     r
+instance Semigroup BlockTheme where
+    l <> r = BlockTheme
+        { btStyle     = btStyle     l `mplus` btStyle     r
+        , btPrefix    = btPrefix    l `mplus` btPrefix    r
+        , btUnderline = btUnderline l `mplus` btUnderline r
+        , btAlign     = btAlign     l `mplus` btAlign     r
         }
 
 
 --------------------------------------------------------------------------------
-newtype HeaderThemes = HeaderThemes (M.Map String HeaderTheme)
+newtype BlockThemes = BlockThemes (M.Map T.Text BlockTheme)
     deriving (Eq, Show, A.FromJSON, A.ToJSON)
 
 
 --------------------------------------------------------------------------------
-instance Semigroup HeaderThemes where
-    HeaderThemes l <> HeaderThemes r = HeaderThemes $ M.unionWith (<>) l r
+instance Semigroup BlockThemes where
+    BlockThemes l <> BlockThemes r = BlockThemes $ M.unionWith (<>) l r
 
 
 --------------------------------------------------------------------------------
 data Theme = Theme
     { themeBorders            :: !(Maybe Style)
     , themeHeader             :: !(Maybe Style)
-    , themeHeaders            :: !(Maybe HeaderThemes)
+    , themeHeaders            :: !(Maybe BlockThemes)
     , themeCodeBlock          :: !(Maybe Style)
     , themeBulletList         :: !(Maybe Style)
     , themeBulletListMarkers  :: !(Maybe T.Text)
@@ -241,6 +241,7 @@ data Theme = Theme
     , themeImageText          :: !(Maybe Style)
     , themeImageTarget        :: !(Maybe Style)
     , themeSyntaxHighlighting :: !(Maybe SyntaxHighlighting)
+    , themeClass              :: !(Maybe BlockThemes)
     } deriving (Eq, Show)
 
 
@@ -273,6 +274,7 @@ instance Semigroup Theme where
         , themeImageText          = mplusOn   themeImageText
         , themeImageTarget        = mplusOn   themeImageTarget
         , themeSyntaxHighlighting = mappendOn themeSyntaxHighlighting
+        , themeClass              = mappendOn themeClass
         }
       where
         mplusOn   f = f l `mplus`   f r
@@ -285,17 +287,18 @@ instance Monoid Theme where
     mempty  = Theme
         Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
         Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-        Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+        Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 --------------------------------------------------------------------------------
 defaultTheme :: Theme
 defaultTheme = Theme
     { themeBorders            = dull Ansi.Yellow
     , themeHeader             = dull Ansi.Blue
-    , themeHeaders            = Just $ HeaderThemes $ M.fromList $ do
+    , themeHeaders            = Just $ BlockThemes $ M.fromList $ do
         n <- [1 .. 6]
         let prefix = T.replicate n "#" <> " "
-        pure ("h" <> show n, HeaderTheme Nothing (Just prefix) Nothing Nothing)
+            key    = T.pack $ "h" <> show n
+        pure (key, BlockTheme Nothing (Just prefix) Nothing Nothing)
     , themeCodeBlock          = dull Ansi.White `mappend` ondull Ansi.Black
     , themeBulletList         = dull Ansi.Magenta
     , themeBulletListMarkers  = Just "-*"
@@ -319,6 +322,17 @@ defaultTheme = Theme
     , themeImageText          = dull Ansi.Green
     , themeImageTarget        = dull Ansi.Cyan `mappend` underline
     , themeSyntaxHighlighting = Just defaultSyntaxHighlighting
+    , themeClass              = Just $ BlockThemes $ M.fromList
+        [ ( "alert"
+          , BlockTheme
+              { btAlign     = Just LeftBlockAlign
+              , btPrefix    = Just "⚠ "
+              , btStyle     = Just $ Style
+                  [Ansi.SetColor Ansi.Foreground Ansi.Vivid Ansi.Red]
+              , btUnderline = Nothing
+              }
+          )
+        ]
     }
   where
     dull   c  = Just $ Style [Ansi.SetColor Ansi.Foreground Ansi.Dull c]
@@ -328,12 +342,18 @@ defaultTheme = Theme
 
 
 --------------------------------------------------------------------------------
-themeForHeader :: Int -> Theme -> HeaderTheme
-themeForHeader n theme = maybe def (<> def) $ do
-    HeaderThemes m <- themeHeaders theme
-    M.lookup ("h" ++ show n) m
+themeForHeader :: Int -> [T.Text] -> Theme -> BlockTheme
+themeForHeader n classes theme = foldl'
+    (\acc clas -> maybe acc (<> acc) $ do
+        BlockThemes m <- themeClass theme
+        M.lookup clas m)
+    (maybe def (<> def) $ do
+        BlockThemes m <- themeHeaders theme
+        M.lookup key m)
+    classes
   where
-    def = HeaderTheme (themeHeader theme) Nothing Nothing Nothing
+    def = BlockTheme (themeHeader theme) Nothing Nothing Nothing
+    key = T.pack $ "h" <> show n
 
 
 --------------------------------------------------------------------------------
