@@ -11,12 +11,12 @@ patat:
 ...
 
 
-# Dynamically Typed Languages {.warning}
+# Dynamically Typed Languages {.alert}
 
 A dynamically typed language is a programming language where type checking is
 performed at runtime (during execution) rather than beforehand.
 
-## More information {.warning}
+## More information {.alert}
 
 The header above should mix the class and h2-based styles.
 
@@ -24,13 +24,13 @@ The header above should mix the class and h2-based styles.
 
 Some programming languages take a hybrid approach...
 
-# Override warning
+# Override alert
 
 <!--config:
   theme:
     class:
-      warning:
+      alert:
         prefix: "⚠⚠⚠ "
 -->
 
-## Override the default warning with more emoji {.warning}
+## Override the default alert with more emoji {.alert}
