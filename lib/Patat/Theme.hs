@@ -323,7 +323,7 @@ defaultTheme = Theme
     , themeImageTarget        = dull Ansi.Cyan `mappend` underline
     , themeSyntaxHighlighting = Just defaultSyntaxHighlighting
     , themeClass              = Just $ BlockThemes $ M.fromList
-        [ ( "warning"
+        [ ( "alert"
           , BlockTheme
               { btAlign     = Just LeftBlockAlign
               , btPrefix    = Just "⚠ "

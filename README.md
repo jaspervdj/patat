@@ -558,7 +558,7 @@ classes.
 patat:
   theme:
     class:
-      warning:
+      alert:
         prefix: "⚠ "
         style: [vividRed]
       info:
@@ -566,13 +566,13 @@ patat:
         style: [dullYellow]
 ...
 
-# Dynamically Typed Languages {.warning}
+# Dynamically Typed Languages {.alert}
 
 A dynamically typed language is a programming language where type checking is
 performed at runtime (during execution) rather than beforehand.
 ```
 
-Note that `.warning` is already included in the default theme, so that will
+Note that `.alert` is already included in the default theme, so that will
 work out of the box.
 
 ### Syntax Highlighting
