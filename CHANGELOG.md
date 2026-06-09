@@ -1,5 +1,32 @@
 # Changelog
 
+## UNRELEASED
+
+ *  This allows you to customize elements (currently only headers) with specific
+    classes.  For example:
+
+    ```markdown
+    ---
+    patat:
+      theme:
+        class:
+          alert:
+            prefix: "⚠️ "
+            style: [vividRed]
+          info:
+            prefix: "💡 "
+            style: [dullYellow]
+    ...
+
+    # Dynamically Typed Languages {.alert}
+
+    A dynamically typed language is a programming language where type checking
+    is performed at runtime (during execution) rather than beforehand.
+    ```
+
+    Note that `.alert` is already included in the default theme, so that will
+    work out of the box.
+
 ## 0.15.2.0 (2025-08-06)
 
  *  Fix case-insensitivity of class names for `eval` code blocks (#192).
