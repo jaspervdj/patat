@@ -27,6 +27,8 @@
     Note that `.alert` is already included in the default theme, so that will
     work out of the box.
 
+ *  Allow compiling against Pandoc 3.10
+
 ## 0.15.2.0 (2025-08-06)
 
  *  Fix case-insensitivity of class names for `eval` code blocks (#192).
