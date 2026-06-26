@@ -117,7 +117,10 @@ Library
 
 Executable patat
   Main-is:          Main.hs
-  Ghc-options:      -Wall -threaded -rtsopts "-with-rtsopts=-N"
+  if arch(loongarch64)
+	  Ghc-options:      -Wall -threaded -rtsopts 
+  else
+	  Ghc-options:      -Wall -threaded -rtsopts "-with-rtsopts=-N"
   Hs-source-dirs:   src
   Default-language: Haskell2010
   Build-depends:    base, patat
